@@ -39,9 +39,9 @@ public class VisitTrackingFilter extends OncePerRequestFilter {
         // Continue the filter chain first, then log asynchronously
         filterChain.doFilter(request, response);
 
-        // Only track API calls, skip admin analytics to prevent recursive inflation
+        // Only track API calls, skip admin analytics and health checks to prevent unwanted log inflation
         String path = request.getRequestURI();
-        if (!path.startsWith("/api/") || path.startsWith("/api/admin/analytics")) {
+        if (!path.startsWith("/api/") || path.startsWith("/api/admin/analytics") || path.equals("/api/health") || path.equals("/health")) {
             return;
         }
 

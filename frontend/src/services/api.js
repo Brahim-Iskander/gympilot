@@ -2,7 +2,7 @@ import axios from 'axios';
 
 import { AUTH_EXPIRED_EVENT, TOKEN_STORAGE_KEY } from '../constants';
 
-const baseURL = import.meta.env.VITE_API_URL ?? 'http://localhost:8081/api';
+const baseURL = import.meta.env.VITE_API_URL ?? 'https://gympilot-iejq.onrender.com/api';
 
 export const api = axios.create({
   baseURL,

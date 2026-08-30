@@ -65,6 +65,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/partners").permitAll()
+                        .requestMatchers("/api/health", "/health").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/admin/coach-chat/**").hasAnyRole("ADMIN", "COACH")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
