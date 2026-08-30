@@ -26,4 +26,16 @@ export const authService = {
   changePassword(payload) {
     return api.post('/auth/password', payload).then((response) => response.data);
   },
+
+  forgotPassword(email) {
+    return api.post('/auth/forgot-password', { email }).then((response) => response.data);
+  },
+
+  validateResetToken(token) {
+    return api.get('/auth/reset-password/validate', { params: { token } }).then((response) => response.data);
+  },
+
+  resetPassword({ token, newPassword }) {
+    return api.post('/auth/reset-password', { token, newPassword }).then((response) => response.data);
+  },
 };

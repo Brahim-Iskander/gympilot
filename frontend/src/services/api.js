@@ -20,7 +20,7 @@ api.interceptors.request.use((config) => {
 
 // A 401 on an authenticated call means the token is invalid/expired:
 // clear the local session and let AuthContext react to the event.
-const PUBLIC_ENDPOINTS = ['/auth/login', '/auth/register'];
+const PUBLIC_ENDPOINTS = ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password'];
 
 api.interceptors.response.use(
   (response) => response,

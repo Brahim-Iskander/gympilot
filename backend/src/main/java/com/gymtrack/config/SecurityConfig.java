@@ -63,7 +63,8 @@ public class SecurityConfig {
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login", "/api/auth/forgot-password", "/api/auth/reset-password").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/auth/reset-password/validate").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/partners").permitAll()
                         .requestMatchers("/api/health", "/health").permitAll()
                         .requestMatchers("/error").permitAll()

@@ -65,4 +65,22 @@ public class AuthController {
                                @Valid @RequestBody ChangePasswordRequest request) {
         authService.changePassword(authentication.getName(), request);
     }
+
+    /** Public - generates a secure token and sends a password reset email via JavaMail. */
+    @PostMapping("/forgot-password")
+    public java.util.Map<String, String> forgotPassword(@Valid @RequestBody com.gymtrack.dto.ForgotPasswordRequest request) {
+        return authService.forgotPassword(request);
+    }
+
+    /** Public - validates a password reset token before displaying the reset form. */
+    @GetMapping("/reset-password/validate")
+    public com.gymtrack.dto.ValidateTokenResponse validateResetToken(@org.springframework.web.bind.annotation.RequestParam("token") String token) {
+        return authService.validateResetToken(token);
+    }
+
+    /** Public - validates token and updates user password. */
+    @PostMapping("/reset-password")
+    public java.util.Map<String, String> resetPassword(@Valid @RequestBody com.gymtrack.dto.ResetPasswordRequest request) {
+        return authService.resetPassword(request);
+    }
 }

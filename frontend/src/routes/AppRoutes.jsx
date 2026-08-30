@@ -26,6 +26,8 @@ import AdminCoachChat from '../pages/Admin/AdminCoachChat';
 import AdminTickets from '../pages/Admin/AdminTickets';
 import SupportTickets from '../pages/Support/SupportTickets';
 import MembershipPage from '../pages/Membership/Membership';
+import ForgotPasswordPage from '../pages/ForgotPassword/ForgotPassword';
+import ResetPasswordPage from '../pages/ResetPassword/ResetPassword';
 
 export default function AppRoutes() {
   return (
@@ -45,6 +47,22 @@ export default function AppRoutes() {
         element={
           <PublicOnlyRoute>
             <RegisterPage />
+          </PublicOnlyRoute>
+        }
+      />
+      <Route
+        path="/forgot-password"
+        element={
+          <PublicOnlyRoute>
+            <ForgotPasswordPage />
+          </PublicOnlyRoute>
+        }
+      />
+      <Route
+        path="/reset-password"
+        element={
+          <PublicOnlyRoute>
+            <ResetPasswordPage />
           </PublicOnlyRoute>
         }
       />

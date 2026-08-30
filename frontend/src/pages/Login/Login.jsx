@@ -110,6 +110,22 @@ export default function Login() {
             }}
           />
 
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: -1 }}>
+            <Link
+              component={RouterLink}
+              to="/forgot-password"
+              variant="body2"
+              sx={{
+                color: 'text.secondary',
+                fontWeight: 600,
+                fontSize: '0.85rem',
+                '&:hover': { color: 'primary.main' },
+              }}
+            >
+              Forgot password?
+            </Link>
+          </Box>
+
           <Button
             type="submit"
             variant="contained"
