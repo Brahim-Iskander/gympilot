@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   Alert,
   Box,
@@ -29,6 +29,8 @@ import PaletteRoundedIcon from '@mui/icons-material/PaletteRounded';
 import SaveRoundedIcon from '@mui/icons-material/SaveRounded';
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
 import VisibilityOffRoundedIcon from '@mui/icons-material/VisibilityOffRounded';
+import PhotoCameraRoundedIcon from '@mui/icons-material/PhotoCameraRounded';
+import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 
 import LanguageSelector from '../../components/LanguageSelector';
 import { useAuth } from '../../context/AuthContext';
@@ -85,6 +87,11 @@ export default function Settings() {
     lastName: user?.lastName || '',
     email: user?.email || '',
   });
+  const [avatarPreview, setAvatarPreview] = useState(user?.avatar || null);
+  const [avatarFile, setAvatarFile] = useState(undefined); // undefined means untouched, null means removed, string means new base64
+  const [avatarError, setAvatarError] = useState('');
+  const avatarInputRef = useRef(null);
+
   const [accountSaving, setAccountSaving] = useState(false);
   const [accountMessage, setAccountMessage] = useState({ type: '', text: '' });
 
@@ -116,7 +123,39 @@ export default function Settings() {
       lastName: user?.lastName || '',
       email: user?.email || '',
     });
+    setAvatarPreview(user?.avatar || null);
+    setAvatarFile(undefined);
   }, [user]);
+
+  const handleAvatarSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setAvatarError('Only JPG, PNG, or WebP images are allowed.');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setAvatarError('Image size must be less than 2MB.');
+      return;
+    }
+
+    setAvatarError('');
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAvatarPreview(reader.result);
+      setAvatarFile(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveAvatar = () => {
+    setAvatarPreview(null);
+    setAvatarFile('');
+    setAvatarError('');
+    if (avatarInputRef.current) avatarInputRef.current.value = '';
+  };
 
   useEffect(() => {
     let active = true;
@@ -192,12 +231,17 @@ export default function Settings() {
     }
     setAccountSaving(true);
     try {
-      const updated = await authService.updateProfile({
+      const payload = {
         firstName: account.firstName.trim(),
         lastName: account.lastName.trim(),
-      });
+      };
+      if (avatarFile !== undefined) {
+        payload.avatar = avatarFile;
+      }
+      const updated = await authService.updateProfile(payload);
       updateUser(updated);
-      setAccountMessage({ type: 'success', text: 'Account updated.' });
+      setAvatarFile(undefined);
+      setAccountMessage({ type: 'success', text: 'Account and profile picture updated.' });
     } catch (err) {
       setAccountMessage({ type: 'error', text: getApiErrorMessage(err) });
     } finally {
@@ -280,17 +324,84 @@ export default function Settings() {
       case 'account':
         return (
           <Stack spacing={3}>
-            <Stack direction="row" spacing={2.5} alignItems="center">
-              <Avatar name={fullName} size="xl" />
-              <Box>
-                <Typography variant="subtitle1" fontWeight={700}>
-                  {fullName || 'Your account'}
+            {/* Hidden file input for photo upload */}
+            <input
+              type="file"
+              ref={avatarInputRef}
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleAvatarSelect}
+              style={{ display: 'none' }}
+            />
+
+            {/* Profile Avatar Card */}
+            <Box
+              sx={{
+                p: 2.5,
+                borderRadius: 3,
+                border: '1px solid',
+                borderColor: 'divider',
+                bgcolor: 'action.hover',
+                display: 'flex',
+                flexDirection: { xs: 'column', sm: 'row' },
+                alignItems: { xs: 'flex-start', sm: 'center' },
+                gap: 2.5,
+              }}
+            >
+              <Avatar
+                src={avatarPreview || user?.avatar}
+                name={fullName}
+                size="xxl"
+                sx={{
+                  border: '2px solid',
+                  borderColor: 'primary.main',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
+                }}
+              />
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="subtitle1" fontWeight={800} sx={{ fontFamily: "'Sora','Inter',sans-serif" }}>
+                  Profile Photo
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {account.email}
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+                  Supports JPG, PNG, or WebP. Max 2MB file size.
                 </Typography>
+
+                <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    startIcon={<PhotoCameraRoundedIcon />}
+                    onClick={() => avatarInputRef.current?.click()}
+                    sx={{ borderRadius: 2 }}
+                  >
+                    Upload New Photo
+                  </Button>
+
+                  {(avatarPreview || user?.avatar) && (
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      size="small"
+                      startIcon={<DeleteOutlineRoundedIcon />}
+                      onClick={handleRemoveAvatar}
+                      sx={{ borderRadius: 2 }}
+                    >
+                      Remove Photo
+                    </Button>
+                  )}
+                </Stack>
+
+                {avatarError && (
+                  <Typography variant="caption" color="error.main" fontWeight={600} sx={{ display: 'block', mt: 1 }}>
+                    {avatarError}
+                  </Typography>
+                )}
+                {avatarFile !== undefined && (
+                  <Typography variant="caption" color="primary.main" fontWeight={600} sx={{ display: 'block', mt: 1 }}>
+                    Photo selected. Click "Save account" below to commit changes.
+                  </Typography>
+                )}
               </Box>
-            </Stack>
+            </Box>
 
             {accountMessage.text && (
               <Alert severity={accountMessage.type === 'success' ? 'success' : 'error'} variant="outlined">

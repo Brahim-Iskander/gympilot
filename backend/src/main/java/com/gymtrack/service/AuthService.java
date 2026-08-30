@@ -213,6 +213,9 @@ public class AuthService {
         User user = requireUser(email);
         user.setFirstName(request.firstName().trim());
         user.setLastName(request.lastName().trim());
+        if (request.avatar() != null) {
+            user.setAvatar(request.avatar().isBlank() ? null : request.avatar());
+        }
         User saved = userRepository.save(user);
         log.info("Updated profile for user: {}", saved.getEmail());
         return UserResponse.from(saved);

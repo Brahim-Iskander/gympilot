@@ -49,6 +49,9 @@ public class User {
     /** ACTIVE or INACTIVE. Defaults to INACTIVE. */
     private String membershipStatus = "INACTIVE";
 
+    /** Profile avatar image (Base64 data URL or external URL). */
+    private String avatar;
+
     @CreatedDate
     private Instant createdAt;
 
@@ -160,6 +163,14 @@ public class User {
 
     public boolean hasActiveMembership() {
         return "ACTIVE".equalsIgnoreCase(membershipStatus) && membershipTier != null && !"FREE".equalsIgnoreCase(membershipTier);
+    }
+
+    public String getAvatar() {
+        return avatar;
+    }
+
+    public void setAvatar(String avatar) {
+        this.avatar = avatar;
     }
 
     @Override

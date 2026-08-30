@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import {
   Box,
@@ -8,6 +8,9 @@ import {
   Grid,
   Stack,
   Typography,
+  IconButton,
+  Tooltip,
+  CircularProgress,
 } from '@mui/material';
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import FitnessCenterRoundedIcon from '@mui/icons-material/FitnessCenterRounded';
@@ -15,8 +18,10 @@ import FlagRoundedIcon from '@mui/icons-material/FlagRounded';
 import ScheduleRoundedIcon from '@mui/icons-material/ScheduleRounded';
 import MonitorWeightRoundedIcon from '@mui/icons-material/MonitorWeightRounded';
 import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded';
+import PhotoCameraRoundedIcon from '@mui/icons-material/PhotoCameraRounded';
 
 import { useAuth } from '../../context/AuthContext';
+import { authService } from '../../services/authService';
 import { onboardingService } from '../../services/onboardingService';
 import { getApiErrorMessage } from '../../utils/errors';
 import {
@@ -85,10 +90,13 @@ function StatTile({ icon, label, value }) {
 }
 
 export default function Profile() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [onboarding, setOnboarding] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState('');
+  const avatarInputRef = useRef(null);
 
   useEffect(() => {
     let active = true;
@@ -110,6 +118,41 @@ export default function Profile() {
     };
   }, []);
 
+  const handleAvatarSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setAvatarError('Only JPG, PNG, or WebP images are allowed.');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setAvatarError('Image size must be less than 2MB.');
+      return;
+    }
+
+    setAvatarError('');
+    setAvatarUploading(true);
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      try {
+        const base64 = reader.result;
+        const updated = await authService.updateProfile({
+          firstName: user?.firstName || '',
+          lastName: user?.lastName || '',
+          avatar: base64,
+        });
+        updateUser(updated);
+      } catch (err) {
+        setAvatarError(getApiErrorMessage(err));
+      } finally {
+        setAvatarUploading(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ');
 
   let aiPlan = null;
@@ -123,6 +166,14 @@ export default function Profile() {
 
   return (
     <Box>
+      <input
+        type="file"
+        ref={avatarInputRef}
+        accept="image/jpeg,image/png,image/webp"
+        onChange={handleAvatarSelect}
+        style={{ display: 'none' }}
+      />
+
       <SectionHeader
         title="Profile"
         subtitle="Your account and training profile from GymPilot"
@@ -154,7 +205,45 @@ export default function Profile() {
               spacing={3}
               alignItems={{ xs: 'flex-start', sm: 'center' }}
             >
-              <Avatar name={fullName} size="xxl" />
+              <Box sx={{ position: 'relative' }}>
+                <Avatar
+                  src={user?.avatar}
+                  name={fullName}
+                  size="xxl"
+                  sx={{
+                    border: '2px solid',
+                    borderColor: 'primary.main',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                  }}
+                />
+                <Tooltip title="Upload / change profile photo">
+                  <IconButton
+                    size="small"
+                    onClick={() => avatarInputRef.current?.click()}
+                    disabled={avatarUploading}
+                    sx={{
+                      position: 'absolute',
+                      bottom: -4,
+                      right: -4,
+                      bgcolor: 'primary.main',
+                      color: '#000',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                      border: '2px solid',
+                      borderColor: 'background.paper',
+                      '&:hover': {
+                        bgcolor: 'primary.dark',
+                      },
+                    }}
+                  >
+                    {avatarUploading ? (
+                      <CircularProgress size={16} sx={{ color: '#000' }} />
+                    ) : (
+                      <PhotoCameraRoundedIcon sx={{ fontSize: 16 }} />
+                    )}
+                  </IconButton>
+                </Tooltip>
+              </Box>
+
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Typography
                   variant="h5"
@@ -165,6 +254,11 @@ export default function Profile() {
                 <Typography color="text.secondary" sx={{ mt: 0.5 }}>
                   {user?.email}
                 </Typography>
+                {avatarError && (
+                  <Typography variant="caption" color="error.main" fontWeight={600} sx={{ display: 'block', mt: 0.5 }}>
+                    {avatarError}
+                  </Typography>
+                )}
                 <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mt: 1.5 }}>
                   {onboarding?.goal && <Badge label={labelGoal(onboarding.goal)} variant="accent" />}
                   {onboarding?.experienceLevel && (

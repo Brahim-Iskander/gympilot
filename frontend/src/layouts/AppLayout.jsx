@@ -503,6 +503,7 @@ export default function AppLayout() {
               >
                 <ListItemIcon>
                   <Avatar
+                    src={user?.avatar}
                     variant="rounded"
                     sx={{
                       width: 36,
@@ -961,6 +962,7 @@ export default function AppLayout() {
                     }}
                   >
                     <Avatar
+                      src={user?.avatar}
                       variant="rounded"
                       sx={{
                         width: 32,

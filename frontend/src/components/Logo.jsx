@@ -17,7 +17,7 @@ export default function Logo({ size = 52 }) {
     >
       <Box
         component="img"
-        src="/logo.jpeg"
+        src="/favicon1.png"
         alt="GymPilot logo"
         sx={{
           width: size,

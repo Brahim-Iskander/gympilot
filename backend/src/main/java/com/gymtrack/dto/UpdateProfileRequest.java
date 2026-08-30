@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
- * Partial account update — name only. Email changes are not supported in v1.
+ * Account update — name and optional avatar.
  */
 public record UpdateProfileRequest(
 
@@ -14,6 +14,11 @@ public record UpdateProfileRequest(
 
         @NotBlank(message = "Last name is required")
         @Size(max = 50, message = "Last name must not exceed 50 characters")
-        String lastName
+        String lastName,
+
+        String avatar
 ) {
+    public UpdateProfileRequest(String firstName, String lastName) {
+        this(firstName, lastName, null);
+    }
 }

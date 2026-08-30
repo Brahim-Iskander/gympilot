@@ -7,12 +7,15 @@ import {
   Grid,
   IconButton,
   InputAdornment,
+  MenuItem,
   Snackbar,
   Stack,
   TextField,
   Tooltip,
   Typography,
   styled,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import FitnessCenterRoundedIcon from '@mui/icons-material/FitnessCenterRounded';
@@ -22,6 +25,7 @@ import SchoolRoundedIcon from '@mui/icons-material/SchoolRounded';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
 import ExerciseTutorialModal from './ExerciseTutorialModal';
+import BodyMapSVG from './BodyMapSVG';
 
 const StyledCard = styled(Card)(({ }) => ({
   borderRadius: 16,
@@ -242,6 +246,9 @@ function ExerciseCard({ exercise, onAdd, isAdded, onOpenTutorial }) {
 }
 
 export default function ExerciseLibrary({ onAddExercise, addedExerciseIds = [] }) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedEquipment, setSelectedEquipment] = useState('All');
@@ -253,8 +260,12 @@ export default function ExerciseLibrary({ onAddExercise, addedExerciseIds = [] }
   const filteredExercises = useMemo(() => {
     return exercises.filter((exercise) => {
       const matchesSearch = exercise.name.toLowerCase().includes(search.toLowerCase());
-      const matchesCategory = selectedCategory === 'All' || exercise.muscle === selectedCategory;
-      const matchesEquipment = selectedEquipment === 'All' || exercise.equipment === selectedEquipment;
+      const matchesCategory =
+        selectedCategory === 'All' ||
+        exercise.muscle?.toLowerCase() === selectedCategory.toLowerCase();
+      const matchesEquipment =
+        selectedEquipment === 'All' ||
+        exercise.equipment?.toLowerCase() === selectedEquipment.toLowerCase();
       return matchesSearch && matchesCategory && matchesEquipment;
     });
   }, [search, selectedCategory, selectedEquipment]);
@@ -266,11 +277,41 @@ export default function ExerciseLibrary({ onAddExercise, addedExerciseIds = [] }
     }
   };
 
-  return (
-    <Box>
+  // Body map muscle click → sync with selectedCategory
+  const handleBodyMapMuscleSelect = (muscle) => {
+    setSelectedCategory((prev) => (prev?.toLowerCase() === muscle?.toLowerCase() ? 'All' : muscle));
+  };
+
+  // ── Body Map Panel ──
+  const bodyMapPanel = (
+    <Box
+      sx={{
+        width: isMobile ? '100%' : 340,
+        minWidth: isMobile ? 'auto' : 300,
+        flexShrink: 0,
+        position: isMobile ? 'relative' : 'sticky',
+        top: isMobile ? 'auto' : 24,
+        alignSelf: 'flex-start',
+        p: 2.5,
+        borderRadius: 4,
+        border: '1px solid rgba(255,255,255,0.07)',
+        background: 'linear-gradient(180deg, rgba(255,255,255,0.035) 0%, rgba(255,255,255,0.01) 100%)',
+        backdropFilter: 'blur(8px)',
+      }}
+    >
+      <BodyMapSVG
+        selectedMuscle={selectedCategory === 'All' ? null : selectedCategory}
+        onSelectMuscle={handleBodyMapMuscleSelect}
+      />
+    </Box>
+  );
+
+  // ── Exercise List Panel ──
+  const exerciseListPanel = (
+    <Box sx={{ flex: 1, minWidth: 0 }}>
       {/* Search & Filter Header */}
-      <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2} sx={{ mb: 4 }}>
-        <Box sx={{ flex: 1, minWidth: { xs: '100%', sm: 280 } }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2} sx={{ mb: 3 }}>
+        <Box sx={{ flex: 1, minWidth: { xs: '100%', sm: 240 } }}>
           <TextField
             placeholder="Search exercises by name..."
             value={search}
@@ -292,11 +333,13 @@ export default function ExerciseLibrary({ onAddExercise, addedExerciseIds = [] }
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
             size="small"
-            sx={{ minWidth: 150, '& .MuiSelect-select': { py: 0.5 } }}
+            sx={{ minWidth: 150 }}
             SelectProps={{ IconComponent: () => <ExpandMoreRoundedIcon fontSize="small" /> }}
           >
             {categories.map((cat) => (
-              <Chip key={cat} label={cat} />
+              <MenuItem key={cat} value={cat}>
+                {cat === 'All' ? 'All Muscles' : cat}
+              </MenuItem>
             ))}
           </TextField>
           <TextField
@@ -304,24 +347,29 @@ export default function ExerciseLibrary({ onAddExercise, addedExerciseIds = [] }
             value={selectedEquipment}
             onChange={(e) => setSelectedEquipment(e.target.value)}
             size="small"
-            sx={{ minWidth: 150, '& .MuiSelect-select': { py: 0.5 } }}
+            sx={{ minWidth: 150 }}
             SelectProps={{ IconComponent: () => <ExpandMoreRoundedIcon fontSize="small" /> }}
           >
             {equipment.map((eq) => (
-              <Chip key={eq} label={eq} />
+              <MenuItem key={eq} value={eq}>
+                {eq === 'All' ? 'All Equipment' : eq}
+              </MenuItem>
             ))}
           </TextField>
         </Stack>
       </Stack>
 
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Showing {filteredExercises.length} of {exercises.length} exercises • Click <strong>Tutorial</strong> on any exercise to see form instructions & tips.
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
+        Showing {filteredExercises.length} of {exercises.length} exercises
+        {selectedCategory !== 'All' && (
+          <> • Filtered by <strong style={{ color: '#C6FF3E' }}>{selectedCategory}</strong></>
+        )}
       </Typography>
 
       {/* Grid */}
-      <Grid container spacing={2.5}>
+      <Grid container spacing={2}>
         {filteredExercises.map((exercise) => (
-          <Grid item xs={12} sm={6} md={4} lg={3} key={exercise.id}>
+          <Grid item xs={12} sm={6} lg={6} key={exercise.id}>
             <ExerciseCard
               exercise={exercise}
               onAdd={handleAdd}
@@ -342,6 +390,30 @@ export default function ExerciseLibrary({ onAddExercise, addedExerciseIds = [] }
           </Typography>
         </Box>
       )}
+    </Box>
+  );
+
+  return (
+    <Box>
+      {/* ── Responsive Layout: Body Map + Exercise List ── */}
+      <Stack
+        direction={isMobile ? 'column' : 'row'}
+        spacing={isMobile ? 3 : 4}
+        alignItems="flex-start"
+      >
+        {/* On mobile, body map goes on top. On desktop, exercise list first (left), body map second (right). */}
+        {isMobile ? (
+          <>
+            {bodyMapPanel}
+            {exerciseListPanel}
+          </>
+        ) : (
+          <>
+            {exerciseListPanel}
+            {bodyMapPanel}
+          </>
+        )}
+      </Stack>
 
       {/* Interactive Exercise Tutorial Modal */}
       <ExerciseTutorialModal

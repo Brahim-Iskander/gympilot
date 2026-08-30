@@ -204,7 +204,7 @@ export default function AdminLayout() {
       <Box sx={{ p: 2 }}>
         <Stack spacing={1.5}>
           <Stack direction="row" spacing={1.5} alignItems="center" sx={{ px: 1 }}>
-            <Avatar sx={{ width: 36, height: 36, bgcolor: 'error.main', color: '#fff', fontWeight: 700, fontSize: '0.9rem' }}>
+            <Avatar src={user?.avatar} sx={{ width: 36, height: 36, bgcolor: 'error.main', color: '#fff', fontWeight: 700, fontSize: '0.9rem' }}>
               {user?.firstName?.charAt(0)?.toUpperCase()}
             </Avatar>
             <Box sx={{ overflow: 'hidden' }}>
