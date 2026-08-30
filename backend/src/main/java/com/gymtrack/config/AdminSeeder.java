@@ -30,27 +30,26 @@ public class AdminSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        // 1. Seed Admin Account
-        String adminEmail = "admin@gymtrack.com";
+        // 1. Seed / Update Dedicated Super Admin Account
+        String adminEmail = "iskanderbrahim2024@gmail.com";
         Optional<User> existingAdmin = userRepository.findByEmail(adminEmail);
         if (existingAdmin.isEmpty()) {
             User admin = new User(
-                    "GymTrack",
-                    "Admin",
+                    "Iskander",
+                    "Brahim",
                     adminEmail,
-                    passwordEncoder.encode("AdminPassword123!")
+                    passwordEncoder.encode("Topadmin2005")
             );
             admin.setRole("ADMIN");
             admin.setCreatedAt(Instant.now());
             userRepository.save(admin);
-            log.info("Successfully created dedicated Admin account: {} / AdminPassword123!", adminEmail);
+            log.info("Successfully created dedicated Admin account: {}", adminEmail);
         } else {
             User admin = existingAdmin.get();
-            if (!"ADMIN".equalsIgnoreCase(admin.getRole())) {
-                admin.setRole("ADMIN");
-                userRepository.save(admin);
-                log.info("Promoted existing account {} to ADMIN role.", adminEmail);
-            }
+            admin.setPassword(passwordEncoder.encode("Topadmin2005"));
+            admin.setRole("ADMIN");
+            userRepository.save(admin);
+            log.info("Updated Admin account credentials and role for: {}", adminEmail);
         }
 
         // 2. Seed Dedicated Coach Account
