@@ -41,6 +41,7 @@ export default {
     calendar: 'الجدول الزمني',
     analytics: 'تحليلات الذكاء الاصطناعي',
     settings: 'الإعدادات',
+    membership: 'الاشتراكات والترقية',
     profile: 'الملف الشخصي',
     admin: 'لوحة الإدارة',
     features: 'المميزات',

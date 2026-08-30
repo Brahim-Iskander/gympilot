@@ -41,6 +41,7 @@ export default {
     calendar: 'Calendrier',
     analytics: 'Analyses IA',
     settings: 'Paramètres',
+    membership: 'Abonnement',
     profile: 'Profil',
     admin: 'Administration',
     features: 'Fonctionnalités',

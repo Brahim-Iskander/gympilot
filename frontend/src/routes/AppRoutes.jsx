@@ -25,6 +25,7 @@ import AdminPartners from '../pages/Admin/AdminPartners';
 import AdminCoachChat from '../pages/Admin/AdminCoachChat';
 import AdminTickets from '../pages/Admin/AdminTickets';
 import SupportTickets from '../pages/Support/SupportTickets';
+import MembershipPage from '../pages/Membership/Membership';
 
 export default function AppRoutes() {
   return (
@@ -129,6 +130,14 @@ export default function AppRoutes() {
           element={
             <ProtectedRoute>
               <SupportTickets />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/membership"
+          element={
+            <ProtectedRoute>
+              <MembershipPage />
             </ProtectedRoute>
           }
         />

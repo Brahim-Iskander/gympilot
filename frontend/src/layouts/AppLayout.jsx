@@ -53,6 +53,7 @@ import {
   LightModeRounded,
   KeyboardArrowDownRounded,
   ConfirmationNumberRounded,
+  CardMembershipRounded,
 } from '@mui/icons-material';
 
 import Logo from '../components/Logo';
@@ -122,6 +123,12 @@ export default function AppLayout() {
 
   const ACCOUNT_ITEMS = [
     {
+      id: 'membership',
+      label: t('nav.membership', 'Membership'),
+      icon: <CardMembershipRounded />,
+      path: '/membership',
+    },
+    {
       id: 'support',
       label: 'Support Tickets',
       icon: <ConfirmationNumberRounded />,
@@ -165,6 +172,11 @@ export default function AppLayout() {
       label: `${t('nav.analytics')}`,
       path: '/analytics',
       icon: <AnalyticsRounded />,
+    },
+    {
+      label: `${t('nav.membership', 'Membership')}`,
+      path: '/membership',
+      icon: <CardMembershipRounded />,
     },
     {
       label: `${t('nav.settings')}`,

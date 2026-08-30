@@ -41,6 +41,7 @@ export default {
     calendar: 'Calendar',
     analytics: 'Analytics',
     settings: 'Settings',
+    membership: 'Membership',
     profile: 'Profile',
     admin: 'Admin',
     features: 'Features',
