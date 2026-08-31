@@ -16,6 +16,7 @@ import VisibilityOffRoundedIcon from '@mui/icons-material/VisibilityOffRounded';
 import LoginRoundedIcon from '@mui/icons-material/LoginRounded';
 
 import AuthShell from '../../components/AuthShell';
+import SEO from '../../components/SEO';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../i18n';
 import { getApiErrorMessage } from '../../utils/errors';
@@ -54,7 +55,13 @@ export default function Login() {
   };
 
   return (
-    <AuthShell
+    <>
+      <SEO
+        title="Sign In"
+        description="Sign in to your GymPilot account to log workouts, track progressive overload, and access your strength dashboard."
+        path="/login"
+      />
+      <AuthShell
       title={t('auth.welcomeBack')}
       subtitle={t('auth.loginSubtitle')}
       footer={
@@ -139,5 +146,6 @@ export default function Login() {
         </Stack>
       </Box>
     </AuthShell>
+    </>
   );
 }

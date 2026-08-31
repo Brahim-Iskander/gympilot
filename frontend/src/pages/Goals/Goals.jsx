@@ -11,6 +11,7 @@ import {
 
 import GoalsList from './components/GoalsList';
 import { SectionHeader } from '../../components/ui';
+import SEO from '../../components/SEO';
 
 const goalTypes = [
   { id: 'strength', name: 'Strength', icon: <Dumbbell01Icon size={18} /> },
@@ -26,9 +27,15 @@ export default function Goals() {
 
   return (
     <Box>
+      <SEO
+        title="Fitness & Strength Goals"
+        description="Set, track, and crush your body composition, lift target, and workout frequency milestones on GymPilot."
+        path="/goals"
+        noIndex
+      />
       <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2} sx={{ mb: 4 }}>
         <Box>
-          <Typography variant="h4" sx={{ fontFamily: "'Sora','Inter',sans-serif", fontWeight: 800 }}>
+          <Typography variant="h4" component="h1" sx={{ fontFamily: "'Sora','Inter',sans-serif", fontWeight: 800 }}>
             Goals
           </Typography>
           <Typography variant="body2" color="text.secondary">

@@ -18,6 +18,7 @@ import {
   Alert,
   Tooltip,
 } from '@mui/material';
+import SEO from '../../components/SEO';
 import {
   LineChart,
   Line,
@@ -420,6 +421,12 @@ export default function Analytics() {
 
   return (
     <Box>
+      <SEO
+        title="AI Progress Analytics"
+        description="AI-powered body recomposition insights, progressive overload velocity tracking, and hypertrophy directives on GymPilot."
+        path="/analytics"
+        noIndex
+      />
       <SectionHeader
         title="AI Performance & Deep Analytics"
         subtitle="Personalized progress assessment, trend identification, and progressive overload intelligence by Claude Opus"

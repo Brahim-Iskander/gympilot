@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { CssBaseline, ThemeProvider } from '@mui/material';
+import { HelmetProvider } from 'react-helmet-async';
 
 import App from './App';
 import { getTheme } from './theme';
@@ -27,12 +28,14 @@ function ThemedApp() {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <LanguageProvider>
-        <CustomThemeProvider>
-          <ThemedApp />
-        </CustomThemeProvider>
-      </LanguageProvider>
-    </BrowserRouter>
+    <HelmetProvider>
+      <BrowserRouter>
+        <LanguageProvider>
+          <CustomThemeProvider>
+            <ThemedApp />
+          </CustomThemeProvider>
+        </LanguageProvider>
+      </BrowserRouter>
+    </HelmetProvider>
   </React.StrictMode>,
 );

@@ -9,6 +9,7 @@ import NutritionDashboard from './components/NutritionDashboard';
 import Meals from './components/Meals';
 import Macros from './components/Macros';
 import { TabNavigation } from '../../components/ui';
+import SEO from '../../components/SEO';
 
 const tabs = [
   { id: 'dashboard', label: 'Dashboard', icon: <RestaurantRoundedIcon /> },
@@ -22,8 +23,14 @@ export default function Nutrition() {
 
   return (
     <Box>
+      <SEO
+        title="Nutrition & Macro Targets"
+        description="Track daily calorie intake, macronutrient ratios (protein, carbs, fats), and suggested meal plans on GymPilot."
+        path="/nutrition"
+        noIndex
+      />
       <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2} sx={{ mb: 4 }}>
-        <Typography variant="h4" sx={{ fontFamily: "'Sora','Inter',sans-serif", fontWeight: 800 }}>
+        <Typography variant="h4" component="h1" sx={{ fontFamily: "'Sora','Inter',sans-serif", fontWeight: 800 }}>
           Nutrition
         </Typography>
       </Stack>

@@ -30,6 +30,7 @@ import PhotoCompareModal from './components/PhotoCompareModal';
 import { TabNavigation, LoadingSpinner } from '../../components/ui';
 import { progressService } from '../../services/progressService';
 import { getApiErrorMessage } from '../../utils/errors';
+import SEO from '../../components/SEO';
 
 const tabs = [
   { id: 'timeline', label: 'Timeline & Logs', icon: <HistoryRoundedIcon /> },
@@ -121,6 +122,12 @@ export default function Progress() {
 
   return (
     <Box>
+      <SEO
+        title="Body & Strength Progress Tracking"
+        description="Monitor weight trajectory, body circumference measurements, lift personal records, and progress photos on GymPilot."
+        path="/progress"
+        noIndex
+      />
       {/* Page Header & Navigation to Analytics */}
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
@@ -130,7 +137,7 @@ export default function Progress() {
         sx={{ mb: 3 }}
       >
         <Box>
-          <Typography variant="h4" sx={{ fontFamily: "'Sora','Inter',sans-serif", fontWeight: 800 }}>
+          <Typography variant="h4" component="h1" sx={{ fontFamily: "'Sora','Inter',sans-serif", fontWeight: 800 }}>
             Progress & Body Tracking
           </Typography>
           <Typography variant="body2" color="text.secondary">

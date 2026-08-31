@@ -10,6 +10,7 @@ import MyPrograms from './components/MyPrograms';
 import StartWorkout from './components/StartWorkout';
 import ExerciseLibrary from './components/ExerciseLibrary';
 import { TabNavigation } from '../../components/ui';
+import SEO from '../../components/SEO';
 
 const tabs = [
   { id: 'programs', label: 'My Programs', icon: <FitnessCenterRoundedIcon /> },
@@ -53,8 +54,14 @@ export default function Workouts() {
 
   return (
     <Box>
+      <SEO
+        title="Workout Log & Training Programs"
+        description="Track your workout routines, log sets, reps, and weights, and explore the exercise library on GymPilot."
+        path="/workouts"
+        noIndex
+      />
       <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2} sx={{ mb: 4 }}>
-        <Typography variant="h4" sx={{ fontFamily: "'Sora','Inter',sans-serif", fontWeight: 800 }}>
+        <Typography variant="h4" component="h1" sx={{ fontFamily: "'Sora','Inter',sans-serif", fontWeight: 800 }}>
           Workouts
         </Typography>
       </Stack>

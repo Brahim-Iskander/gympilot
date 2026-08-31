@@ -16,6 +16,7 @@ import SendRoundedIcon from '@mui/icons-material/SendRounded';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 
 import AuthShell from '../../components/AuthShell';
+import SEO from '../../components/SEO';
 import { authService } from '../../services/authService';
 import { getApiErrorMessage } from '../../utils/errors';
 
@@ -63,7 +64,13 @@ export default function ForgotPassword() {
   };
 
   return (
-    <AuthShell
+    <>
+      <SEO
+        title="Forgot Password"
+        description="Reset your GymPilot account password securely."
+        path="/forgot-password"
+      />
+      <AuthShell
       title={submittedEmail ? 'Check Your Inbox' : 'Forgot Password'}
       subtitle={
         submittedEmail
@@ -205,5 +212,6 @@ export default function ForgotPassword() {
         </Box>
       )}
     </AuthShell>
+    </>
   );
 }

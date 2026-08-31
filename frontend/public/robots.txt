@@ -1,0 +1,27 @@
+# GymPilot — robots.txt
+# Allow crawlers on public pages, block auth-only and admin routes
+
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /dashboard/
+Disallow: /workouts
+Disallow: /progress
+Disallow: /nutrition
+Disallow: /goals
+Disallow: /calendar
+Disallow: /analytics
+Disallow: /settings
+Disallow: /support
+Disallow: /membership
+Disallow: /admin
+Disallow: /admin/
+Disallow: /onboarding
+
+# Public pages (allowed by default via Allow: /)
+# /           — Homepage
+# /login      — Login page
+# /register   — Registration page
+
+# Sitemap
+Sitemap: https://gymmpilot.netlify.app/sitemap.xml

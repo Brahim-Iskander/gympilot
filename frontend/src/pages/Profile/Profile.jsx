@@ -33,6 +33,7 @@ import {
   labelSex,
 } from '../../utils/onboardingLabels';
 import { Avatar, Badge, Card, LoadingSpinner, SectionHeader } from '../../components/ui';
+import SEO from '../../components/SEO';
 
 const staticCardSx = {
   '&:hover': {
@@ -166,6 +167,12 @@ export default function Profile() {
 
   return (
     <Box>
+      <SEO
+        title="Athlete Profile"
+        description="View your athlete profile, training statistics, and fitness parameters on GymPilot."
+        path="/dashboard/profile"
+        noIndex
+      />
       <input
         type="file"
         ref={avatarInputRef}

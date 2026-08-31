@@ -1,8 +1,13 @@
 package com.gymtrack.service;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import com.gymtrack.dto.community.CommunityMessageResponse;
@@ -14,6 +19,8 @@ import com.gymtrack.repository.UserRepository;
 @Service
 public class CommunityChatService {
 
+    private static final Logger log = LoggerFactory.getLogger(CommunityChatService.class);
+
     private final CommunityMessageRepository communityMessageRepository;
     private final UserRepository userRepository;
 
@@ -23,10 +30,12 @@ public class CommunityChatService {
     }
 
     /**
-     * Get recent messages from the community chat.
+     * Get messages from the last 24 hours (daily community chat).
+     * Messages older than 24h are excluded from the response.
      */
     public List<CommunityMessageResponse> getRecentMessages() {
-        return communityMessageRepository.findTop100ByOrderByCreatedAtAsc()
+        Instant since = Instant.now().minus(24, ChronoUnit.HOURS);
+        return communityMessageRepository.findByCreatedAtAfterOrderByCreatedAtAsc(since)
                 .stream()
                 .map(CommunityMessageResponse::from)
                 .collect(Collectors.toList());
@@ -55,5 +64,16 @@ public class CommunityChatService {
 
         CommunityMessage saved = communityMessageRepository.save(message);
         return CommunityMessageResponse.from(saved);
+    }
+
+    /**
+     * Scheduled cleanup: delete community messages older than 24 hours.
+     * Runs every hour to keep the chat fresh and daily.
+     */
+    @Scheduled(fixedRate = 3600000) // every 1 hour (in milliseconds)
+    public void purgeExpiredMessages() {
+        Instant cutoff = Instant.now().minus(24, ChronoUnit.HOURS);
+        communityMessageRepository.deleteByCreatedAtBefore(cutoff);
+        log.info("Community chat cleanup: purged messages older than {}", cutoff);
     }
 }

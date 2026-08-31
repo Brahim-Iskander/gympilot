@@ -44,6 +44,7 @@ import {
 
 import { ticketService } from '../../services/ticketService';
 import { useAuth } from '../../context/AuthContext';
+import SEO from '../../components/SEO';
 
 export default function MembershipPage() {
   const theme = useTheme();
@@ -98,6 +99,12 @@ export default function MembershipPage() {
 
   return (
     <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>
+      <SEO
+        title="Membership Plans & Pricing"
+        description="Upgrade your GymPilot tier. Unlock 1-on-1 certified live coach access, advanced AI analytics, and unlimited workout program generation."
+        path="/membership"
+        noIndex
+      />
       {/* Header Section */}
       <Box sx={{ textAlign: 'center', mb: { xs: 4, md: 6 } }}>
         <Stack

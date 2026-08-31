@@ -21,6 +21,7 @@ import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import ErrorOutlineRoundedIcon from '@mui/icons-material/ErrorOutlineRounded';
 
 import AuthShell from '../../components/AuthShell';
+import SEO from '../../components/SEO';
 import { authService } from '../../services/authService';
 import { getApiErrorMessage } from '../../utils/errors';
 
@@ -60,11 +61,11 @@ export default function ResetPassword() {
           setTokenEmail(res.email || '');
         } else {
           setTokenValid(false);
-          setValidationError(res.message || 'This reset link is invalid or expired.');
+          setValidationError(res.message || 'This reset link has expired or is invalid.');
         }
       } catch (err) {
         setTokenValid(false);
-        setValidationError(getApiErrorMessage(err) || 'This reset link is invalid or expired.');
+        setValidationError(getApiErrorMessage(err) || 'Failed to validate reset link.');
       } finally {
         setValidating(false);
       }
@@ -73,36 +74,27 @@ export default function ResetPassword() {
     checkToken();
   }, [token]);
 
-  const validateForm = () => {
-    const errors = {};
-    if (!newPassword) {
-      errors.newPassword = 'New password is required';
-    } else if (newPassword.length < 8) {
-      errors.newPassword = 'Password must be at least 8 characters';
+  const validate = () => {
+    const errs = {};
+    if (!newPassword || newPassword.length < 8) {
+      errs.newPassword = 'Password must be at least 8 characters';
     }
-
-    if (!confirmPassword) {
-      errors.confirmPassword = 'Confirm your new password';
-    } else if (newPassword !== confirmPassword) {
-      errors.confirmPassword = 'Passwords do not match';
+    if (newPassword !== confirmPassword) {
+      errs.confirmPassword = 'Passwords do not match';
     }
-
-    return errors;
+    return errs;
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    const errors = validateForm();
-    setFormErrors(errors);
-    if (Object.keys(errors).length > 0) return;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const errs = validate();
+    setFormErrors(errs);
+    if (Object.keys(errs).length > 0) return;
 
     setSubmitting(true);
     setSubmitError('');
     try {
-      await authService.resetPassword({
-        token,
-        newPassword,
-      });
+      await authService.resetPassword(token, newPassword);
       setResetSuccess(true);
     } catch (err) {
       setSubmitError(getApiErrorMessage(err));
@@ -112,36 +104,43 @@ export default function ResetPassword() {
   };
 
   return (
-    <AuthShell
-      title={
-        validating
-          ? 'Verifying Link...'
-          : resetSuccess
-          ? 'Password Reset Complete'
-          : !tokenValid
-          ? 'Link Expired'
-          : 'Reset Password'
-      }
-      subtitle={
-        validating
-          ? 'Please wait while we verify your security token.'
-          : resetSuccess
-          ? 'Your new credentials are saved. You can now log in.'
-          : !tokenValid
-          ? 'This reset link cannot be used.'
-          : tokenEmail
-          ? `Choose a new secure password for ${tokenEmail}`
-          : 'Choose a strong password with at least 8 characters.'
-      }
-      footer={
-        <Typography variant="body2" color="text.secondary">
-          Remember your credentials?{' '}
-          <Link component={RouterLink} to="/login" sx={{ color: 'primary.main', fontWeight: 600 }}>
-            Sign In
-          </Link>
-        </Typography>
-      }
-    >
+    <>
+      <SEO
+        title="Reset Password"
+        description="Choose a new secure password for your GymPilot account."
+        path="/reset-password"
+        noIndex
+      />
+      <AuthShell
+        title={
+          validating
+            ? 'Verifying Link...'
+            : resetSuccess
+            ? 'Password Reset Complete'
+            : !tokenValid
+            ? 'Link Expired'
+            : 'Reset Password'
+        }
+        subtitle={
+          validating
+            ? 'Please wait while we verify your security token.'
+            : resetSuccess
+            ? 'Your new credentials are saved. You can now log in.'
+            : !tokenValid
+            ? 'This reset link cannot be used.'
+            : tokenEmail
+            ? `Choose a new secure password for ${tokenEmail}`
+            : 'Choose a strong password with at least 8 characters.'
+        }
+        footer={
+          <Typography variant="body2" color="text.secondary">
+            Remember your credentials?{' '}
+            <Link component={RouterLink} to="/login" sx={{ color: 'primary.main', fontWeight: 600 }}>
+              Sign In
+            </Link>
+          </Typography>
+        }
+      >
       {validating ? (
         <Box sx={{ py: 6, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <CircularProgress color="primary" />
@@ -314,5 +313,6 @@ export default function ResetPassword() {
         </Box>
       )}
     </AuthShell>
+    </>
   );
 }

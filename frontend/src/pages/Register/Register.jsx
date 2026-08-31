@@ -17,6 +17,7 @@ import VisibilityOffRoundedIcon from '@mui/icons-material/VisibilityOffRounded';
 import PersonAddAlt1RoundedIcon from '@mui/icons-material/PersonAddAlt1Rounded';
 
 import AuthShell from '../../components/AuthShell';
+import SEO from '../../components/SEO';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../i18n';
 import { getApiErrorMessage } from '../../utils/errors';
@@ -87,7 +88,13 @@ export default function Register() {
   };
 
   return (
-    <AuthShell
+    <>
+      <SEO
+        title="Create Free Account"
+        description="Join GymPilot today. Create your free account to track workouts, monitor strength progress, set goals, and hit new personal records."
+        path="/register"
+      />
+      <AuthShell
       title={t('auth.createAccount')}
       subtitle={t('auth.registerSubtitle')}
       footer={
@@ -185,5 +192,6 @@ export default function Register() {
         </Stack>
       </Box>
     </AuthShell>
+    </>
   );
 }

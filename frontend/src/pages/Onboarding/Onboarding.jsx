@@ -17,6 +17,7 @@ import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import Logo from '../../components/Logo';
 import LanguageSelector from '../../components/LanguageSelector';
 import FullScreenLoader from '../../components/FullScreenLoader';
+import SEO from '../../components/SEO';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../i18n';
 import { onboardingService } from '../../services/onboardingService';
@@ -184,6 +185,12 @@ export default function Onboarding() {
 
   return (
     <Box sx={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+      <SEO
+        title="Athlete Setup & Onboarding"
+        description="Set up your physical profile, goal focus, experience, and training schedule on GymPilot."
+        path="/onboarding"
+        noIndex
+      />
       <Box
         aria-hidden
         sx={{

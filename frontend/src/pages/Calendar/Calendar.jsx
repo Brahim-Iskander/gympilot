@@ -14,6 +14,7 @@ import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 import EventRoundedIcon from '@mui/icons-material/EventRounded';
 import { SectionHeader, Card } from '../../components/ui';
 import { useAiPlan } from '../../hooks/useAiPlan';
+import SEO from '../../components/SEO';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -138,6 +139,12 @@ export default function Calendar() {
 
   return (
     <Box>
+      <SEO
+        title="Training Calendar & Schedule"
+        description="Schedule workouts, view training history, and track monthly measurement reminders on GymPilot."
+        path="/calendar"
+        noIndex
+      />
       <SectionHeader
         title="Calendar"
         subtitle={aiPlan ? "Your dynamic AI-generated schedule" : "Track your workouts, measurements, and goals"}

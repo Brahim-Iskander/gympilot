@@ -33,6 +33,7 @@ import PhotoCameraRoundedIcon from '@mui/icons-material/PhotoCameraRounded';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 
 import LanguageSelector from '../../components/LanguageSelector';
+import SEO from '../../components/SEO';
 import { useAuth } from '../../context/AuthContext';
 import { useThemeMode } from '../../context/ThemeContext';
 import { useLanguage } from '../../i18n';
@@ -880,6 +881,12 @@ export default function Settings() {
 
   return (
     <Box>
+      <SEO
+        title="Settings & Preferences"
+        description="Manage your GymPilot account preferences, training profile, language, and security settings."
+        path="/settings"
+        noIndex
+      />
       <SectionHeader
         title="Settings"
         subtitle="Manage your account and training profile"

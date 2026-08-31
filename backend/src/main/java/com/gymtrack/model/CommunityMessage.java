@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 /**
  * Public community message exchanged in real-time between all GymPilot athletes and users.
  * 100% Free and open to all registered users.
+ * Messages are ephemeral — automatically deleted after 24 hours (daily chat).
  */
 @Document(collection = "community_messages")
 public class CommunityMessage {
@@ -27,6 +28,7 @@ public class CommunityMessage {
     private String message;
 
     @CreatedDate
+    @Indexed(expireAfterSeconds = 86400) // TTL: auto-delete after 24 hours
     private Instant createdAt;
 
     public CommunityMessage() {

@@ -55,6 +55,7 @@ import {
 
 import { ticketService } from '../../services/ticketService';
 import { useAuth } from '../../context/AuthContext';
+import SEO from '../../components/SEO';
 
 const TOPIC_CONFIG = {
   GENERAL: { label: 'General Inquiry', color: '#8A7CFF', icon: <HelpOutlineRounded fontSize="small" /> },
@@ -293,6 +294,12 @@ export default function SupportTickets() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
+      <SEO
+        title="Athlete Help Desk & Support Tickets"
+        description="Submit inquiry tickets, report issues, and communicate with the GymPilot technical and billing team."
+        path="/support"
+        noIndex
+      />
       {/* Header */}
       <Box
         sx={{
