@@ -1,4 +1,5 @@
-import { Box, Button, Card, Chip, Container, Grid, Stack, Typography, styled } from '@mui/material';
+import { useState } from 'react';
+import { Box, Button, Card, Chip, Container, Grid, Stack, Typography, Snackbar, Alert, styled } from '@mui/material';
 import LocalOfferRoundedIcon from '@mui/icons-material/LocalOfferRounded';
 import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded';
 import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded';
@@ -75,9 +76,14 @@ const featuredAds = [
 ];
 
 export default function AdsSection() {
+  const [toast, setToast] = useState({ open: false, message: '' });
+
   const handleClaimDeal = (ad) => {
     navigator.clipboard?.writeText(ad.promoCode);
-    alert(`Promo Code "${ad.promoCode}" copied to clipboard! Enjoy your ${ad.discount} with ${ad.brand}!`);
+    setToast({
+      open: true,
+      message: `Promo Code "${ad.promoCode}" copied to clipboard! Enjoy your ${ad.discount} with ${ad.brand}!`,
+    });
   };
 
   return (
@@ -212,6 +218,22 @@ export default function AdsSection() {
           ))}
         </Grid>
       </Container>
+
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={4000}
+        onClose={() => setToast({ open: false, message: '' })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setToast({ open: false, message: '' })}
+          severity="success"
+          variant="filled"
+          sx={{ width: '100%', borderRadius: 2, fontWeight: 600 }}
+        >
+          {toast.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

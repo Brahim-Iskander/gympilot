@@ -16,6 +16,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -32,6 +33,9 @@ public class AiService {
 
     @Value("${ai.model:llama-3.3-70b-versatile}")
     private String model;
+
+    @Value("${ai.vision-model:llama-3.2-90b-vision-preview}")
+    private String visionModel;
 
     @Value("${ai.api.key:}")
     private String apiKey;
@@ -1006,15 +1010,18 @@ public class AiService {
      */
     public Map<String, Object> analyzeFood(String prompt, String imageBase64) {
         String query = (prompt != null && !prompt.isBlank()) ? prompt.trim() : "Healthy Balanced Fitness Meal";
+        boolean hasImage = imageBase64 != null && !imageBase64.isBlank() && imageBase64.length() > 100;
 
         // Try AI completion if API key is present
-        if (apiKey != null && !apiKey.isEmpty() && !apiKey.contains("placeholder")) {
+        if (apiKey != null && !apiKey.isEmpty()) {
             try {
                 String systemPrompt = "You are an expert AI Food Vision and Clinical Sports Nutritionist. " +
-                        "Analyze the meal described or image provided. Estimate portion size, total calories, exact macronutrients (protein, carbs, fat, fiber in grams), health score (0-100), key micronutrients, and an ingredient breakdown. " +
-                        "Return ONLY a valid JSON object matching this exact schema: " +
+                        "Analyze the meal in the image provided (or described by text if no image). " +
+                        "Identify every visible food item, estimate portion sizes, total calories, exact macronutrients (protein, carbs, fat, fiber in grams), health score (0-100), key micronutrients, and an ingredient breakdown. " +
+                        "Be specific to what you actually see — do NOT give generic or template answers. " +
+                        "Return ONLY a valid JSON object (no markdown, no explanation) matching this exact schema: " +
                         "{" +
-                        "  \"foodName\": \"Dish Name\"," +
+                        "  \"foodName\": \"Specific Dish Name\"," +
                         "  \"servingSize\": \"e.g. 1 plate (380g)\"," +
                         "  \"calories\": 520," +
                         "  \"protein\": 42," +
@@ -1023,7 +1030,7 @@ public class AiService {
                         "  \"fiber\": 6," +
                         "  \"healthScore\": 94," +
                         "  \"category\": \"High Protein / Post-Workout\"," +
-                        "  \"coachTips\": \"Nutrition advice and recommendations.\"," +
+                        "  \"coachTips\": \"Personalized nutrition advice based on what you see.\"," +
                         "  \"ingredients\": [" +
                         "    {\"name\": \"Ingredient 1\", \"amount\": \"150g\", \"calories\": 250, \"protein\": 30, \"carbs\": 0, \"fat\": 14}," +
                         "    {\"name\": \"Ingredient 2\", \"amount\": \"100g\", \"calories\": 130, \"protein\": 4, \"carbs\": 28, \"fat\": 2}" +
@@ -1035,16 +1042,44 @@ public class AiService {
                         "  ]" +
                         "}";
 
-                Map<String, Object> requestBody = Map.of(
-                        "model", model,
-                        "messages", List.of(
-                                Map.of("role", "system", "content", systemPrompt),
-                                Map.of("role", "user", "content", "Analyze this meal: " + query)
-                        ),
-                        "temperature", 0.3
-                );
+                // Build the user message — multimodal with image, or text-only
+                Object userContent;
+                String selectedModel;
 
-                JsonNode response = createWebClient().post()
+                if (hasImage) {
+                    // Ensure proper data URI or URL format
+                    String imageUrl = (imageBase64.startsWith("data:") || imageBase64.startsWith("http://") || imageBase64.startsWith("https://"))
+                            ? imageBase64
+                            : "data:image/jpeg;base64," + imageBase64;
+
+                    // Multimodal content array for vision model
+                    userContent = List.of(
+                            Map.of("type", "text", "text", "Analyze this meal image in detail. Additional context: " + query),
+                            Map.of("type", "image_url", "image_url", Map.of("url", imageUrl))
+                    );
+                    selectedModel = visionModel;
+                    log.info("Food analysis: using vision model '{}' with image ({} chars)", selectedModel, imageBase64.length());
+                } else {
+                    // Text-only
+                    userContent = "Analyze this meal in detail: " + query;
+                    selectedModel = model;
+                    log.info("Food analysis: using text model '{}' for query '{}'", selectedModel, query);
+                }
+
+                Map<String, Object> requestBody = new HashMap<>();
+                requestBody.put("model", selectedModel);
+                requestBody.put("temperature", 0.3);
+                requestBody.put("max_tokens", 1024);
+                requestBody.put("messages", List.of(
+                        Map.of("role", "system", "content", systemPrompt),
+                        Map.of("role", "user", "content", userContent)
+                ));
+
+                JsonNode response = createWebClient()
+                        .mutate()
+                        .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(20 * 1024 * 1024))
+                        .build()
+                        .post()
                         .uri("/chat/completions")
                         .header("Authorization", "Bearer " + apiKey)
                         .header("Content-Type", "application/json")
@@ -1057,16 +1092,20 @@ public class AiService {
                     JsonNode choice = response.get("choices").get(0);
                     if (choice.has("message") && choice.get("message").has("content")) {
                         String generatedText = choice.get("message").get("content").asText().trim();
-                        generatedText = generatedText.replaceAll("^```json\\s*", "").replaceAll("^```\\s*", "").replaceAll("```$", "").trim();
+                        // Strip markdown code fences if present
+                        generatedText = generatedText.replaceAll("(?s)^```json\s*", "").replaceAll("(?s)^```\s*", "").replaceAll("(?s)```\s*$", "").trim();
+                        log.info("Food AI response received ({} chars)", generatedText.length());
                         return objectMapper.readValue(generatedText, Map.class);
                     }
                 }
             } catch (Exception e) {
-                log.warn("Food AI API analysis fallback: {}", e.getMessage());
+                log.warn("Food AI API analysis failed, using fallback: {}", e.getMessage());
             }
+        } else {
+            log.warn("No AI API key configured — using fallback food analysis. Set AI_API_KEY env variable for real analysis.");
         }
 
-        // Comprehensive Smart Fallback Nutrition Recognition Engine
+        // Fallback: keyword-based nutrition estimation
         return generateSmartFoodAnalysis(query);
     }
 

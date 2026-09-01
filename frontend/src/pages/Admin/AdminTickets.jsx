@@ -22,6 +22,7 @@ import {
   CircularProgress,
   Badge,
   Alert,
+  Snackbar,
   Avatar,
   Table,
   TableBody,
@@ -88,6 +89,7 @@ export default function AdminTickets() {
 
   // Full image viewer
   const [previewModalImg, setPreviewModalImg] = useState(null);
+  const [toast, setToast] = useState({ open: false, message: '', severity: 'info' });
 
   const replyFileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -145,12 +147,12 @@ export default function AdminTickets() {
     if (!file) return;
 
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-      alert('Only JPG, PNG, and WebP images are allowed.');
+      setToast({ open: true, message: 'Only JPG, PNG, and WebP images are allowed.', severity: 'warning' });
       return;
     }
 
     if (file.size > 2 * 1024 * 1024) {
-      alert('Image size must be less than 2MB.');
+      setToast({ open: true, message: 'Image size must be less than 2MB.', severity: 'warning' });
       return;
     }
 
@@ -1012,6 +1014,22 @@ export default function AdminTickets() {
           />
         </Box>
       </Dialog>
+
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={4000}
+        onClose={() => setToast((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setToast((prev) => ({ ...prev, open: false }))}
+          severity={toast.severity}
+          variant="filled"
+          sx={{ width: '100%', borderRadius: 2 }}
+        >
+          {toast.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 }

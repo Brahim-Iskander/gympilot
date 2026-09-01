@@ -9,6 +9,7 @@ import {
   InputAdornment,
   MenuItem,
   Snackbar,
+  Alert,
   Stack,
   TextField,
   Tooltip,
@@ -428,9 +429,17 @@ export default function ExerciseLibrary({ onAddExercise, addedExerciseIds = [] }
         open={!!snackbar}
         autoHideDuration={2500}
         onClose={() => setSnackbar('')}
-        message={snackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      />
+      >
+        <Alert
+          onClose={() => setSnackbar('')}
+          severity="success"
+          variant="filled"
+          sx={{ width: '100%', borderRadius: 2, fontWeight: 600 }}
+        >
+          {snackbar}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

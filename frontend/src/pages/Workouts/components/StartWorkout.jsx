@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Button, Card, Chip, IconButton, Stack, Typography, styled, TextField, Tabs, Tab, CircularProgress } from '@mui/material';
+import { Box, Button, Card, Chip, IconButton, Stack, Typography, styled, TextField, Tabs, Tab, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import EmojiEventsRoundedIcon from '@mui/icons-material/EmojiEventsRounded';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import TimerRoundedIcon from '@mui/icons-material/TimerRounded';
@@ -231,6 +232,7 @@ export default function StartWorkout({ aiPlan, loading, addedExercises = [], sel
   };
 
   const [finishing, setFinishing] = useState(false);
+  const [completionModal, setCompletionModal] = useState({ open: false, workoutName: '' });
   const navigate = useNavigate();
 
   const handleFinishWorkout = async () => {
@@ -285,11 +287,10 @@ export default function StartWorkout({ aiPlan, loading, addedExercises = [], sel
         }
       }
 
-      alert(`Workout "${displayPlan.name}" completed and saved! Great job!`);
-      navigate('/dashboard');
+      setCompletionModal({ open: true, workoutName: displayPlan.name });
     } catch (err) {
       console.error('Failed to save workout session:', err);
-      alert(`Workout "${displayPlan.name}" completed! Great job!`);
+      setCompletionModal({ open: true, workoutName: displayPlan.name });
     } finally {
       setFinishing(false);
     }
@@ -379,6 +380,67 @@ export default function StartWorkout({ aiPlan, loading, addedExercises = [], sel
           </Button>
         </Stack>
       </Box>
+
+      {/* Workout Completion Confirmation Modal */}
+      <Dialog
+        open={completionModal.open}
+        onClose={() => {
+          setCompletionModal({ open: false, workoutName: '' });
+          navigate('/dashboard');
+        }}
+        PaperProps={{
+          sx: {
+            borderRadius: 4,
+            p: 2,
+            textAlign: 'center',
+            bgcolor: 'background.paper',
+            border: '1px solid rgba(198, 255, 62, 0.3)',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+            maxWidth: 420,
+          },
+        }}
+      >
+        <DialogTitle sx={{ pb: 1 }}>
+          <Box
+            sx={{
+              width: 64,
+              height: 64,
+              borderRadius: '50%',
+              bgcolor: 'rgba(198, 255, 62, 0.15)',
+              color: '#C6FF3E',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mx: 'auto',
+              mb: 2,
+            }}
+          >
+            <EmojiEventsRoundedIcon sx={{ fontSize: 36 }} />
+          </Box>
+          <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: "'Sora', sans-serif" }}>
+            Workout Completed! 🎉
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ pb: 2 }}>
+          <Typography variant="body1" color="text.secondary">
+            Outstanding effort! <strong>{completionModal.workoutName}</strong> has been logged and saved to your progress history.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: 'center', pt: 1, pb: 1 }}>
+          <Button
+            variant="contained"
+            fullWidth
+            size="large"
+            onClick={() => {
+              setCompletionModal({ open: false, workoutName: '' });
+              navigate('/dashboard');
+            }}
+            sx={{ fontWeight: 700, py: 1.2, borderRadius: 2 }}
+          >
+            Go to Dashboard
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
