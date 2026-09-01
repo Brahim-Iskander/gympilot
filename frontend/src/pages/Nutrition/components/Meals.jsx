@@ -1,83 +1,109 @@
 import { useState } from 'react';
-import { Box, Button, Card, Chip, Grid, Stack, TextField, Typography, styled, Dialog, DialogContent, DialogActions, Menu, MenuItem, IconButton, CircularProgress } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import {
+  Box,
+  Button,
+  Card,
+  Chip,
+  Grid,
+  Stack,
+  TextField,
+  Typography,
+  styled,
+  Dialog,
+  DialogContent,
+  DialogActions,
+  DialogTitle,
+  Menu,
+  MenuItem,
+  IconButton,
+  CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+} from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import MoreVertRoundedIcon from '@mui/icons-material/MoreVertRounded';
 import LocalDiningRoundedIcon from '@mui/icons-material/LocalDiningRounded';
+import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded';
 
 const StyledCard = styled(Card)(() => ({
-  borderRadius: 4,
+  borderRadius: 16,
   border: '1px solid',
   borderColor: 'divider',
   background: 'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
 }));
 
-const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'];
+const mealCategories = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
 
-function MealCard({ meal, onEdit, onDelete }) {
+function MealCardItem({ meal, onEdit, onDelete }) {
   const [anchorEl, setAnchorEl] = useState(null);
 
-  const handleMenuOpen = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
   return (
-    <StyledCard sx={{ p: 2, height: '100%' }}>
+    <StyledCard sx={{ p: 2.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 1.5 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Box
             sx={{
-              width: 40,
-              height: 40,
-              borderRadius: 2,
-              bgcolor: 'rgba(198,255,62,0.12)',
-              color: 'primary.main',
+              width: 44,
+              height: 44,
+              borderRadius: 2.5,
+              bgcolor: meal.aiScanned ? 'rgba(198,255,62,0.15)' : 'rgba(255,255,255,0.06)',
+              color: meal.aiScanned ? 'primary.main' : 'text.secondary',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <LocalDiningRoundedIcon fontSize="small" />
+            {meal.aiScanned ? <AutoAwesomeRoundedIcon fontSize="small" /> : <LocalDiningRoundedIcon fontSize="small" />}
           </Box>
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.25 }}>
-              {meal.name}
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Typography variant="h6" sx={{ fontWeight: 800, mb: 0 }}>
+                {meal.title}
+              </Typography>
+              {meal.aiScanned && (
+                <Chip label="AI Scanned" size="small" sx={{ height: 20, fontSize: '0.7rem', fontWeight: 700, bgcolor: 'rgba(198,255,62,0.12)', color: 'primary.main' }} />
+              )}
+            </Stack>
+            <Typography variant="caption" color="text.secondary">
+              {meal.type} · {meal.time || 'Logged today'}
             </Typography>
-            <Typography variant="body2" color="text.secondary">{meal.items}</Typography>
           </Box>
         </Box>
-        <IconButton size="small" onClick={handleMenuOpen} sx={{ color: 'text.secondary' }}>
+        <IconButton size="small" onClick={(e) => setAnchorEl(e.currentTarget)} sx={{ color: 'text.secondary' }}>
           <MoreVertRoundedIcon fontSize="small" />
         </IconButton>
       </Stack>
 
-      <Grid container spacing={1} sx={{ mb: 1.5 }}>
-        <Grid item xs={6}>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2, flex: 1 }}>
+        {meal.items || 'No detailed ingredient description'}
+      </Typography>
+
+      <Grid container spacing={1} sx={{ pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+        <Grid item xs={3}>
           <Typography variant="caption" color="text.secondary">Calories</Typography>
-          <Typography variant="h6" sx={{ fontFamily: "'Sora','Inter',sans-serif", fontWeight: 800, color: '#FF6B6B' }}>
+          <Typography variant="body1" sx={{ fontFamily: "'Sora','Inter',sans-serif", fontWeight: 800, color: '#FF6B6B' }}>
             {meal.calories} kcal
           </Typography>
         </Grid>
-        <Grid item xs={6}>
+        <Grid item xs={3}>
           <Typography variant="caption" color="text.secondary">Protein</Typography>
-          <Typography variant="h6" sx={{ fontFamily: "'Sora','Inter',sans-serif", fontWeight: 800, color: '#C6FF3E' }}>
+          <Typography variant="body1" sx={{ fontFamily: "'Sora','Inter',sans-serif", fontWeight: 800, color: '#C6FF3E' }}>
             {meal.protein}g
           </Typography>
         </Grid>
-        <Grid item xs={6}>
+        <Grid item xs={3}>
           <Typography variant="caption" color="text.secondary">Carbs</Typography>
-          <Typography variant="h6" sx={{ fontFamily: "'Sora','Inter',sans-serif", fontWeight: 800, color: '#8A7CFF' }}>
+          <Typography variant="body1" sx={{ fontFamily: "'Sora','Inter',sans-serif", fontWeight: 800, color: '#8A7CFF' }}>
             {meal.carbs}g
           </Typography>
         </Grid>
-        <Grid item xs={6}>
+        <Grid item xs={3}>
           <Typography variant="caption" color="text.secondary">Fat</Typography>
-          <Typography variant="h6" sx={{ fontFamily: "'Sora','Inter',sans-serif", fontWeight: 800, color: '#FFC107' }}>
+          <Typography variant="body1" sx={{ fontFamily: "'Sora','Inter',sans-serif", fontWeight: 800, color: '#FFC107' }}>
             {meal.fat}g
           </Typography>
         </Grid>
@@ -86,19 +112,19 @@ function MealCard({ meal, onEdit, onDelete }) {
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-        PaperProps={{ sx: { borderRadius: 2, border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' } }}
+        onClose={() => setAnchorEl(null)}
+        PaperProps={{ sx: { borderRadius: 2, border: '1px solid', borderColor: 'divider' } }}
       >
-        <MenuItem onClick={() => { handleMenuClose(); onEdit(meal); }}>
+        <MenuItem onClick={() => { setAnchorEl(null); onEdit(meal); }}>
           <Stack direction="row" spacing={1} alignItems="center">
             <EditRoundedIcon fontSize="small" color="action" />
             <Typography variant="body2">Edit</Typography>
           </Stack>
         </MenuItem>
-        <MenuItem onClick={() => { handleMenuClose(); onDelete(meal); }}>
+        <MenuItem onClick={() => { setAnchorEl(null); onDelete(meal.id); }}>
           <Stack direction="row" spacing={1} alignItems="center">
             <DeleteRoundedIcon fontSize="small" color="error" />
-            <Typography variant="body2" color="error.main">Delete</Typography>
+            <Typography variant="body2" color="error">Delete</Typography>
           </Stack>
         </MenuItem>
       </Menu>
@@ -106,191 +132,211 @@ function MealCard({ meal, onEdit, onDelete }) {
   );
 }
 
-export default function Meals({ aiPlan, loading }) {
-  if (loading) {
-    return (
-      <Box sx={{ py: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <CircularProgress sx={{ color: 'primary.main', mb: 2 }} />
-        <Typography variant="body2" color="text.secondary">Loading meals...</Typography>
-      </Box>
-    );
-  }
-
-  const targetCalories = aiPlan?.nutritionPlan?.dailyCalories || 2200;
-  const targetProtein = aiPlan?.nutritionPlan?.protein || 160;
-  const targetCarbs = aiPlan?.nutritionPlan?.carbs || 230;
-  const targetFat = aiPlan?.nutritionPlan?.fat || 70;
-
-  const mealSuggestions = aiPlan?.nutritionPlan?.mealSuggestions || [];
-
-  const displayMeals = mealSuggestions.length > 0 ? mealSuggestions.map((suggestion, idx) => {
-    const parts = suggestion.split(':');
-    let name = `Meal ${idx + 1}`;
-    let items = suggestion;
-    if (parts.length > 1) {
-      name = parts[0].trim();
-      items = parts.slice(1).join(':').trim();
-    }
-    const numMeals = mealSuggestions.length;
-    return {
-      id: `ai-${idx}`,
-      name,
-      items,
-      calories: Math.round(targetCalories / numMeals),
-      protein: Math.round(targetProtein / numMeals),
-      carbs: Math.round(targetCarbs / numMeals),
-      fat: Math.round(targetFat / numMeals),
-    };
-  }) : [
-    { id: 'm-1', name: 'Breakfast', items: 'Scrambled eggs with whole grain toast', calories: Math.round(targetCalories * 0.25), protein: Math.round(targetProtein * 0.25), carbs: Math.round(targetCarbs * 0.25), fat: Math.round(targetFat * 0.25) },
-    { id: 'm-2', name: 'Lunch', items: 'Grilled chicken breast with quinoa and vegetables', calories: Math.round(targetCalories * 0.35), protein: Math.round(targetProtein * 0.35), carbs: Math.round(targetCarbs * 0.35), fat: Math.round(targetFat * 0.35) },
-    { id: 'm-3', name: 'Dinner', items: 'Lean beef stir-fry with brown rice', calories: Math.round(targetCalories * 0.30), protein: Math.round(targetProtein * 0.30), carbs: Math.round(targetCarbs * 0.30), fat: Math.round(targetFat * 0.30) },
-    { id: 'm-4', name: 'Snacks', items: 'Greek yogurt with almonds and honey', calories: Math.round(targetCalories * 0.10), protein: Math.round(targetProtein * 0.10), carbs: Math.round(targetCarbs * 0.10), fat: Math.round(targetFat * 0.10) },
-  ];
-
-  const [showAddMeal, setShowAddMeal] = useState(false);
+export default function Meals({ aiPlan, loading, dailyNutrition, nutritionTotals, logMeal, deleteMeal }) {
+  const navigate = useNavigate();
+  const [filterType, setFilterType] = useState('All');
+  const [openAddModal, setOpenAddModal] = useState(false);
   const [editingMeal, setEditingMeal] = useState(null);
-  const [formData, setFormData] = useState({
-    name: 'Breakfast',
-    items: '',
+
+  const [form, setForm] = useState({
+    title: '',
+    type: 'Lunch',
     calories: '',
     protein: '',
     carbs: '',
     fat: '',
+    items: '',
   });
 
-  const handleEdit = (meal) => {
-    setEditingMeal(meal);
-    setFormData({
-      name: meal.name,
-      items: meal.items,
-      calories: meal.calories.toString(),
-      protein: meal.protein.toString(),
-      carbs: meal.carbs.toString(),
-      fat: meal.fat.toString(),
-    });
-    setShowAddMeal(true);
-  };
+  const meals = dailyNutrition?.meals || [];
+  const filteredMeals = filterType === 'All' ? meals : meals.filter((m) => m.type?.toLowerCase() === filterType.toLowerCase());
 
-  const handleDelete = (meal) => {
-    if (window.confirm(`Delete ${meal.name}?`)) {
-      alert(`Deleted ${meal.name}`);
-    }
-  };
-
-  const handleSubmit = () => {
-    if (editingMeal) {
-      alert(`Updated ${formData.name}`);
-    } else {
-      alert(`Added ${formData.name}`);
-    }
-    setShowAddMeal(false);
+  const handleOpenAdd = () => {
     setEditingMeal(null);
-    setFormData({ name: 'Breakfast', items: '', calories: '', protein: '', carbs: '', fat: '' });
+    setForm({ title: '', type: 'Lunch', calories: '', protein: '', carbs: '', fat: '', items: '' });
+    setOpenAddModal(true);
+  };
+
+  const handleOpenEdit = (meal) => {
+    setEditingMeal(meal);
+    setForm({
+      title: meal.title,
+      type: meal.type || 'Lunch',
+      calories: meal.calories || '',
+      protein: meal.protein || '',
+      carbs: meal.carbs || '',
+      fat: meal.fat || '',
+      items: meal.items || '',
+    });
+    setOpenAddModal(true);
+  };
+
+  const handleSaveMeal = () => {
+    if (!form.title) return;
+    if (editingMeal) {
+      deleteMeal(editingMeal.id);
+    }
+    logMeal({
+      id: editingMeal ? editingMeal.id : undefined,
+      title: form.title,
+      type: form.type,
+      calories: Number(form.calories) || 0,
+      protein: Number(form.protein) || 0,
+      carbs: Number(form.carbs) || 0,
+      fat: Number(form.fat) || 0,
+      items: form.items,
+      aiScanned: editingMeal ? editingMeal.aiScanned : false,
+    });
+    setOpenAddModal(false);
   };
 
   return (
     <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2} sx={{ mb: 4 }}>
-        <Typography variant="h6" sx={{ fontFamily: "'Sora','Inter',sans-serif", fontWeight: 800 }}>
-          Meals
-        </Typography>
-        <Button variant="outlined" startIcon={<AddRoundedIcon />} onClick={() => { setEditingMeal(null); setFormData({ name: 'Breakfast', items: '', calories: '', protein: '', carbs: '', fat: '' }); setShowAddMeal(true); }} size="small">
-          Add Meal
-        </Button>
+      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} gap={2} sx={{ mb: 3 }}>
+        <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+          {['All', ...mealCategories].map((cat) => (
+            <Chip
+              key={cat}
+              label={cat}
+              onClick={() => setFilterType(cat)}
+              variant={filterType === cat ? 'filled' : 'outlined'}
+              sx={{
+                fontWeight: 700,
+                bgcolor: filterType === cat ? 'primary.main' : 'transparent',
+                color: filterType === cat ? 'primary.contrastText' : 'text.secondary',
+                borderColor: filterType === cat ? 'primary.main' : 'divider',
+                cursor: 'pointer',
+              }}
+            />
+          ))}
+        </Stack>
+
+        <Stack direction="row" spacing={1.5}>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<AutoAwesomeRoundedIcon />}
+            onClick={() => navigate('/calories-calculator')}
+            sx={{ borderRadius: 2.5, fontWeight: 700 }}
+          >
+            AI Photo Scan
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<AddRoundedIcon />}
+            onClick={handleOpenAdd}
+            sx={{ borderRadius: 2.5, fontWeight: 700 }}
+          >
+            + Custom Meal
+          </Button>
+        </Stack>
       </Stack>
 
-      <Grid container spacing={3}>
-        {displayMeals.map((meal) => (
-          <Grid item xs={12} sm={6} md={3} key={meal.id}>
-            <MealCard meal={meal} onEdit={handleEdit} onDelete={handleDelete} />
-          </Grid>
-        ))}
-      </Grid>
+      {filteredMeals.length === 0 ? (
+        <StyledCard sx={{ p: 6, textAlign: 'center' }}>
+          <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
+            No meals found in this category
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Use our AI Calorie Calculator or add a manual meal to start tracking your macros today.
+          </Typography>
+          <Button variant="contained" color="primary" onClick={handleOpenAdd} sx={{ borderRadius: 2 }}>
+            Add Meal Now
+          </Button>
+        </StyledCard>
+      ) : (
+        <Grid container spacing={2.5}>
+          {filteredMeals.map((meal) => (
+            <Grid item xs={12} sm={6} md={4} key={meal.id}>
+              <MealCardItem meal={meal} onEdit={handleOpenEdit} onDelete={deleteMeal} />
+            </Grid>
+          ))}
+        </Grid>
+      )}
 
-      <Dialog open={showAddMeal} onClose={() => { setShowAddMeal(false); setEditingMeal(null); setFormData({ name: 'Breakfast', items: '', calories: '', protein: '', carbs: '', fat: '' }); }} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 4, border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' } }}>
+      {/* Add/Edit Modal */}
+      <Dialog open={openAddModal} onClose={() => setOpenAddModal(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+        <DialogTitle sx={{ fontWeight: 800 }}>
+          {editingMeal ? 'Edit Meal' : 'Add Custom Meal'}
+        </DialogTitle>
         <DialogContent>
-          <Stack spacing={2} sx={{ p: 1 }}>
-            <Typography variant="h6" sx={{ fontWeight: 800 }}>
-              {editingMeal ? 'Edit Meal' : 'Add Meal'}
-            </Typography>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              label="Meal Title"
+              placeholder="e.g., Grilled Salmon & Brown Rice"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              fullWidth
+              required
+            />
+
+            <FormControl fullWidth>
+              <InputLabel>Category</InputLabel>
+              <Select
+                value={form.type}
+                label="Category"
+                onChange={(e) => setForm({ ...form, type: e.target.value })}
+              >
+                {mealCategories.map((c) => (
+                  <MenuItem key={c} value={c}>{c}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
             <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  select
-                  label="Meal Type"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  fullWidth
-                  size="small"
-                  SelectProps={{ native: true }}
-                >
-                  {mealTypes.map((type) => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </TextField>
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  label="Food Items"
-                  value={formData.items}
-                  onChange={(e) => setFormData({ ...formData, items: e.target.value })}
-                  fullWidth
-                  size="small"
-                  placeholder="e.g., Chicken + Rice + Broccoli"
-                />
-              </Grid>
               <Grid item xs={6}>
                 <TextField
                   label="Calories (kcal)"
                   type="number"
-                  value={formData.calories}
-                  onChange={(e) => setFormData({ ...formData, calories: e.target.value })}
+                  value={form.calories}
+                  onChange={(e) => setForm({ ...form, calories: e.target.value })}
                   fullWidth
-                  size="small"
-                  inputProps={{ inputMode: 'numeric' }}
                 />
               </Grid>
               <Grid item xs={6}>
                 <TextField
                   label="Protein (g)"
                   type="number"
-                  value={formData.protein}
-                  onChange={(e) => setFormData({ ...formData, protein: e.target.value })}
+                  value={form.protein}
+                  onChange={(e) => setForm({ ...form, protein: e.target.value })}
                   fullWidth
-                  size="small"
-                  inputProps={{ inputMode: 'numeric' }}
                 />
               </Grid>
               <Grid item xs={6}>
                 <TextField
                   label="Carbs (g)"
                   type="number"
-                  value={formData.carbs}
-                  onChange={(e) => setFormData({ ...formData, carbs: e.target.value })}
+                  value={form.carbs}
+                  onChange={(e) => setForm({ ...form, carbs: e.target.value })}
                   fullWidth
-                  size="small"
-                  inputProps={{ inputMode: 'numeric' }}
                 />
               </Grid>
               <Grid item xs={6}>
                 <TextField
                   label="Fat (g)"
                   type="number"
-                  value={formData.fat}
-                  onChange={(e) => setFormData({ ...formData, fat: e.target.value })}
+                  value={form.fat}
+                  onChange={(e) => setForm({ ...form, fat: e.target.value })}
                   fullWidth
-                  size="small"
-                  inputProps={{ inputMode: 'numeric' }}
                 />
               </Grid>
             </Grid>
+
+            <TextField
+              label="Ingredients / Description"
+              placeholder="e.g., 200g chicken breast, 1 cup cooked rice, olive oil"
+              value={form.items}
+              onChange={(e) => setForm({ ...form, items: e.target.value })}
+              multiline
+              rows={2}
+              fullWidth
+            />
           </Stack>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => { setShowAddMeal(false); setEditingMeal(null); setFormData({ name: 'Breakfast', items: '', calories: '', protein: '', carbs: '', fat: '' }); }}>Cancel</Button>
-          <Button variant="contained" onClick={handleSubmit}>
-            {editingMeal ? 'Update' : 'Add Meal'}
+        <DialogActions sx={{ p: 2.5 }}>
+          <Button onClick={() => setOpenAddModal(false)}>Cancel</Button>
+          <Button variant="contained" color="primary" onClick={handleSaveMeal} sx={{ borderRadius: 2, fontWeight: 700 }}>
+            {editingMeal ? 'Save Changes' : 'Add Meal'}
           </Button>
         </DialogActions>
       </Dialog>

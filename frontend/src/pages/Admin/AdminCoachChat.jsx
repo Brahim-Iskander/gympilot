@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import SEO from '../../components/SEO';
 import {
   Avatar,
   Badge,
@@ -172,6 +173,12 @@ export default function AdminCoachChat() {
 
   return (
     <Box sx={{ height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
+      <SEO
+        title="Coach Live Desk — Admin"
+        description="Live athlete chat consultation, workouts feedback, and guidance."
+        path="/admin/coach-chat"
+        noIndex
+      />
       {/* Top Header */}
       <Stack
         direction={{ xs: 'column', sm: 'row' }}

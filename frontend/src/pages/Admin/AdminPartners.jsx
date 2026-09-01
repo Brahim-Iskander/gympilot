@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import SEO from '../../components/SEO';
 import {
   Box,
   Button,
@@ -106,6 +107,12 @@ export default function AdminPartners() {
 
   return (
     <Container maxWidth="xl" disableGutters>
+      <SEO
+        title="Partner Management — Admin"
+        description="Add, edit, and manage partner brands displayed on GymPilot."
+        path="/admin/partners"
+        noIndex
+      />
       {/* Header */}
       <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={2} sx={{ mb: 4 }}>
         <Box>

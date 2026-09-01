@@ -29,6 +29,7 @@ import AddEntryModal from './components/AddEntryModal';
 import PhotoCompareModal from './components/PhotoCompareModal';
 import { TabNavigation, LoadingSpinner } from '../../components/ui';
 import { progressService } from '../../services/progressService';
+import { fitnessDataService } from '../../services/fitnessDataService';
 import { getApiErrorMessage } from '../../utils/errors';
 import SEO from '../../components/SEO';
 
@@ -95,8 +96,20 @@ export default function Progress() {
     } else {
       await progressService.create(payload);
     }
+
+    // Synchronize PRs and triggers
+    if (payload.strengthLogs) {
+      payload.strengthLogs.forEach((log) => {
+        if (log.weight && log.exerciseName) {
+          fitnessDataService.updatePR(log.exerciseName, log.weight);
+        }
+      });
+    }
+    fitnessDataService.notify();
+
     await loadEntries();
   };
+
 
   const handleDeleteEntry = async (id) => {
     await progressService.delete(id);

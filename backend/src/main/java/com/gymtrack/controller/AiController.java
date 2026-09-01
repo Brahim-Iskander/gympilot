@@ -16,6 +16,8 @@ import com.gymtrack.model.UserOnboarding;
 import com.gymtrack.repository.UserOnboardingRepository;
 import com.gymtrack.service.AiService;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/ai")
 public class AiController {
@@ -34,6 +36,15 @@ public class AiController {
         return ResponseEntity.ok(new ChatResponse(responseText));
     }
 
+    /** POST /api/ai/analyze-food - AI Food Vision & Calorie Recognition */
+    @PostMapping("/analyze-food")
+    public ResponseEntity<Map<String, Object>> analyzeFood(@RequestBody Map<String, String> request) {
+        String prompt = request.getOrDefault("prompt", "");
+        String imageBase64 = request.getOrDefault("image", "");
+        Map<String, Object> result = aiService.analyzeFood(prompt, imageBase64);
+        return ResponseEntity.ok(result);
+    }
+
     /** GET /api/ai/analytics - Personalized AI progress & performance analysis */
     @GetMapping("/analytics")
     public ResponseEntity<AiAnalyticsResponse> getAnalytics(Authentication authentication) {
@@ -43,3 +54,4 @@ public class AiController {
         return ResponseEntity.ok(analytics);
     }
 }
+

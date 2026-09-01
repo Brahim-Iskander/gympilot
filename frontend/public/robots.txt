@@ -17,11 +17,13 @@ Disallow: /membership
 Disallow: /admin
 Disallow: /admin/
 Disallow: /onboarding
+Disallow: /reset-password
 
 # Public pages (allowed by default via Allow: /)
-# /           — Homepage
-# /login      — Login page
-# /register   — Registration page
+# /                 — Homepage
+# /login            — Login page
+# /register         — Registration page
+# /forgot-password  — Forgot password page
 
 # Sitemap
 Sitemap: https://gymmpilot.netlify.app/sitemap.xml

@@ -1,5 +1,5 @@
 import { useAuth } from '../../context/AuthContext';
-import { useAiPlan } from '../../hooks/useAiPlan';
+import { useFitnessData } from '../../hooks/useFitnessData';
 import { Container } from '@mui/material';
 import DashboardStats from './components/DashboardStats';
 import TodayWorkout from './components/TodayWorkout';
@@ -10,7 +10,18 @@ import SEO from '../../components/SEO';
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { aiPlan, loading } = useAiPlan();
+  const {
+    aiPlan,
+    aiPlanLoading,
+    dailyNutrition,
+    nutritionTotals,
+    workoutHistory,
+    workoutStreak,
+    thisWeekWorkouts,
+    prs,
+    goals,
+  } = useFitnessData();
+
   const firstName = user?.firstName || 'Athlete';
 
   return (
@@ -22,11 +33,19 @@ export default function Dashboard() {
         noIndex
       />
       <Container maxWidth="xl" sx={{ py: 4 }}>
-        <DashboardStats userName={firstName} aiPlan={aiPlan} />
-        <TodayWorkout aiPlan={aiPlan} loading={loading} />
-        <WeeklyProgress aiPlan={aiPlan} />
-        <StrengthOverview />
-        <GoalsOverview />
+        <DashboardStats
+          userName={firstName}
+          aiPlan={aiPlan}
+          workoutStreak={workoutStreak}
+          thisWeekWorkouts={thisWeekWorkouts}
+          workoutHistory={workoutHistory}
+          nutritionTotals={nutritionTotals}
+          prs={prs}
+        />
+        <TodayWorkout aiPlan={aiPlan} loading={aiPlanLoading} />
+        <WeeklyProgress aiPlan={aiPlan} workoutHistory={workoutHistory} />
+        <StrengthOverview prs={prs} />
+        <GoalsOverview goals={goals} />
       </Container>
     </>
   );

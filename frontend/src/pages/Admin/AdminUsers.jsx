@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import SEO from '../../components/SEO';
 import {
   Avatar,
   Box,
@@ -214,6 +215,12 @@ export default function AdminUsers() {
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <Container maxWidth="xl" disableGutters>
+      <SEO
+        title="User Management — Admin"
+        description="Search, inspect, and manage GymPilot user accounts, memberships, and roles."
+        path="/admin/users"
+        noIndex
+      />
 
       {/* Page Title & Search */}
       <Stack

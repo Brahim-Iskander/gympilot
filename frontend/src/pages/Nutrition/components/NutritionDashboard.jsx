@@ -1,20 +1,24 @@
-import { Box, Button, Card, Chip, Grid, Stack, Typography, styled, CircularProgress } from '@mui/material';
+import { Box, Button, Card, Chip, Grid, Stack, Typography, styled, CircularProgress, Paper, IconButton } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import LocalFireDepartmentRoundedIcon from '@mui/icons-material/LocalFireDepartmentRounded';
 import FitnessCenterRoundedIcon from '@mui/icons-material/FitnessCenterRounded';
 import GrainRoundedIcon from '@mui/icons-material/GrainRounded';
 import FastfoodRoundedIcon from '@mui/icons-material/FastfoodRounded';
+import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
+import RemoveRoundedIcon from '@mui/icons-material/RemoveRounded';
+import WaterDropRoundedIcon from '@mui/icons-material/WaterDropRounded';
 import ProgressBar from '../../../components/ui/ProgressBar';
 
 const StyledCard = styled(Card)(() => ({
-  borderRadius: 4,
+  borderRadius: 16,
   border: '1px solid',
   borderColor: 'divider',
   background: 'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
 }));
 
 function MacroCard({ macro }) {
-  const percentage = Math.min((macro.current / macro.target) * 100, 100);
+  const percentage = Math.min((macro.current / Math.max(macro.target, 1)) * 100, 100);
   const remaining = Math.max(0, macro.target - macro.current);
 
   return (
@@ -55,14 +59,16 @@ function MacroCard({ macro }) {
         <ProgressBar value={macro.current} max={macro.target} color={macro.color} size="md" />
       </Box>
 
-      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 'auto' }}>
         {remaining > 0 ? `${remaining} ${macro.unit} remaining` : 'Target reached!'}
       </Typography>
     </StyledCard>
   );
 }
 
-export default function NutritionDashboard({ aiPlan, loading }) {
+export default function NutritionDashboard({ aiPlan, loading, dailyNutrition, nutritionTotals, updateWater }) {
+  const navigate = useNavigate();
+
   if (loading) {
     return (
       <Box sx={{ py: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
@@ -77,34 +83,25 @@ export default function NutritionDashboard({ aiPlan, loading }) {
   const targetCarbs = aiPlan?.nutritionPlan?.carbs || 230;
   const targetFat = aiPlan?.nutritionPlan?.fat || 70;
 
+  const currentCalories = nutritionTotals?.calories || 0;
+  const currentProtein = nutritionTotals?.protein || 0;
+  const currentCarbs = nutritionTotals?.carbs || 0;
+  const currentFat = nutritionTotals?.fat || 0;
+
   const displayMacros = [
-    { id: 'calories', name: 'Calories', current: Math.round(targetCalories * 0.75), target: targetCalories, unit: 'kcal', icon: <LocalFireDepartmentRoundedIcon />, color: '#FF6B6B' },
-    { id: 'protein', name: 'Protein', current: Math.round(targetProtein * 0.75), target: targetProtein, unit: 'g', icon: <FitnessCenterRoundedIcon />, color: '#C6FF3E' },
-    { id: 'carbs', name: 'Carbs', current: Math.round(targetCarbs * 0.75), target: targetCarbs, unit: 'g', icon: <GrainRoundedIcon />, color: '#8A7CFF' },
-    { id: 'fat', name: 'Fat', current: Math.round(targetFat * 0.75), target: targetFat, unit: 'g', icon: <FastfoodRoundedIcon />, color: '#FFC107' },
+    { id: 'calories', name: 'Calories', current: currentCalories, target: targetCalories, unit: 'kcal', icon: <LocalFireDepartmentRoundedIcon />, color: '#FF6B6B' },
+    { id: 'protein', name: 'Protein', current: currentProtein, target: targetProtein, unit: 'g', icon: <FitnessCenterRoundedIcon />, color: '#C6FF3E' },
+    { id: 'carbs', name: 'Carbs', current: currentCarbs, target: targetCarbs, unit: 'g', icon: <GrainRoundedIcon />, color: '#8A7CFF' },
+    { id: 'fat', name: 'Fat', current: currentFat, target: targetFat, unit: 'g', icon: <FastfoodRoundedIcon />, color: '#FFC107' },
   ];
 
-  // Dynamic meal suggestions parsing
-  const mealSuggestions = aiPlan?.nutritionPlan?.mealSuggestions || [];
-  const parsedMeals = mealSuggestions.length > 0 ? mealSuggestions.map((suggestion, idx) => {
-    const parts = suggestion.split(':');
-    let title = `Meal ${idx + 1}`;
-    let items = suggestion;
-    if (parts.length > 1) {
-      title = parts[0].trim();
-      items = parts.slice(1).join(':').trim();
-    }
-    const cal = Math.round(targetCalories / mealSuggestions.length);
-    return { title, items, calories: cal };
-  }) : [
-    { title: 'Breakfast', items: 'Scrambled eggs with whole grain toast', calories: Math.round(targetCalories * 0.25) },
-    { title: 'Lunch', items: 'Grilled chicken breast with quinoa and vegetables', calories: Math.round(targetCalories * 0.35) },
-    { title: 'Dinner', items: 'Lean beef stir-fry with brown rice', calories: Math.round(targetCalories * 0.30) },
-    { title: 'Snacks', items: 'Greek yogurt with almonds and honey', calories: Math.round(targetCalories * 0.10) },
-  ];
+  const loggedMeals = dailyNutrition?.meals || [];
+  const waterLiters = dailyNutrition?.waterLiters || 2.0;
+  const waterTarget = dailyNutrition?.waterTargetLiters || 3.5;
 
   return (
     <Box>
+      {/* 4 Macro Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {displayMacros.map((macro) => (
           <Grid item xs={12} sm={6} md={3} key={macro.id}>
@@ -113,46 +110,183 @@ export default function NutritionDashboard({ aiPlan, loading }) {
         ))}
       </Grid>
 
+      {/* Water & Quick Scanner Row */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        {/* Hydration Widget */}
+        <Grid item xs={12} md={6}>
+          <StyledCard sx={{ p: 3, height: '100%' }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <Box
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 2,
+                    bgcolor: 'rgba(64,158,255,0.15)',
+                    color: '#409EFF',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <WaterDropRoundedIcon />
+                </Box>
+                <Box>
+                  <Typography variant="h6" fontWeight={800}>
+                    Daily Hydration
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Target: {waterTarget} L / day
+                  </Typography>
+                </Box>
+              </Stack>
+              <Typography variant="h5" fontWeight={800} color="#409EFF">
+                {waterLiters} L
+              </Typography>
+            </Stack>
+
+            <Box sx={{ mb: 2 }}>
+              <ProgressBar value={waterLiters} max={waterTarget} color="#409EFF" size="md" />
+            </Box>
+
+            <Stack direction="row" spacing={1} justifyContent="flex-end">
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<RemoveRoundedIcon />}
+                onClick={() => updateWater(Math.max(0, waterLiters - 0.25))}
+                sx={{ borderRadius: 2 }}
+              >
+                -250ml
+              </Button>
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<AddRoundedIcon />}
+                onClick={() => updateWater(waterLiters + 0.25)}
+                sx={{ borderRadius: 2, bgcolor: '#409EFF', '&:hover': { bgcolor: '#2b85e4' } }}
+              >
+                +250ml Glass
+              </Button>
+            </Stack>
+          </StyledCard>
+        </Grid>
+
+        {/* AI Food Scanner Promo */}
+        <Grid item xs={12} md={6}>
+          <Paper
+            sx={{
+              p: 3,
+              borderRadius: 4,
+              border: '1px solid',
+              borderColor: 'rgba(198,255,62,0.3)',
+              background: 'linear-gradient(135deg, rgba(198,255,62,0.08), rgba(255,255,255,0.02))',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              height: '100%',
+            }}
+          >
+            <Box sx={{ mb: 2 }}>
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                <AutoAwesomeRoundedIcon sx={{ color: 'primary.main', fontSize: 20 }} />
+                <Typography variant="h6" fontWeight={800}>
+                  AI Calorie & Food Vision
+                </Typography>
+              </Stack>
+              <Typography variant="body2" color="text.secondary">
+                Don't guess calories. Snap a photo of your plate and let AI calculate portion sizes, macros, and nutrients instantly.
+              </Typography>
+            </Box>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => navigate('/calories-calculator')}
+              startIcon={<AutoAwesomeRoundedIcon />}
+              sx={{ borderRadius: 2.5, fontWeight: 700, alignSelf: 'flex-start' }}
+            >
+              Scan Food Photo Now
+            </Button>
+          </Paper>
+        </Grid>
+      </Grid>
+
+      {/* Today's Logged Meals Summary */}
       <StyledCard sx={{ p: 3 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-          <Typography variant="h6" sx={{ fontFamily: "'Sora','Inter',sans-serif", fontWeight: 800 }}>
-            Today's AI Recommended Meals
-          </Typography>
-          <Button variant="outlined" startIcon={<AddRoundedIcon />} size="small">
-            Add Custom Meal
+          <Box>
+            <Typography variant="h6" sx={{ fontFamily: "'Sora','Inter',sans-serif", fontWeight: 800 }}>
+              Today's Logged Meals ({loggedMeals.length})
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Total Consumed: <strong>{currentCalories} kcal</strong> · {currentProtein}g Protein
+            </Typography>
+          </Box>
+          <Button
+            variant="outlined"
+            startIcon={<AddRoundedIcon />}
+            size="small"
+            onClick={() => navigate('/calories-calculator')}
+            sx={{ borderRadius: 2 }}
+          >
+            + AI Scan Meal
           </Button>
         </Stack>
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {parsedMeals.map((meal, idx) => (
-            <Box
-              key={idx}
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                p: 2,
-                borderRadius: 2,
-                background: 'rgba(255,255,255,0.02)',
-                border: '1px solid',
-                borderColor: 'rgba(255,255,255,0.06)',
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Chip
-                  size="small"
-                  label={meal.title}
-                  sx={{ fontWeight: 600, bgcolor: 'rgba(198,255,62,0.1)', color: '#C6FF3E', border: '1px solid', borderColor: 'rgba(198,255,62,0.2)' }}
-                />
-                <Box>
-                  <Typography variant="body2" fontWeight={600}>{meal.items}</Typography>
-                  <Typography variant="caption" color="text.secondary">Est. {meal.calories} kcal</Typography>
-                </Box>
-              </Box>
-              <Button variant="outlined" size="small">Edit</Button>
-            </Box>
-          ))}
-        </Box>
+        {loggedMeals.length === 0 ? (
+          <Box sx={{ py: 4, textAlign: 'center' }}>
+            <Typography variant="body2" color="text.secondary">
+              No meals logged today yet. Click "AI Food Scanner" to analyze and log your first meal!
+            </Typography>
+          </Box>
+        ) : (
+          <Stack spacing={2}>
+            {loggedMeals.map((meal) => (
+              <Paper
+                key={meal.id}
+                sx={{
+                  p: 2,
+                  borderRadius: 3,
+                  bgcolor: 'rgba(255,255,255,0.02)',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: 1.5,
+                }}
+              >
+                <Stack direction="row" spacing={1.5} alignItems="center">
+                  <Chip
+                    label={meal.type || 'Meal'}
+                    size="small"
+                    sx={{
+                      fontWeight: 700,
+                      bgcolor: meal.aiScanned ? 'rgba(198,255,62,0.12)' : 'rgba(255,255,255,0.08)',
+                      color: meal.aiScanned ? 'primary.main' : 'text.primary',
+                    }}
+                  />
+                  <Box>
+                    <Typography variant="body1" fontWeight={700}>
+                      {meal.title}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {meal.items || 'Meal items'} · {meal.time}
+                    </Typography>
+                  </Box>
+                </Stack>
+
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Chip label={`${meal.calories} kcal`} size="small" sx={{ fontWeight: 800, color: '#FF6B6B' }} />
+                  <Chip label={`${meal.protein}g P`} size="small" sx={{ fontWeight: 800, color: '#C6FF3E' }} />
+                  <Chip label={`${meal.carbs}g C`} size="small" sx={{ fontWeight: 800, color: '#8A7CFF' }} />
+                  <Chip label={`${meal.fat}g F`} size="small" sx={{ fontWeight: 800, color: '#FFC107' }} />
+                </Stack>
+              </Paper>
+            ))}
+          </Stack>
+        )}
       </StyledCard>
     </Box>
   );

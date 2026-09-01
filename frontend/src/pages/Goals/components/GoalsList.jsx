@@ -31,6 +31,7 @@ import {
 } from 'hugeicons-react';
 import { Card, EmptyState, ConfirmDialog } from '../../../components/ui';
 import { useAiPlan } from '../../../hooks/useAiPlan';
+import { fitnessDataService } from '../../../services/fitnessDataService';
 
 const GOAL_TYPES = [
   { id: 'strength', name: 'Strength', icon: <Dumbbell01Icon size={18} /> },
@@ -89,31 +90,25 @@ export default function GoalsList({ filter = 'all' }) {
   const [form, setForm] = useState({ title: '', type: 'strength', target: '', current: '', unit: 'kg', deadline: '' });
 
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        setGoals(JSON.parse(saved));
-        return;
-      } catch (e) {
-        console.error('Failed to parse saved goals', e);
-      }
-    }
-    const initialAiGoals = generateAiGoals(aiPlan);
-    setGoals(initialAiGoals);
-    if (aiPlan) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(initialAiGoals));
-    }
+    const liveGoals = fitnessDataService.getGoals(aiPlan);
+    setGoals(liveGoals);
+
+    const unsubscribe = fitnessDataService.subscribe(() => {
+      setGoals(fitnessDataService.getGoals(aiPlan));
+    });
+    return () => unsubscribe();
   }, [aiPlan]);
 
   const saveGoalsState = (newGoals) => {
     setGoals(newGoals);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newGoals));
+    fitnessDataService.saveGoals(newGoals);
   };
 
   const handleResetAiGoals = () => {
     const resetGoals = generateAiGoals(aiPlan);
     saveGoalsState(resetGoals);
   };
+
 
   const filteredGoals = filter === 'all' ? goals : goals.filter((g) => g.type === filter);
 

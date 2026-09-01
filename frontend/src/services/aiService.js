@@ -30,4 +30,15 @@ export const aiService = {
       throw error;
     }
   },
+
+  async analyzeFood(prompt, imageBase64) {
+    try {
+      const response = await api.post('/ai/analyze-food', { prompt, image: imageBase64 });
+      return response.data;
+    } catch (error) {
+      console.error('Error analyzing food with AI:', error);
+      throw error;
+    }
+  },
 };
+

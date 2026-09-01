@@ -42,6 +42,7 @@ import DarkModeRoundedIcon from '@mui/icons-material/DarkModeRounded';
 import LightModeRoundedIcon from '@mui/icons-material/LightModeRounded';
 
 const SIDEBAR_WIDTH = 260;
+const HEADER_HEIGHT = 64;
 
 const ADMIN_NAV = [
   {
@@ -93,15 +94,15 @@ export default function AdminLayout() {
 
   // Poll for coach unread inquiries and support tickets unread
   useEffect(() => {
-    coachChatService.getAdminUnreadCount().then(setCoachUnread).catch(() => {});
+    coachChatService.getAdminUnreadCount().then(setCoachUnread).catch(() => { });
     if (isAdmin) {
-      adminService.getTicketUnreadCount().then((res) => setTicketUnread(res.unreadCount || 0)).catch(() => {});
+      adminService.getTicketUnreadCount().then((res) => setTicketUnread(res.unreadCount || 0)).catch(() => { });
     }
 
     const interval = setInterval(() => {
-      coachChatService.getAdminUnreadCount().then(setCoachUnread).catch(() => {});
+      coachChatService.getAdminUnreadCount().then(setCoachUnread).catch(() => { });
       if (isAdmin) {
-        adminService.getTicketUnreadCount().then((res) => setTicketUnread(res.unreadCount || 0)).catch(() => {});
+        adminService.getTicketUnreadCount().then((res) => setTicketUnread(res.unreadCount || 0)).catch(() => { });
       }
     }, 5000);
     return () => clearInterval(interval);
@@ -119,8 +120,22 @@ export default function AdminLayout() {
 
   const sidebarContent = (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: 'background.paper' }}>
-      {/* Header */}
-      <Box sx={{ p: 3, borderBottom: '1px solid', borderColor: 'divider', minHeight: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      {/* Header — height locked to HEADER_HEIGHT so its bottom
+          border lines up exactly with the navbar's bottom border */}
+      <Box
+        sx={{
+          px: 3,
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          height: HEADER_HEIGHT,
+          minHeight: HEADER_HEIGHT,
+          maxHeight: HEADER_HEIGHT,
+          boxSizing: 'border-box',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
         <Stack direction="row" spacing={1.5} alignItems="center">
           <Logo size={28} />
           {isCoach && !isAdmin ? (
@@ -256,7 +271,7 @@ export default function AdminLayout() {
             backdropFilter: 'blur(12px)',
           }}
         >
-          <Toolbar disableGutters sx={{ minHeight: '64px !important', px: 3 }}>
+          <Toolbar disableGutters sx={{ minHeight: `${HEADER_HEIGHT}px !important`, height: HEADER_HEIGHT, px: 3 }}>
             {isMobile && (
               <IconButton onClick={() => setMobileOpen(true)} sx={{ mr: 1, color: 'text.primary' }}>
                 <MenuRounded />

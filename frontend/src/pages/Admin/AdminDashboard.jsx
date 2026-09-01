@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import SEO from '../../components/SEO';
 import {
   Box,
   Button,
@@ -166,6 +167,12 @@ export default function AdminDashboard() {
 
   return (
     <Container maxWidth="xl" disableGutters>
+      <SEO
+        title="System Dashboard — Admin"
+        description="GymPilot platform management, user registration trends, and activity stats."
+        path="/admin"
+        noIndex
+      />
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">

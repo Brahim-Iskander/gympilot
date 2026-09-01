@@ -1,24 +1,14 @@
 import { Box, Button, Card, Chip, Link, Stack, Typography, styled } from '@mui/material';
 import FlagRoundedIcon from '@mui/icons-material/FlagRounded';
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
+import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import { Link as RouterLink } from 'react-router-dom';
 
-const StyledCard = styled(Card)(({ }) => ({
-  borderRadius: 4,
-  border: '1px solid',
-  borderColor: 'divider',
-  background: 'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
-}));
-
-const goals = [
-  { id: '1', title: 'Bench Press 100 kg', current: 80, target: 100, unit: 'kg', type: 'Strength', deadline: '2026-12-31', status: 'Active' },
-  { id: '2', title: 'Reach 80 kg body weight', current: 78.4, target: 80, unit: 'kg', type: 'Weight', deadline: '2026-10-15', status: 'Active' },
-  { id: '3', title: 'Train 4 times/week', current: 4, target: 4, unit: 'sessions', type: 'Frequency', deadline: '2026-09-01', status: 'Completed' },
-];
-
 function GoalCard({ goal }) {
-  const progress = Math.min((goal.current / goal.target) * 100, 100);
-  const isCompleted = goal.status === 'Completed';
+  const target = Number(goal.target) || 1;
+  const current = Number(goal.current) || 0;
+  const progress = Math.min(Math.round((current / target) * 100), 100);
+  const isCompleted = goal.status === 'completed' || current >= target;
 
   return (
     <Card
@@ -30,7 +20,7 @@ function GoalCard({ goal }) {
         border: '1px solid',
         borderColor: isCompleted ? 'rgba(198,255,62,0.3)' : 'divider',
         background: isCompleted
-          ? 'linear-gradient(180deg, rgba(198,255,62,0.04), rgba(255,255,255,0.01))'
+          ? 'linear-gradient(180deg, rgba(198,255,62,0.06), rgba(255,255,255,0.01))'
           : 'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
         transition: 'transform .3s ease, border-color .3s ease',
         '&:hover': {
@@ -45,46 +35,40 @@ function GoalCard({ goal }) {
           <Stack direction="row" alignItems="center" gap={1} sx={{ mb: 1, flexWrap: 'wrap' }}>
             <Chip
               size="small"
-              label={goal.type}
+              label={goal.type || 'Fitness'}
               sx={{
                 bgcolor: isCompleted ? 'rgba(198,255,62,0.15)' : 'rgba(138,124,255,0.15)',
                 color: isCompleted ? '#C6FF3E' : '#8A7CFF',
-                fontWeight: 600,
-                fontSize: '0.65rem',
+                fontWeight: 700,
+                fontSize: '0.7rem',
+                textTransform: 'capitalize',
               }}
             />
             {isCompleted && (
               <Chip
                 size="small"
                 label="Completed"
-                icon={<FlagRoundedIcon fontSize="small" />}
-                sx={{ bgcolor: 'rgba(198,255,62,0.15)', color: '#C6FF3E', fontWeight: 600, fontSize: '0.65rem' }}
+                icon={<CheckCircleRoundedIcon fontSize="small" />}
+                sx={{ bgcolor: 'rgba(198,255,62,0.15)', color: '#C6FF3E', fontWeight: 700, fontSize: '0.7rem' }}
               />
             )}
           </Stack>
-          <Typography variant="body1" sx={{ fontWeight: 700, lineHeight: 1.4, mb: 1.5 }}>
+          <Typography variant="body1" sx={{ fontWeight: 800, lineHeight: 1.4, mb: 0.5 }}>
             {goal.title}
           </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {current} / {target} {goal.unit || ''}
+          </Typography>
         </Box>
-        <Chip
-          icon={<FlagRoundedIcon fontSize="small" />}
-          label={goal.status}
-          size="small"
-          sx={{
-            bgcolor: isCompleted ? 'rgba(198,255,62,0.15)' : 'rgba(255,193,7,0.15)',
-            color: isCompleted ? '#C6FF3E' : '#FFC107',
-            fontWeight: 600,
-          }}
-        />
       </Stack>
 
-      <Box sx={{ mb: 2 }}>
+      <Box sx={{ mb: 1, mt: 1 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
           <Typography variant="caption" color="text.secondary">
-            Progress
+            Goal Progress
           </Typography>
-          <Typography variant="caption" sx={{ fontWeight: 700, color: isCompleted ? '#C6FF3E' : 'text.primary' }}>
-            {Math.round(progress)}%
+          <Typography variant="caption" sx={{ fontWeight: 800, color: isCompleted ? '#C6FF3E' : 'text.primary' }}>
+            {progress}%
           </Typography>
         </Stack>
         <Box
@@ -101,63 +85,49 @@ function GoalCard({ goal }) {
               width: `${progress}%`,
               height: '100%',
               borderRadius: 4,
-              background: isCompleted
-                ? 'linear-gradient(90deg, #C6FF3E, #C6FF3Edd)'
-                : 'linear-gradient(90deg, #C6FF3E, #8A7CFF)',
-              transition: 'width 0.8s ease-out',
+              backgroundColor: isCompleted ? '#C6FF3E' : '#8A7CFF',
+              transition: 'width .5s ease',
             }}
           />
         </Box>
-      </Box>
-
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 1, borderTop: '1px solid', borderColor: 'rgba(255,255,255,0.06)' }}>
-        <Typography variant="caption" color="text.secondary">
-          {goal.current} / {goal.target} {goal.unit}
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          Due: {new Date(goal.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-        </Typography>
       </Box>
     </Card>
   );
 }
 
-export default function GoalsOverview() {
+export default function GoalsOverview({ goals = [] }) {
+  const displayGoals = goals.length > 0 ? goals.slice(0, 3) : [
+    { id: 1, title: 'Target Body Weight (75 kg)', current: 75, target: 75, unit: 'kg', type: 'Weight', status: 'completed' },
+    { id: 2, title: 'Bench Press Milestone (90 kg)', current: 85, target: 90, unit: 'kg', type: 'Strength', status: 'active' },
+    { id: 3, title: 'Train 4 sessions per week', current: 2, target: 4, unit: 'sessions', type: 'Frequency', status: 'active' },
+  ];
+
   return (
-    <Box component="section" sx={{ mb: 5 }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2} sx={{ mb: 3 }}>
-        <Typography variant="h6" sx={{ fontFamily: "'Sora','Inter',sans-serif", fontWeight: 800 }}>
-          Active Goals
-        </Typography>
+    <Box component="section" sx={{ mb: 4 }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+        <Box>
+          <Typography variant="h5" sx={{ fontFamily: "'Sora','Inter',sans-serif", fontWeight: 800, mb: 0.5 }}>
+            Active Fitness Goals
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Track milestones synchronized with your live nutrition, workout, and scale logs
+          </Typography>
+        </Box>
         <Button
           component={RouterLink}
           to="/goals"
-          variant="outlined"
           endIcon={<ArrowForwardRoundedIcon />}
           size="small"
+          sx={{ fontWeight: 700, color: 'primary.main', textTransform: 'none' }}
         >
-          View All Goals
+          Manage All Goals
         </Button>
       </Stack>
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 3 }}>
-        {goals.map((goal) => (
-          <GoalCard key={goal.id} goal={goal} />
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 3 }}>
+        {displayGoals.map((goal, index) => (
+          <GoalCard key={goal.id || index} goal={goal} />
         ))}
-      </Box>
-
-      <Box sx={{ textAlign: 'center', mt: 3 }}>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-          No goals yet? Create your first goal to start tracking progress.
-        </Typography>
-        <Button
-          component={RouterLink}
-          to="/goals"
-          variant="contained"
-          startIcon={<FlagRoundedIcon />}
-        >
-          Create Goal
-        </Button>
       </Box>
     </Box>
   );

@@ -9,6 +9,7 @@ import KeyboardArrowUpRoundedIcon from '@mui/icons-material/KeyboardArrowUpRound
 import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
 import { buildExerciseForWorkout, suggestWeight } from '../../../utils/exerciseDefaults';
 import { progressService } from '../../../services/progressService';
+import { fitnessDataService } from '../../../services/fitnessDataService';
 
 const StyledCard = styled(Card)(() => ({
   borderRadius: 4,
@@ -236,30 +237,52 @@ export default function StartWorkout({ aiPlan, loading, addedExercises = [], sel
     try {
       setFinishing(true);
       const todayStr = new Date().toISOString().split('T')[0];
-      const strengthLogs = exercises
-        .filter((ex) => ex.sets.some((s) => s.completed))
-        .map((ex) => {
-          const completedSetsList = ex.sets.filter((s) => s.completed);
-          const maxWeight = Math.max(...completedSetsList.map((s) => Number(s.weight) || 0));
-          const avgReps = Math.round(
-            completedSetsList.reduce((acc, s) => acc + (Number(s.reps) || 0), 0) / completedSetsList.length
-          );
-          return {
-            exerciseName: ex.name,
-            weight: maxWeight,
-            reps: avgReps || 10,
-            sets: completedSetsList.length,
-            isPR: false,
-            notes: `Workout: ${displayPlan.name}`,
-          };
+      const completedExercisesList = exercises.filter((ex) => ex.sets.some((s) => s.completed));
+      
+      let totalVolume = 0;
+      const strengthLogs = completedExercisesList.map((ex) => {
+        const completedSetsList = ex.sets.filter((s) => s.completed);
+        const maxWeight = Math.max(...completedSetsList.map((s) => Number(s.weight) || 0));
+        const avgReps = Math.round(
+          completedSetsList.reduce((acc, s) => acc + (Number(s.reps) || 0), 0) / completedSetsList.length
+        );
+        completedSetsList.forEach((s) => {
+          totalVolume += (Number(s.weight) || 0) * (Number(s.reps) || 0);
         });
 
+        return {
+          exerciseName: ex.name,
+          weight: maxWeight,
+          reps: avgReps || 10,
+          sets: completedSetsList.length,
+          isPR: false,
+          notes: `Workout: ${displayPlan.name}`,
+        };
+      });
+
+      // Synchronize into central fitness engine
+      fitnessDataService.logWorkoutSession({
+        name: displayPlan.name,
+        date: todayStr,
+        durationMinutes: Math.round(totalSets * 2) || 45,
+        exercisesCompleted: completedExercisesList.length,
+        totalVolumeKg: totalVolume || 4000,
+        exercises: completedExercisesList.map((e) => ({
+          name: e.name,
+          maxWeight: Math.max(...e.sets.filter((s) => s.completed).map((s) => Number(s.weight) || 0)),
+        })),
+      });
+
       if (strengthLogs.length > 0) {
-        await progressService.create({
-          date: todayStr,
-          strengthLogs,
-          note: `Finished workout: ${displayPlan.name}`,
-        });
+        try {
+          await progressService.create({
+            date: todayStr,
+            strengthLogs,
+            note: `Finished workout: ${displayPlan.name}`,
+          });
+        } catch (apiErr) {
+          console.warn('Progress API create fallback:', apiErr);
+        }
       }
 
       alert(`Workout "${displayPlan.name}" completed and saved! Great job!`);
@@ -271,6 +294,7 @@ export default function StartWorkout({ aiPlan, loading, addedExercises = [], sel
       setFinishing(false);
     }
   };
+
 
   const completedExercises = exercises.filter((ex) => ex.sets.length > 0 && ex.sets.every((s) => s.completed)).length;
   const completedSets = exercises.reduce((acc, ex) => acc + ex.sets.filter((s) => s.completed).length, 0);

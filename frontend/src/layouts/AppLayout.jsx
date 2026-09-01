@@ -54,6 +54,7 @@ import {
   KeyboardArrowDownRounded,
   ConfirmationNumberRounded,
   CardMembershipRounded,
+  AutoAwesomeRounded,
 } from '@mui/icons-material';
 
 import Logo from '../components/Logo';
@@ -63,6 +64,7 @@ import { useThemeMode } from '../context/ThemeContext';
 import { useLanguage } from '../i18n';
 
 const SIDEBAR_WIDTH = 260;
+const HEADER_HEIGHT = 64;
 
 export default function AppLayout() {
   const theme = useTheme();
@@ -100,6 +102,12 @@ export default function AppLayout() {
       label: t('nav.nutrition'),
       icon: <RestaurantRounded />,
       path: '/nutrition',
+    },
+    {
+      id: 'calories-calculator',
+      label: 'AI Food Vision',
+      icon: <AutoAwesomeRounded />,
+      path: '/calories-calculator',
     },
     {
       id: 'goals',
@@ -157,6 +165,11 @@ export default function AppLayout() {
       label: `${t('nav.nutrition')}`,
       path: '/nutrition',
       icon: <RestaurantRounded />,
+    },
+    {
+      label: 'AI Calorie Calculator & Food Vision',
+      path: '/calories-calculator',
+      icon: <AutoAwesomeRounded />,
     },
     {
       label: `${t('nav.goals')}`,
@@ -407,11 +420,12 @@ export default function AppLayout() {
             overflow: 'hidden',
           }}
         >
-          {/* LOGO */}
+          {/* LOGO — height locked to HEADER_HEIGHT so its bottom
+              border lines up exactly with the navbar's bottom border */}
 
           <Box
             sx={{
-              p: {
+              px: {
                 xs: 2,
                 md: 3,
               },
@@ -423,7 +437,10 @@ export default function AppLayout() {
               alignItems: 'center',
               justifyContent: 'space-between',
 
-              minHeight: 64,
+              height: HEADER_HEIGHT,
+              minHeight: HEADER_HEIGHT,
+              maxHeight: HEADER_HEIGHT,
+              boxSizing: 'border-box',
             }}
           >
             <Logo size={32} />
@@ -492,16 +509,16 @@ export default function AppLayout() {
                   borderRadius: 2,
                   px: 1.5,
                   py: 1,
-
+                  minWidth: 0,
+                  maxWidth: '100%',
                   color: 'text.secondary',
-
                   '&:hover': {
                     backgroundColor: 'action.hover',
                     color: 'text.primary',
                   },
                 }}
               >
-                <ListItemIcon>
+                <ListItemIcon sx={{ minWidth: 44 }}>
                   <Avatar
                     src={user?.avatar}
                     variant="rounded"
@@ -517,11 +534,21 @@ export default function AppLayout() {
                 </ListItemIcon>
 
                 <ListItemText
+                  sx={{
+                    minWidth: 0,
+                    overflow: 'hidden',
+                    my: 0,
+                  }}
                   primary={
                     <Typography
                       variant="body2"
+                      noWrap
+                      title={`${user?.firstName || ''} ${user?.lastName || ''}`.trim()}
                       sx={{
                         fontWeight: 600,
+                        display: 'block',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
                       }}
                     >
                       {user?.firstName}{' '}
@@ -533,6 +560,12 @@ export default function AppLayout() {
                       variant="caption"
                       color="text.secondary"
                       noWrap
+                      title={user?.email}
+                      sx={{
+                        display: 'block',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
                     >
                       {user?.email}
                     </Typography>
@@ -645,7 +678,8 @@ export default function AppLayout() {
             <Toolbar
               disableGutters
               sx={{
-                minHeight: '64px !important',
+                minHeight: `${HEADER_HEIGHT}px !important`,
+                height: HEADER_HEIGHT,
               }}
             >
               {/* MOBILE MENU */}
@@ -1007,7 +1041,7 @@ export default function AppLayout() {
 
           <Toolbar
             sx={{
-              minHeight: '64px !important',
+              minHeight: `${HEADER_HEIGHT}px !important`,
             }}
           />
 

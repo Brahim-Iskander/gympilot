@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import SEO from '../../components/SEO';
 import {
   Box,
   Button,
@@ -227,6 +228,12 @@ export default function AdminTickets() {
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
+      <SEO
+        title="Support Tickets Management — Admin"
+        description="Review, triage, and respond to athlete support tickets on GymPilot."
+        path="/admin/tickets"
+        noIndex
+      />
       {/* Header */}
       <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
         <Box>
