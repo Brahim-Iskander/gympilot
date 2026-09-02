@@ -22,6 +22,8 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import DarkModeRoundedIcon from '@mui/icons-material/DarkModeRounded';
 import LightModeRoundedIcon from '@mui/icons-material/LightModeRounded';
+import CardGiftcardRoundedIcon from '@mui/icons-material/CardGiftcardRounded';
+import EmojiEventsRoundedIcon from '@mui/icons-material/EmojiEventsRounded';
 
 import Logo from './Logo';
 import LanguageSelector from './LanguageSelector';
@@ -105,7 +107,31 @@ export default function Navbar() {
 
               {isAuthenticated ? (
                 <>
-                  <Typography variant="body2" color="text.secondary" sx={{ px: 1.5 }}>
+                  <Tooltip title="Your Rewards & Referrals">
+                    <Button
+                      component={RouterLink}
+                      to="/dashboard/profile?tab=referrals"
+                      size="small"
+                      startIcon={<EmojiEventsRoundedIcon sx={{ color: '#FFD700', fontSize: 18 }} />}
+                      sx={{
+                        bgcolor: 'rgba(198, 255, 62, 0.1)',
+                        color: 'text.primary',
+                        fontWeight: 800,
+                        fontSize: '0.82rem',
+                        borderRadius: 2,
+                        border: '1px solid rgba(198, 255, 62, 0.25)',
+                        px: 1.5,
+                        py: 0.6,
+                        '&:hover': {
+                          bgcolor: 'rgba(198, 255, 62, 0.18)',
+                          borderColor: 'primary.main',
+                        },
+                      }}
+                    >
+                      {user?.points ?? 0} pts
+                    </Button>
+                  </Tooltip>
+                  <Typography variant="body2" color="text.secondary" sx={{ px: 1 }}>
                     {t('nav.welcomeUser', { name: user?.firstName || 'Athlete' })}
                   </Typography>
                   <Tooltip title={t('nav.signOut')}>
@@ -195,6 +221,22 @@ export default function Navbar() {
 
         {isAuthenticated ? (
           <Stack spacing={2}>
+            <Button
+              component={RouterLink}
+              to="/dashboard/profile?tab=referrals"
+              onClick={closeDrawer}
+              variant="outlined"
+              startIcon={<EmojiEventsRoundedIcon sx={{ color: '#FFD700' }} />}
+              sx={{
+                fontWeight: 700,
+                borderColor: 'rgba(198, 255, 62, 0.3)',
+                color: 'text.primary',
+                bgcolor: 'rgba(198, 255, 62, 0.05)',
+                justifyContent: 'flex-start',
+              }}
+            >
+              Reward Points: {user?.points ?? 0} pts
+            </Button>
             <Typography variant="body2" color="text.secondary" sx={{ px: 1 }}>
               {t('nav.signedInAs', { name: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() })}
             </Typography>

@@ -38,5 +38,11 @@ public interface UserRepository extends MongoRepository<User, String> {
 
     long countByMembershipStatus(String membershipStatus);
 
+    Optional<User> findByReferralCode(String referralCode);
+
+    boolean existsByReferralCode(String referralCode);
+
+    java.util.List<User> findByReferredByOrderByCreatedAtDesc(String referralCode);
+
     long countByMembershipTierAndMembershipStatus(String membershipTier, String membershipStatus);
 }

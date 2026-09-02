@@ -52,6 +52,16 @@ public class User {
     /** Profile avatar image (Base64 data URL or external URL). */
     private String avatar;
 
+    /** Reward points balance (default 0). */
+    private int points = 0;
+
+    /** Unique referral code for inviting friends. */
+    @Indexed(unique = true, sparse = true)
+    private String referralCode;
+
+    /** Referral code of the user who invited this member (null if none). */
+    private String referredBy;
+
     @CreatedDate
     private Instant createdAt;
 
@@ -171,6 +181,30 @@ public class User {
 
     public void setAvatar(String avatar) {
         this.avatar = avatar;
+    }
+
+    public int getPoints() {
+        return points;
+    }
+
+    public void setPoints(int points) {
+        this.points = points;
+    }
+
+    public String getReferralCode() {
+        return referralCode;
+    }
+
+    public void setReferralCode(String referralCode) {
+        this.referralCode = referralCode;
+    }
+
+    public String getReferredBy() {
+        return referredBy;
+    }
+
+    public void setReferredBy(String referredBy) {
+        this.referredBy = referredBy;
     }
 
     @Override

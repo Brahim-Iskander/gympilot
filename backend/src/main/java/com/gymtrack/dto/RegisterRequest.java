@@ -21,6 +21,12 @@ public record RegisterRequest(
 
         @NotBlank(message = "Password is required")
         @Size(min = 8, max = 72, message = "Password must be between 8 and 72 characters")
-        String password
+        String password,
+
+        @Size(max = 20, message = "Referral code must not exceed 20 characters")
+        String referralCode
 ) {
+    public RegisterRequest(String firstName, String lastName, String email, String password) {
+        this(firstName, lastName, email, password, null);
+    }
 }

@@ -37,6 +37,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final MailService mailService;
+    private final ReferralService referralService;
 
     @org.springframework.beans.factory.annotation.Value("${app.frontend.url:http://localhost:5173}")
     private String frontendUrl;
@@ -50,13 +51,15 @@ public class AuthService {
                        PasswordEncoder passwordEncoder,
                        AuthenticationManager authenticationManager,
                        JwtService jwtService,
-                       MailService mailService) {
+                       MailService mailService,
+                       ReferralService referralService) {
         this.userRepository = userRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.mailService = mailService;
+        this.referralService = referralService;
     }
 
     public java.util.Map<String, String> forgotPassword(com.gymtrack.dto.ForgotPasswordRequest request) {
@@ -177,8 +180,15 @@ public class AuthService {
                 email,
                 passwordEncoder.encode(request.password()));
 
+        user.setReferralCode(referralService.generateUniqueReferralCode(user));
+
         User saved = userRepository.save(user);
-        log.info("Registered new user: {}", saved);
+        log.info("Registered new user with referral code '{}': {}", saved.getReferralCode(), saved.getEmail());
+
+        // Process referral bonus if code provided
+        if (request.referralCode() != null && !request.referralCode().isBlank()) {
+            referralService.awardReferralPoints(saved, request.referralCode());
+        }
 
         return new AuthResponse(jwtService.generateToken(saved.getEmail()), UserResponse.from(saved));
     }
@@ -198,6 +208,9 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(InvalidCredentialsException::new);
 
+        // Ensure legacy users have a referral code
+        referralService.ensureReferralCode(user);
+
         // Track last login time
         user.setLastLoginAt(Instant.now());
         userRepository.save(user);
@@ -206,7 +219,9 @@ public class AuthService {
     }
 
     public UserResponse getCurrentUser(String email) {
-        return UserResponse.from(requireUser(email));
+        User user = requireUser(email);
+        referralService.ensureReferralCode(user);
+        return UserResponse.from(user);
     }
 
     public UserResponse updateProfile(String email, UpdateProfileRequest request) {

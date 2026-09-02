@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link as RouterLink, Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link as RouterLink, Navigate, useSearchParams } from 'react-router-dom';
 import {
   Alert,
   Box,
@@ -11,10 +11,16 @@ import {
   Stack,
   TextField,
   Typography,
+  Chip,
+  Card,
+  Collapse,
 } from '@mui/material';
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
 import VisibilityOffRoundedIcon from '@mui/icons-material/VisibilityOffRounded';
 import PersonAddAlt1RoundedIcon from '@mui/icons-material/PersonAddAlt1Rounded';
+import CardGiftcardRoundedIcon from '@mui/icons-material/CardGiftcardRounded';
+import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded';
+import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 
 import AuthShell from '../../components/AuthShell';
 import SEO from '../../components/SEO';
@@ -22,6 +28,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../i18n';
 import { getApiErrorMessage } from '../../utils/errors';
 import { validateRegisterForm } from '../../utils/validation';
+import { referralService } from '../../services/referralService';
 
 const INITIAL_VALUES = {
   firstName: '',
@@ -32,6 +39,9 @@ const INITIAL_VALUES = {
 };
 
 export default function Register() {
+  const [searchParams] = useSearchParams();
+  const initialRef = (searchParams.get('ref') || searchParams.get('referral') || '').trim();
+
   const { register, isAuthenticated, loading } = useAuth();
   const { t } = useLanguage();
   const [values, setValues] = useState(INITIAL_VALUES);
@@ -39,6 +49,23 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
+
+  // Referral code state
+  const [referralCode, setReferralCode] = useState(initialRef);
+  const [referralInfo, setReferralInfo] = useState(null);
+  const [showReferralInput, setShowReferralInput] = useState(Boolean(initialRef));
+
+  useEffect(() => {
+    if (initialRef) {
+      referralService.validateReferralCode(initialRef)
+        .then((res) => {
+          if (res?.valid) {
+            setReferralInfo(res);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [initialRef]);
 
   // Already signed in? PublicOnlyRoute handles redirect; keep a safe fallback.
   if (!loading && isAuthenticated) {
@@ -65,6 +92,7 @@ export default function Register() {
         lastName: values.lastName.trim(),
         email: values.email.trim().toLowerCase(),
         password: values.password,
+        referralCode: referralCode ? referralCode.trim().toUpperCase() : undefined,
       });
     } catch (error) {
       setFormError(getApiErrorMessage(error));
@@ -178,6 +206,90 @@ export default function Register() {
             helperText={errors.confirmPassword}
             InputProps={passwordVisibilityProps}
           />
+
+          {/* Referral Reward Banner / Input */}
+          {referralInfo?.valid ? (
+            <Card
+              sx={{
+                p: 2,
+                borderRadius: 2.5,
+                bgcolor: 'rgba(198, 255, 62, 0.08)',
+                border: '1px solid rgba(198, 255, 62, 0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 1.5,
+              }}
+            >
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <Box
+                  sx={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: 2,
+                    bgcolor: 'rgba(198, 255, 62, 0.2)',
+                    color: 'primary.main',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <CardGiftcardRoundedIcon fontSize="small" />
+                </Box>
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                    Friend Referral Applied! 🎉
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                    Invited by <strong>{referralInfo.referrerName}</strong> (+10 bonus points)
+                  </Typography>
+                </Box>
+              </Stack>
+              <Chip
+                label="+10 PTS"
+                size="small"
+                sx={{
+                  bgcolor: 'primary.main',
+                  color: '#000',
+                  fontWeight: 800,
+                  fontSize: '0.75rem',
+                }}
+              />
+            </Card>
+          ) : (
+            <Box>
+              {!showReferralInput ? (
+                <Button
+                  size="small"
+                  onClick={() => setShowReferralInput(true)}
+                  startIcon={<CardGiftcardRoundedIcon sx={{ fontSize: 16 }} />}
+                  sx={{ color: 'text.secondary', textTransform: 'none', px: 0, '&:hover': { color: 'primary.main' } }}
+                >
+                  Have a referral or invite code?
+                </Button>
+              ) : (
+                <Collapse in={showReferralInput}>
+                  <TextField
+                    label="Referral / Invite Code (Optional)"
+                    placeholder="e.g. ALEX8392"
+                    fullWidth
+                    size="small"
+                    value={referralCode}
+                    onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                    helperText="Enter a friend's code to unlock 10 bonus points on registration"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <CardGiftcardRoundedIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Collapse>
+              )}
+            </Box>
+          )}
 
           <Button
             type="submit"

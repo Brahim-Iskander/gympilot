@@ -10,7 +10,7 @@ import com.gymtrack.model.User;
 public record UserResponse(String id, String firstName, String lastName, String email,
                            String role, boolean banned, String membershipTier,
                            String membershipStatus, boolean hasActiveMembership, Instant createdAt,
-                           String avatar) {
+                           String avatar, int points, String referralCode) {
 
     public static UserResponse from(User user) {
         return new UserResponse(
@@ -24,6 +24,8 @@ public record UserResponse(String id, String firstName, String lastName, String 
                 user.getMembershipStatus(),
                 user.hasActiveMembership(),
                 user.getCreatedAt(),
-                user.getAvatar());
+                user.getAvatar(),
+                user.getPoints(),
+                user.getReferralCode());
     }
 }

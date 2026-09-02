@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -19,6 +19,8 @@ import ScheduleRoundedIcon from '@mui/icons-material/ScheduleRounded';
 import MonitorWeightRoundedIcon from '@mui/icons-material/MonitorWeightRounded';
 import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded';
 import PhotoCameraRoundedIcon from '@mui/icons-material/PhotoCameraRounded';
+import CardGiftcardRoundedIcon from '@mui/icons-material/CardGiftcardRounded';
+import PersonRoundedIcon from '@mui/icons-material/PersonRounded';
 
 import { useAuth } from '../../context/AuthContext';
 import { authService } from '../../services/authService';
@@ -32,8 +34,9 @@ import {
   labelGoal,
   labelSex,
 } from '../../utils/onboardingLabels';
-import { Avatar, Badge, Card, LoadingSpinner, SectionHeader } from '../../components/ui';
+import { Avatar, Badge, Card, LoadingSpinner, SectionHeader, TabNavigation } from '../../components/ui';
 import SEO from '../../components/SEO';
+import ReferralHub from './components/ReferralHub';
 
 const staticCardSx = {
   '&:hover': {
@@ -91,6 +94,10 @@ function StatTile({ icon, label, value }) {
 }
 
 export default function Profile() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') === 'referrals' ? 'referrals' : 'profile';
+  const [activeTab, setActiveTab] = useState(initialTab);
+
   const { user, updateUser } = useAuth();
   const [onboarding, setOnboarding] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -98,6 +105,18 @@ export default function Profile() {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState('');
   const avatarInputRef = useRef(null);
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'referrals') {
+      setActiveTab('referrals');
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (e, newTab) => {
+    setActiveTab(newTab);
+    setSearchParams(newTab === 'referrals' ? { tab: 'referrals' } : {});
+  };
 
   useEffect(() => {
     let active = true;
@@ -182,8 +201,8 @@ export default function Profile() {
       />
 
       <SectionHeader
-        title="Profile"
-        subtitle="Your account and training profile from GymPilot"
+        title="Profile & Rewards"
+        subtitle="Your account, training parameters, and friend referrals"
         action={
           <Button
             component={RouterLink}
@@ -196,7 +215,20 @@ export default function Profile() {
         }
       />
 
-      {loading ? (
+      <TabNavigation
+        tabs={[
+          { id: 'profile', label: 'Athlete Profile', icon: <PersonRoundedIcon /> },
+          { id: 'referrals', label: `Refer & Earn (${user?.points ?? 0} pts)`, icon: <CardGiftcardRoundedIcon /> },
+        ]}
+        value={activeTab}
+        onChange={handleTabChange}
+        variant="pill"
+        sx={{ mb: 3 }}
+      />
+
+      {activeTab === 'referrals' ? (
+        <ReferralHub />
+      ) : loading ? (
         <LoadingSpinner sx={{ py: 8 }} />
       ) : (
         <Stack spacing={3}>
