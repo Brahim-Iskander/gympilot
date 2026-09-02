@@ -1,5 +1,14 @@
 package com.gymtrack.service;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -7,11 +16,14 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 
 /**
- * Service for sending HTML and transactional emails via JavaMailSender (Brevo SMTP).
+ * Service for sending HTML and transactional emails via Resend HTTP API (Port 443)
+ * with graceful fallback to JavaMailSender (SMTP).
  */
 @Service
 public class MailService {
@@ -19,8 +31,16 @@ public class MailService {
     private static final Logger log = LoggerFactory.getLogger(MailService.class);
 
     private final JavaMailSender mailSender;
+    private final HttpClient httpClient;
+    private final ObjectMapper objectMapper;
 
-    @Value("${app.mail.from:jpfdjxymjg72@melbourne.edu.pl}")
+    @Value("${resend.api-key:${RESEND_API_KEY:}}")
+    private String resendApiKey;
+
+    @Value("${resend.from:${RESEND_FROM:GymPilot <onboarding@resend.dev>}}")
+    private String resendFrom;
+
+    @Value("${app.mail.from:gimpilot411@gmail.com}")
     private String fromAddress;
 
     @Value("${app.mail.from-name:GymPilot Support}")
@@ -28,6 +48,51 @@ public class MailService {
 
     public MailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
+        this.httpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(8))
+                .build();
+        this.objectMapper = new ObjectMapper();
+    }
+
+    private boolean hasResendApi() {
+        return resendApiKey != null && !resendApiKey.isBlank();
+    }
+
+    private boolean sendViaResend(String to, String subject, String htmlBody) {
+        try {
+            String from = (resendFrom != null && !resendFrom.isBlank()) ? resendFrom : "GymPilot <onboarding@resend.dev>";
+
+            Map<String, Object> body = Map.of(
+                    "from", from,
+                    "to", List.of(to),
+                    "subject", subject,
+                    "html", htmlBody
+            );
+
+            String jsonPayload = objectMapper.writeValueAsString(body);
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.resend.com/emails"))
+                    .header("Authorization", "Bearer " + resendApiKey.trim())
+                    .header("Content-Type", "application/json")
+                    .header("User-Agent", "GymPilot/1.0")
+                    .timeout(Duration.ofSeconds(10))
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonPayload, StandardCharsets.UTF_8))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                log.info("Email sent successfully via Resend API (HTTP 443) to: {}", to);
+                return true;
+            } else {
+                log.error("Resend API error (HTTP {}): {}", response.statusCode(), response.body());
+                return false;
+            }
+        } catch (Exception ex) {
+            log.error("Failed to send email via Resend API to: {}", to, ex);
+            return false;
+        }
     }
 
     /**
@@ -39,19 +104,26 @@ public class MailService {
      * @return true if email sent successfully, false otherwise
      */
     public boolean sendResetPasswordEmail(String to, String resetLink) {
+        String subject = "Reset Your GymPilot Password";
+        String htmlBody = buildResetPasswordHtml(resetLink);
+
+        if (hasResendApi()) {
+            boolean sent = sendViaResend(to, subject, htmlBody);
+            if (sent) return true;
+            log.warn("Resend API failed, falling back to SMTP...");
+        }
+
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
             helper.setFrom(new InternetAddress(fromAddress, fromName));
             helper.setTo(to);
-            helper.setSubject("Reset Your GymPilot Password");
-
-            String htmlBody = buildResetPasswordHtml(resetLink);
+            helper.setSubject(subject);
             helper.setText(htmlBody, true);
 
             mailSender.send(message);
-            log.info("Password reset email sent successfully to: {}", to);
+            log.info("Password reset email sent successfully via SMTP to: {}", to);
             return true;
         } catch (Exception ex) {
             log.error("Failed to send password reset email to: {}", to, ex);
@@ -131,19 +203,26 @@ public class MailService {
      * @return true if email sent successfully, false otherwise
      */
     public boolean sendOtpVerificationEmail(String to, String firstName, String otpCode) {
+        String subject = otpCode + " is your GymPilot verification code";
+        String htmlBody = buildOtpVerificationHtml(firstName, otpCode);
+
+        if (hasResendApi()) {
+            boolean sent = sendViaResend(to, subject, htmlBody);
+            if (sent) return true;
+            log.warn("Resend API failed, falling back to SMTP...");
+        }
+
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
             helper.setFrom(new InternetAddress(fromAddress, fromName));
             helper.setTo(to);
-            helper.setSubject(otpCode + " is your GymPilot verification code");
-
-            String htmlBody = buildOtpVerificationHtml(firstName, otpCode);
+            helper.setSubject(subject);
             helper.setText(htmlBody, true);
 
             mailSender.send(message);
-            log.info("OTP verification email sent successfully to: {}", to);
+            log.info("OTP verification email sent successfully via SMTP to: {}", to);
             return true;
         } catch (Exception ex) {
             log.error("Failed to send OTP verification email to: {}", to, ex);
