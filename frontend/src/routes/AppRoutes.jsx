@@ -30,6 +30,7 @@ import SupportTickets from '../pages/Support/SupportTickets';
 import MembershipPage from '../pages/Membership/Membership';
 import ForgotPasswordPage from '../pages/ForgotPassword/ForgotPassword';
 import ResetPasswordPage from '../pages/ResetPassword/ResetPassword';
+import VerifyEmailPage from '../pages/Auth/VerifyEmail';
 
 // Shop Pages
 import Shop from '../pages/Shop/Shop';
@@ -81,6 +82,7 @@ export default function AppRoutes() {
           </PublicOnlyRoute>
         }
       />
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
       <Route path="/onboarding" element={<OnboardingPage />} />
 
       {/* ===================== SHOP ROUTES ===================== */}

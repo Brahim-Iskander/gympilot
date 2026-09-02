@@ -83,4 +83,17 @@ public class AuthController {
     public java.util.Map<String, String> resetPassword(@Valid @RequestBody com.gymtrack.dto.ResetPasswordRequest request) {
         return authService.resetPassword(request);
     }
+
+    /** Protected (JWT authenticated) - verifies email address using 6-digit OTP code. */
+    @PostMapping("/verify-otp")
+    public UserResponse verifyOtp(Authentication authentication,
+                                  @Valid @RequestBody com.gymtrack.dto.VerifyOtpRequest request) {
+        return authService.verifyOtp(authentication.getName(), request.code());
+    }
+
+    /** Protected (JWT authenticated) - resends 6-digit verification code with 60-second cooldown. */
+    @PostMapping("/resend-otp")
+    public java.util.Map<String, String> resendOtp(Authentication authentication) {
+        return authService.resendOtp(authentication.getName());
+    }
 }

@@ -38,7 +38,7 @@ import StepTrainingData from './steps/StepTrainingData';
 import StepLimitations from './steps/StepLimitations';
 
 export default function Onboarding() {
-  const { isAuthenticated, loading: authLoading, onboardingCompleted, setOnboardingCompleted } = useAuth();
+  const { isAuthenticated, isVerified, loading: authLoading, onboardingCompleted, setOnboardingCompleted } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
 
@@ -86,6 +86,10 @@ export default function Onboarding() {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (!isVerified) {
+    return <Navigate to="/verify-email" replace />;
   }
 
   if (onboardingCompleted) {

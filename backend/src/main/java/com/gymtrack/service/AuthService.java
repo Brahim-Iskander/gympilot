@@ -20,8 +20,10 @@ import com.gymtrack.dto.UserResponse;
 import com.gymtrack.exception.EmailAlreadyExistsException;
 import com.gymtrack.exception.InvalidCredentialsException;
 import com.gymtrack.exception.InvalidPasswordException;
+import com.gymtrack.model.EmailOtp;
 import com.gymtrack.model.PasswordResetToken;
 import com.gymtrack.model.User;
+import com.gymtrack.repository.EmailOtpRepository;
 import com.gymtrack.repository.PasswordResetTokenRepository;
 import com.gymtrack.repository.UserRepository;
 import com.gymtrack.security.JwtService;
@@ -33,6 +35,7 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final EmailOtpRepository emailOtpRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
@@ -48,6 +51,7 @@ public class AuthService {
 
     public AuthService(UserRepository userRepository,
                        PasswordResetTokenRepository passwordResetTokenRepository,
+                       EmailOtpRepository emailOtpRepository,
                        PasswordEncoder passwordEncoder,
                        AuthenticationManager authenticationManager,
                        JwtService jwtService,
@@ -55,6 +59,7 @@ public class AuthService {
                        ReferralService referralService) {
         this.userRepository = userRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
+        this.emailOtpRepository = emailOtpRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
@@ -180,15 +185,26 @@ public class AuthService {
                 email,
                 passwordEncoder.encode(request.password()));
 
+        user.setVerified(false);
         user.setReferralCode(referralService.generateUniqueReferralCode(user));
 
         User saved = userRepository.save(user);
-        log.info("Registered new user with referral code '{}': {}", saved.getReferralCode(), saved.getEmail());
+        log.info("Registered new unverified user with referral code '{}': {}", saved.getReferralCode(), saved.getEmail());
 
         // Process referral bonus if code provided
         if (request.referralCode() != null && !request.referralCode().isBlank()) {
             referralService.awardReferralPoints(saved, request.referralCode());
         }
+
+        // Generate and send 6-digit email OTP (10-minute expiry)
+        String otpCode = generateSecureOtp();
+        String codeHash = passwordEncoder.encode(otpCode);
+        Instant expiresAt = Instant.now().plus(java.time.Duration.ofMinutes(10));
+
+        EmailOtp emailOtp = new EmailOtp(saved.getId(), saved.getEmail(), codeHash, expiresAt);
+        emailOtpRepository.save(emailOtp);
+
+        mailService.sendOtpVerificationEmail(saved.getEmail(), saved.getFirstName(), otpCode);
 
         return new AuthResponse(jwtService.generateToken(saved.getEmail()), UserResponse.from(saved));
     }
@@ -244,6 +260,94 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
         log.info("Password changed for user: {}", user.getEmail());
+    }
+
+    public UserResponse verifyOtp(String email, String rawCode) {
+        String normalized = normalizeEmail(email);
+        User user = requireUser(normalized);
+
+        if (user.isVerified()) {
+            return UserResponse.from(user);
+        }
+
+        if (rawCode == null || !rawCode.matches("^[0-9]{6}$")) {
+            throw new IllegalArgumentException("Verification code must be exactly 6 digits.");
+        }
+
+        EmailOtp otp = emailOtpRepository.findTopByEmailOrderByCreatedAtDesc(normalized)
+                .orElseThrow(() -> new IllegalArgumentException("No verification code found. Please request a new code."));
+
+        if (otp.isUsed()) {
+            throw new IllegalArgumentException("This verification code has already been used. Please request a new one.");
+        }
+
+        if (otp.getAttempts() >= 5) {
+            throw new IllegalArgumentException("Maximum verification attempts exceeded. Please request a new verification code.");
+        }
+
+        if (otp.isExpired()) {
+            throw new IllegalArgumentException("Verification code has expired. Please request a new code.");
+        }
+
+        if (!passwordEncoder.matches(rawCode, otp.getCodeHash())) {
+            otp.incrementAttempts();
+            emailOtpRepository.save(otp);
+            int remaining = 5 - otp.getAttempts();
+            if (remaining <= 0) {
+                throw new IllegalArgumentException("Maximum verification attempts exceeded. Please request a new verification code.");
+            }
+            throw new IllegalArgumentException("Invalid verification code. " + remaining + " attempt" + (remaining == 1 ? "" : "s") + " remaining.");
+        }
+
+        // Code matches!
+        otp.setUsed(true);
+        emailOtpRepository.save(otp);
+
+        user.setVerified(true);
+        User saved = userRepository.save(user);
+        log.info("Successfully verified email for user: {}", saved.getEmail());
+
+        return UserResponse.from(saved);
+    }
+
+    public java.util.Map<String, String> resendOtp(String email) {
+        String normalized = normalizeEmail(email);
+        User user = requireUser(normalized);
+
+        if (user.isVerified()) {
+            return java.util.Map.of("message", "Your email is already verified.");
+        }
+
+        java.util.Optional<EmailOtp> latestOpt = emailOtpRepository.findTopByEmailOrderByCreatedAtDesc(normalized);
+        if (latestOpt.isPresent()) {
+            EmailOtp latest = latestOpt.get();
+            Instant cooldownEnd = latest.getLastResentAt().plus(java.time.Duration.ofSeconds(60));
+            if (Instant.now().isBefore(cooldownEnd)) {
+                long secondsRemaining = java.time.Duration.between(Instant.now(), cooldownEnd).toSeconds() + 1;
+                throw new IllegalArgumentException("Please wait " + secondsRemaining + " seconds before requesting another code.");
+            }
+            // Invalidate previous OTP so it cannot be used
+            latest.setUsed(true);
+            emailOtpRepository.save(latest);
+        }
+
+        String otpCode = generateSecureOtp();
+        String codeHash = passwordEncoder.encode(otpCode);
+        Instant expiresAt = Instant.now().plus(java.time.Duration.ofMinutes(10));
+
+        EmailOtp newOtp = new EmailOtp(user.getId(), user.getEmail(), codeHash, expiresAt);
+        emailOtpRepository.save(newOtp);
+
+        mailService.sendOtpVerificationEmail(user.getEmail(), user.getFirstName(), otpCode);
+        log.info("Resent OTP verification email to: {}", user.getEmail());
+
+        return java.util.Map.of("message", "A new verification code has been sent to your email.");
+    }
+
+    private String generateSecureOtp() {
+        java.security.SecureRandom random = new java.security.SecureRandom();
+        int code = 100000 + random.nextInt(900000);
+        return String.valueOf(code);
     }
 
     private User requireUser(String email) {

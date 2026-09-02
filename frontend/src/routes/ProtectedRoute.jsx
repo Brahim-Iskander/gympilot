@@ -10,7 +10,7 @@ import FullScreenLoader from '../components/FullScreenLoader';
  * redirecting, so a refresh on /dashboard never bounces the user to /login.
  */
 export default function ProtectedRoute({ children }) {
-  const { isAuthenticated, onboardingCompleted, loading } = useAuth();
+  const { isAuthenticated, isVerified, onboardingCompleted, loading } = useAuth();
 
   if (loading) {
     return <FullScreenLoader />;
@@ -18,6 +18,10 @@ export default function ProtectedRoute({ children }) {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (!isVerified) {
+    return <Navigate to="/verify-email" replace />;
   }
 
   if (!onboardingCompleted) {

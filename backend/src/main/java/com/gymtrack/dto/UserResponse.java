@@ -10,7 +10,7 @@ import com.gymtrack.model.User;
  */
 public record UserResponse(String id, String firstName, String lastName, String email,
                            String role, Set<String> roles, boolean isSeller, boolean isCoach, boolean isAdmin,
-                           boolean banned, String membershipTier,
+                           boolean banned, boolean isVerified, String membershipTier,
                            String membershipStatus, boolean hasActiveMembership, Instant createdAt,
                            String avatar, int points, String referralCode, String storeName) {
 
@@ -26,6 +26,7 @@ public record UserResponse(String id, String firstName, String lastName, String 
                 user.isCoach(),
                 user.isAdmin(),
                 user.isBanned(),
+                user.isVerified(),
                 user.getMembershipTier(),
                 user.getMembershipStatus(),
                 user.hasActiveMembership(),

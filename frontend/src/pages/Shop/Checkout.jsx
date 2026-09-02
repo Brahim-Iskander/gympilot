@@ -48,16 +48,11 @@ export default function Checkout() {
     address: '',
     city: '',
     postalCode: '',
-    country: 'United States',
+    country: 'Tunisia',
     phone: '',
   });
 
   const [paymentMethod, setPaymentMethod] = useState('CASH_ON_DELIVERY');
-  const [cardDetails, setCardDetails] = useState({
-    cardNumber: '',
-    expiry: '',
-    cvc: '',
-  });
 
   const [orderNotes, setOrderNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -269,55 +264,43 @@ export default function Checkout() {
                           p: 2,
                           borderRadius: 2,
                           border: '1px solid',
-                          borderColor: paymentMethod === 'CREDIT_CARD' ? 'primary.main' : 'divider',
-                          bgcolor: paymentMethod === 'CREDIT_CARD' ? 'rgba(198,255,62,0.04)' : 'transparent',
+                          borderColor: 'divider',
+                          bgcolor: 'action.disabledBackground',
+                          opacity: 0.6,
                         }}
                       >
                         <FormControlLabel
                           value="CREDIT_CARD"
-                          control={<Radio sx={{ color: 'primary.main', '&.Mui-checked': { color: 'primary.main' } }} />}
+                          disabled
+                          control={<Radio disabled sx={{ color: 'text.disabled' }} />}
                           label={
-                            <Box>
-                              <Typography variant="body2" sx={{ fontWeight: 700 }}>Credit / Debit Card (Instant Checkout)</Typography>
-                              <Typography variant="caption" color="text.secondary">Encrypted 256-bit secure payment simulation.</Typography>
-                            </Box>
+                            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                              <Box>
+                                <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.disabled' }}>
+                                  Credit / Debit Card
+                                </Typography>
+                                <Typography variant="caption" color="text.disabled">
+                                  Encrypted 256-bit secure payment simulation.
+                                </Typography>
+                              </Box>
+                              <Box
+                                sx={{
+                                  ml: 1,
+                                  px: 1,
+                                  py: 0.25,
+                                  borderRadius: 1,
+                                  bgcolor: 'rgba(255,255,255,0.08)',
+                                  border: '1px solid',
+                                  borderColor: 'divider',
+                                }}
+                              >
+                                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.disabled' }}>
+                                  Not Available Yet
+                                </Typography>
+                              </Box>
+                            </Stack>
                           }
                         />
-
-                        {paymentMethod === 'CREDIT_CARD' && (
-                          <Grid container spacing={2} sx={{ mt: 1 }}>
-                            <Grid item xs={12}>
-                              <TextField
-                                label="Card Number"
-                                placeholder="4242 •••• •••• 4242"
-                                size="small"
-                                fullWidth
-                                value={cardDetails.cardNumber}
-                                onChange={(e) => setCardDetails({ ...cardDetails, cardNumber: e.target.value })}
-                              />
-                            </Grid>
-                            <Grid item xs={6}>
-                              <TextField
-                                label="MM/YY"
-                                placeholder="12/28"
-                                size="small"
-                                fullWidth
-                                value={cardDetails.expiry}
-                                onChange={(e) => setCardDetails({ ...cardDetails, expiry: e.target.value })}
-                              />
-                            </Grid>
-                            <Grid item xs={6}>
-                              <TextField
-                                label="CVC"
-                                placeholder="123"
-                                size="small"
-                                fullWidth
-                                value={cardDetails.cvc}
-                                onChange={(e) => setCardDetails({ ...cardDetails, cvc: e.target.value })}
-                              />
-                            </Grid>
-                          </Grid>
-                        )}
                       </Paper>
                     </RadioGroup>
                   </FormControl>
@@ -353,11 +336,11 @@ export default function Checkout() {
                           {item.name}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {item.quantity}x @ ${Number(item.price).toFixed(2)}
+                          {item.quantity}x @ TND {Number(item.price).toFixed(2)}
                         </Typography>
                       </Box>
                       <Typography variant="body2" sx={{ fontWeight: 800 }}>
-                        ${(Number(item.price) * item.quantity).toFixed(2)}
+                        TND {(Number(item.price) * item.quantity).toFixed(2)}
                       </Typography>
                     </Stack>
                   ))}
@@ -369,13 +352,13 @@ export default function Checkout() {
                 <Stack spacing={1.5} sx={{ mb: 3 }}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
                     <Typography variant="body2" color="text.secondary">Subtotal</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 700 }}>${totals.subtotal.toFixed(2)}</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>TND {totals.subtotal.toFixed(2)}</Typography>
                   </Stack>
 
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
                     <Typography variant="body2" color="text.secondary">Shipping</Typography>
                     <Typography variant="body2" sx={{ fontWeight: 700, color: totals.shipping === 0 ? 'success.main' : 'text.primary' }}>
-                      {totals.shipping === 0 ? 'FREE' : `$${totals.shipping.toFixed(2)}`}
+                      {totals.shipping === 0 ? 'FREE' : `TND ${totals.shipping.toFixed(2)}`}
                     </Typography>
                   </Stack>
 
@@ -383,7 +366,7 @@ export default function Checkout() {
                     <Stack direction="row" justifyContent="space-between" alignItems="center">
                       <Typography variant="body2" sx={{ color: 'primary.main' }}>Reward Points Discount</Typography>
                       <Typography variant="body2" sx={{ fontWeight: 800, color: 'primary.main' }}>
-                        -${totals.pointsDiscount.toFixed(2)}
+                        -TND {totals.pointsDiscount.toFixed(2)}
                       </Typography>
                     </Stack>
                   )}
@@ -393,7 +376,7 @@ export default function Checkout() {
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
                     <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>Final Total</Typography>
                     <Typography variant="h5" sx={{ fontWeight: 900, color: 'primary.main', fontFamily: "'Sora', sans-serif" }}>
-                      ${totals.total.toFixed(2)}
+                      TND {totals.total.toFixed(2)}
                     </Typography>
                   </Stack>
                 </Stack>
@@ -407,7 +390,7 @@ export default function Checkout() {
                   startIcon={submitting ? <CircularProgress size={20} /> : <LockRoundedIcon />}
                   sx={{ fontWeight: 800, py: 1.5, borderRadius: 2.5 }}
                 >
-                  {submitting ? 'Placing Order...' : `Place Order ($${totals.total.toFixed(2)})`}
+                  {submitting ? 'Placing Order...' : `Place Order (TND ${totals.total.toFixed(2)})`}
                 </Button>
 
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center', mt: 2 }}>
@@ -466,7 +449,7 @@ export default function Checkout() {
                 <Stack direction="row" justifyContent="space-between">
                   <Typography variant="body2" color="text.secondary">Total Amount Paid:</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 800, color: 'primary.main' }}>
-                    ${confirmedOrder?.totalAmount?.toFixed(2)}
+                    TND {confirmedOrder?.totalAmount?.toFixed(2)}
                   </Typography>
                 </Stack>
                 <Stack direction="row" justifyContent="space-between">

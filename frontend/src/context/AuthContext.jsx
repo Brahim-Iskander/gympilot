@@ -83,35 +83,57 @@ export function AuthProvider({ children }) {
   }, []);
 
   const redirectAfterAuth = useCallback(
-    async (isNewAccount = false) => {
-      if (isNewAccount) {
+    async (authUser, isNewAccount = false) => {
+      const targetUser = authUser || user;
+      if (isNewAccount || (targetUser && !targetUser.isVerified)) {
         setOnboardingCompleted(false);
-        navigate('/onboarding', { replace: true });
+        navigate('/verify-email', { replace: true });
         return;
       }
       const completed = await loadOnboardingStatus();
       navigate(completed ? '/dashboard' : '/onboarding', { replace: true });
     },
-    [loadOnboardingStatus, navigate],
+    [loadOnboardingStatus, navigate, user],
   );
 
   const login = useCallback(
     async (email, password) => {
       const data = await authService.login({ email, password });
       persistSession(data);
-      await redirectAfterAuth(false);
+      if (!data.user?.isVerified) {
+        setOnboardingCompleted(false);
+        navigate('/verify-email', { replace: true });
+        return;
+      }
+      const completed = await loadOnboardingStatus();
+      navigate(completed ? '/dashboard' : '/onboarding', { replace: true });
     },
-    [persistSession, redirectAfterAuth],
+    [persistSession, loadOnboardingStatus, navigate],
   );
 
   const register = useCallback(
     async (payload) => {
       const data = await authService.register(payload);
       persistSession(data);
-      await redirectAfterAuth(true);
+      setOnboardingCompleted(false);
+      navigate('/verify-email', { replace: true });
     },
-    [persistSession, redirectAfterAuth],
+    [persistSession, navigate],
   );
+
+  const verifyOtp = useCallback(
+    async (code) => {
+      const updatedUser = await authService.verifyOtp({ code });
+      setUser(updatedUser);
+      navigate('/onboarding', { replace: true });
+      return updatedUser;
+    },
+    [navigate],
+  );
+
+  const resendOtp = useCallback(async () => {
+    return await authService.resendOtp();
+  }, []);
 
   const logout = useCallback(() => {
     localStorage.removeItem(TOKEN_STORAGE_KEY);
@@ -135,10 +157,12 @@ export function AuthProvider({ children }) {
     const isCoach = Boolean(user?.isCoach || user?.role === 'COACH' || upperRoles.includes('COACH'));
     const isSeller = Boolean(user?.isSeller || user?.role === 'SELLER' || upperRoles.includes('SELLER'));
     const isStaff = isAdmin || isCoach || isSeller;
+    const isVerified = Boolean(user?.isVerified);
 
     return {
       user,
       isAuthenticated: Boolean(user),
+      isVerified,
       isAdmin,
       isCoach,
       isSeller,
@@ -149,10 +173,12 @@ export function AuthProvider({ children }) {
       loading,
       login,
       register,
+      verifyOtp,
+      resendOtp,
       logout,
       updateUser,
     };
-  }, [user, onboardingCompleted, loading, login, register, logout, updateUser]);
+  }, [user, onboardingCompleted, loading, login, register, verifyOtp, resendOtp, logout, updateUser]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -70,6 +70,9 @@ public class User {
     /** Referral code of the user who invited this member (null if none). */
     private String referredBy;
 
+    /** Whether email address has been verified via OTP. */
+    private boolean isVerified = false;
+
     @CreatedDate
     private Instant createdAt;
 
@@ -295,6 +298,14 @@ public class User {
 
     public void setReferredBy(String referredBy) {
         this.referredBy = referredBy;
+    }
+
+    public boolean isVerified() {
+        return isVerified;
+    }
+
+    public void setVerified(boolean isVerified) {
+        this.isVerified = isVerified;
     }
 
     @Override

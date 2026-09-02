@@ -38,4 +38,12 @@ export const authService = {
   resetPassword({ token, newPassword }) {
     return api.post('/auth/reset-password', { token, newPassword }).then((response) => response.data);
   },
+
+  verifyOtp({ code }) {
+    return api.post('/auth/verify-otp', { code }).then((response) => response.data);
+  },
+
+  resendOtp() {
+    return api.post('/auth/resend-otp').then((response) => response.data);
+  },
 };

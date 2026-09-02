@@ -8,13 +8,16 @@ import FullScreenLoader from '../components/FullScreenLoader';
  * depending on whether they have finished setup.
  */
 export default function PublicOnlyRoute({ children }) {
-  const { isAuthenticated, onboardingCompleted, loading } = useAuth();
+  const { isAuthenticated, isVerified, onboardingCompleted, loading } = useAuth();
 
   if (loading) {
     return <FullScreenLoader />;
   }
 
   if (isAuthenticated) {
+    if (!isVerified) {
+      return <Navigate to="/verify-email" replace />;
+    }
     return <Navigate to={onboardingCompleted ? '/dashboard' : '/onboarding'} replace />;
   }
 
