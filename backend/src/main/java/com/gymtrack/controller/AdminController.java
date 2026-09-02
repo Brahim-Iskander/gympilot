@@ -62,11 +62,29 @@ public class AdminController {
         return adminService.getUserById(id);
     }
 
-    /** PATCH /api/admin/users/{id}/role - Update user role (USER, COACH, ADMIN) */
+    /** PATCH /api/admin/users/{id}/role - Legacy update user single role (USER, COACH, SELLER, ADMIN) */
     @PatchMapping("/users/{id}/role")
     public AdminUserResponse updateUserRole(@PathVariable String id, @RequestBody Map<String, String> body) {
         String role = body != null ? body.get("role") : null;
         return adminService.updateUserRole(id, role);
+    }
+
+    /** PATCH /api/admin/users/{id}/roles - Update user multi-capability roles with audit logging */
+    @PatchMapping("/users/{id}/roles")
+    public AdminUserResponse updateUserCapabilities(
+            @PathVariable String id,
+            @RequestBody com.gymtrack.dto.UpdateUserRolesRequest request,
+            java.security.Principal principal) {
+        String adminEmail = principal != null ? principal.getName() : "admin@gympilot.com";
+        return adminService.updateUserCapabilities(id, request, adminEmail);
+    }
+
+    /** GET /api/admin/roles/audit-logs - View role change audit history */
+    @GetMapping("/roles/audit-logs")
+    public PagedResponse<com.gymtrack.dto.RoleAuditLogResponse> getRoleAuditLogs(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "15") int size) {
+        return adminService.getRoleAuditLogs(page, size);
     }
 
     /** PATCH /api/admin/users/{id}/membership - Update user membership (tier & status) */

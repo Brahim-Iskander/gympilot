@@ -7,6 +7,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import App from './App';
 import { getTheme } from './theme';
 import { AuthProvider } from './context/AuthContext';
+import { CartProvider } from './context/CartContext';
 import { ThemeProvider as CustomThemeProvider, useThemeMode } from './context/ThemeContext';
 import { LanguageProvider, useLanguage } from './i18n';
 import './styles/global.css';
@@ -20,7 +21,9 @@ function ThemedApp() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <AuthProvider>
-        <App />
+        <CartProvider>
+          <App />
+        </CartProvider>
       </AuthProvider>
     </ThemeProvider>
   );

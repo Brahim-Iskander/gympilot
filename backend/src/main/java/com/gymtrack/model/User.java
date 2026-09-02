@@ -31,8 +31,16 @@ public class User {
     /** BCrypt hash - never exposed outside of authentication logic. */
     private String password;
 
-    /** USER or ADMIN. Defaults to USER for all new registrations. */
+    /** USER, COACH, SELLER, ADMIN. Supports multiple simultaneous capabilities. */
+    private java.util.Set<String> roles = new java.util.HashSet<>(java.util.Set.of("USER"));
+
+    /** Legacy single role field for backward compatibility */
     private String role = "USER";
+
+    /** Seller store details (if user is granted SELLER capability) */
+    private String storeName;
+    private String storeBio;
+    private String storeLogo;
 
     /** Whether this account has been banned by an admin. */
     private boolean banned = false;
@@ -73,6 +81,8 @@ public class User {
         this.lastName = lastName;
         this.email = email;
         this.password = password;
+        this.roles = new java.util.HashSet<>(java.util.Set.of("USER"));
+        this.role = "USER";
     }
 
     public String getId() {
@@ -115,12 +125,92 @@ public class User {
         this.password = password;
     }
 
+    public java.util.Set<String> getRoles() {
+        if (roles == null || roles.isEmpty()) {
+            roles = new java.util.HashSet<>();
+            if (role != null && !role.isBlank()) {
+                roles.add(role.toUpperCase());
+            } else {
+                roles.add("USER");
+            }
+        }
+        return roles;
+    }
+
+    public void setRoles(java.util.Set<String> roles) {
+        this.roles = roles != null ? new java.util.HashSet<>(roles) : new java.util.HashSet<>(java.util.Set.of("USER"));
+        if (this.roles.isEmpty()) {
+            this.roles.add("USER");
+        }
+        // Sync primary role
+        if (this.roles.contains("ADMIN")) {
+            this.role = "ADMIN";
+        } else if (this.roles.contains("COACH")) {
+            this.role = "COACH";
+        } else if (this.roles.contains("SELLER")) {
+            this.role = "SELLER";
+        } else {
+            this.role = "USER";
+        }
+    }
+
+    public boolean hasRole(String roleToCheck) {
+        if (roleToCheck == null) return false;
+        return getRoles().stream().anyMatch(r -> r.equalsIgnoreCase(roleToCheck));
+    }
+
+    public boolean isSeller() {
+        return hasRole("SELLER");
+    }
+
+    public boolean isCoach() {
+        return hasRole("COACH");
+    }
+
+    public boolean isAdmin() {
+        return hasRole("ADMIN");
+    }
+
     public String getRole() {
+        if (role == null || role.isBlank()) {
+            if (isAdmin()) return "ADMIN";
+            if (isCoach()) return "COACH";
+            if (isSeller()) return "SELLER";
+            return "USER";
+        }
         return role;
     }
 
     public void setRole(String role) {
-        this.role = role;
+        this.role = role != null ? role.toUpperCase() : "USER";
+        if (this.roles == null) {
+            this.roles = new java.util.HashSet<>();
+        }
+        this.roles.add(this.role);
+    }
+
+    public String getStoreName() {
+        return storeName;
+    }
+
+    public void setStoreName(String storeName) {
+        this.storeName = storeName;
+    }
+
+    public String getStoreBio() {
+        return storeBio;
+    }
+
+    public void setStoreBio(String storeBio) {
+        this.storeBio = storeBio;
+    }
+
+    public String getStoreLogo() {
+        return storeLogo;
+    }
+
+    public void setStoreLogo(String storeLogo) {
+        this.storeLogo = storeLogo;
     }
 
     public boolean isBanned() {
@@ -210,6 +300,6 @@ public class User {
     @Override
     public String toString() {
         // Never include the password hash in logs.
-        return "User{id='" + id + "', email='" + email + "', role='" + role + "'}";
+        return "User{id='" + id + "', email='" + email + "', roles=" + getRoles() + "}";
     }
 }

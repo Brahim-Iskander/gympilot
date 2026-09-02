@@ -1,11 +1,12 @@
 package com.gymtrack.dto;
 
 import java.time.Instant;
+import java.util.Set;
 
 import com.gymtrack.model.User;
 
 /**
- * Extended user info for admin user management.
+ * Extended user info for admin user management with multi-capability support.
  */
 public record AdminUserResponse(
         String id,
@@ -13,6 +14,10 @@ public record AdminUserResponse(
         String lastName,
         String email,
         String role,
+        Set<String> roles,
+        boolean isSeller,
+        boolean isCoach,
+        boolean isAdmin,
         boolean banned,
         Instant bannedAt,
         Instant lastLoginAt,
@@ -30,6 +35,10 @@ public record AdminUserResponse(
                 user.getLastName(),
                 user.getEmail(),
                 user.getRole() != null ? user.getRole() : "USER",
+                user.getRoles(),
+                user.isSeller(),
+                user.isCoach(),
+                user.isAdmin(),
                 user.isBanned(),
                 user.getBannedAt(),
                 user.getLastLoginAt(),

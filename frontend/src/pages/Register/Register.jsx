@@ -4,7 +4,6 @@ import {
   Alert,
   Box,
   Button,
-  Grid,
   IconButton,
   InputAdornment,
   Link,
@@ -21,6 +20,7 @@ import PersonAddAlt1RoundedIcon from '@mui/icons-material/PersonAddAlt1Rounded';
 import CardGiftcardRoundedIcon from '@mui/icons-material/CardGiftcardRounded';
 import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
+import CelebrationRoundedIcon from '@mui/icons-material/CelebrationRounded';
 
 import AuthShell from '../../components/AuthShell';
 import SEO from '../../components/SEO';
@@ -63,7 +63,7 @@ export default function Register() {
             setReferralInfo(res);
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     }
   }, [initialRef]);
 
@@ -123,27 +123,26 @@ export default function Register() {
         path="/register"
       />
       <AuthShell
-      title={t('auth.createAccount')}
-      subtitle={t('auth.registerSubtitle')}
-      footer={
-        <Typography variant="body2" color="text.secondary">
-          {t('auth.alreadyAccount')}{' '}
-          <Link component={RouterLink} to="/login" sx={{ color: 'primary.main', fontWeight: 600 }}>
-            {t('auth.signIn')}
-          </Link>
-        </Typography>
-      }
-    >
-      <Box component="form" onSubmit={handleSubmit} noValidate>
-        <Stack spacing={2.5}>
-          {formError && (
-            <Alert severity="error" variant="outlined">
-              {formError}
-            </Alert>
-          )}
+        title={t('auth.createAccount')}
+        subtitle={t('auth.registerSubtitle')}
+        footer={
+          <Typography variant="body2" color="text.secondary">
+            {t('auth.alreadyAccount')}{' '}
+            <Link component={RouterLink} to="/login" sx={{ color: 'primary.main', fontWeight: 600 }}>
+              {t('auth.signIn')}
+            </Link>
+          </Typography>
+        }
+      >
+        <Box component="form" onSubmit={handleSubmit} noValidate>
+          <Stack spacing={2.5}>
+            {formError && (
+              <Alert severity="error" variant="outlined">
+                {formError}
+              </Alert>
+            )}
 
-          <Grid container spacing={2.5}>
-            <Grid item xs={12} sm={6}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2.5}>
               <TextField
                 label={t('auth.firstName')}
                 autoComplete="given-name"
@@ -154,8 +153,6 @@ export default function Register() {
                 error={Boolean(errors.firstName)}
                 helperText={errors.firstName}
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
               <TextField
                 label={t('auth.lastName')}
                 autoComplete="family-name"
@@ -166,144 +163,143 @@ export default function Register() {
                 error={Boolean(errors.lastName)}
                 helperText={errors.lastName}
               />
-            </Grid>
-          </Grid>
+            </Stack>
 
-          <TextField
-            label={t('auth.email')}
-            type="email"
-            autoComplete="email"
-            required
-            fullWidth
-            value={values.email}
-            onChange={handleChange('email')}
-            error={Boolean(errors.email)}
-            helperText={errors.email}
-          />
+            <TextField
+              label={t('auth.email')}
+              type="email"
+              autoComplete="email"
+              required
+              fullWidth
+              value={values.email}
+              onChange={handleChange('email')}
+              error={Boolean(errors.email)}
+              helperText={errors.email}
+            />
 
-          <TextField
-            label={t('auth.password')}
-            type={showPassword ? 'text' : 'password'}
-            autoComplete="new-password"
-            required
-            fullWidth
-            value={values.password}
-            onChange={handleChange('password')}
-            error={Boolean(errors.password)}
-            helperText={errors.password ?? t('auth.passwordHint')}
-            InputProps={passwordVisibilityProps}
-          />
+            <TextField
+              label={t('auth.password')}
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="new-password"
+              required
+              fullWidth
+              value={values.password}
+              onChange={handleChange('password')}
+              error={Boolean(errors.password)}
+              helperText={errors.password ?? t('auth.passwordHint')}
+              InputProps={passwordVisibilityProps}
+            />
 
-          <TextField
-            label={t('auth.confirmPassword')}
-            type={showPassword ? 'text' : 'password'}
-            autoComplete="new-password"
-            required
-            fullWidth
-            value={values.confirmPassword}
-            onChange={handleChange('confirmPassword')}
-            error={Boolean(errors.confirmPassword)}
-            helperText={errors.confirmPassword}
-            InputProps={passwordVisibilityProps}
-          />
+            <TextField
+              label={t('auth.confirmPassword')}
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="new-password"
+              required
+              fullWidth
+              value={values.confirmPassword}
+              onChange={handleChange('confirmPassword')}
+              error={Boolean(errors.confirmPassword)}
+              helperText={errors.confirmPassword}
+              InputProps={passwordVisibilityProps}
+            />
 
-          {/* Referral Reward Banner / Input */}
-          {referralInfo?.valid ? (
-            <Card
-              sx={{
-                p: 2,
-                borderRadius: 2.5,
-                bgcolor: 'rgba(198, 255, 62, 0.08)',
-                border: '1px solid rgba(198, 255, 62, 0.3)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 1.5,
-              }}
-            >
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <Box
-                  sx={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: 2,
-                    bgcolor: 'rgba(198, 255, 62, 0.2)',
-                    color: 'primary.main',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  <CardGiftcardRoundedIcon fontSize="small" />
-                </Box>
-                <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }}>
-                    Friend Referral Applied! 🎉
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                    Invited by <strong>{referralInfo.referrerName}</strong> (+10 bonus points)
-                  </Typography>
-                </Box>
-              </Stack>
-              <Chip
-                label="+10 PTS"
-                size="small"
+            {/* Referral Reward Banner / Input */}
+            {referralInfo?.valid ? (
+              <Card
                 sx={{
-                  bgcolor: 'primary.main',
-                  color: '#000',
-                  fontWeight: 800,
-                  fontSize: '0.75rem',
+                  p: 2,
+                  borderRadius: 2.5,
+                  bgcolor: 'rgba(198, 255, 62, 0.08)',
+                  border: '1px solid rgba(198, 255, 62, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 1.5,
                 }}
-              />
-            </Card>
-          ) : (
-            <Box>
-              {!showReferralInput ? (
-                <Button
-                  size="small"
-                  onClick={() => setShowReferralInput(true)}
-                  startIcon={<CardGiftcardRoundedIcon sx={{ fontSize: 16 }} />}
-                  sx={{ color: 'text.secondary', textTransform: 'none', px: 0, '&:hover': { color: 'primary.main' } }}
-                >
-                  Have a referral or invite code?
-                </Button>
-              ) : (
-                <Collapse in={showReferralInput}>
-                  <TextField
-                    label="Referral / Invite Code (Optional)"
-                    placeholder="e.g. ALEX8392"
-                    fullWidth
-                    size="small"
-                    value={referralCode}
-                    onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                    helperText="Enter a friend's code to unlock 10 bonus points on registration"
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <CardGiftcardRoundedIcon sx={{ fontSize: 18, color: 'primary.main' }} />
-                        </InputAdornment>
-                      ),
+              >
+                <Stack direction="row" spacing={1.5} alignItems="center">
+                  <Box
+                    sx={{
+                      width: 38,
+                      height: 38,
+                      borderRadius: 2,
+                      bgcolor: 'rgba(198, 255, 62, 0.2)',
+                      color: 'primary.main',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
                     }}
-                  />
-                </Collapse>
-              )}
-            </Box>
-          )}
+                  >
+                    <CardGiftcardRoundedIcon fontSize="small" />
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      Friend Referral Applied! <CelebrationRoundedIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      Invited by <strong>{referralInfo.referrerName}</strong> (+10 bonus points)
+                    </Typography>
+                  </Box>
+                </Stack>
+                <Chip
+                  label="+10 PTS"
+                  size="small"
+                  sx={{
+                    bgcolor: 'primary.main',
+                    color: '#000',
+                    fontWeight: 800,
+                    fontSize: '0.75rem',
+                  }}
+                />
+              </Card>
+            ) : (
+              <Box>
+                {!showReferralInput ? (
+                  <Button
+                    size="small"
+                    onClick={() => setShowReferralInput(true)}
+                    startIcon={<CardGiftcardRoundedIcon sx={{ fontSize: 16 }} />}
+                    sx={{ color: 'text.secondary', textTransform: 'none', px: 0, '&:hover': { color: 'primary.main' } }}
+                  >
+                    Have a referral or invite code?
+                  </Button>
+                ) : (
+                  <Collapse in={showReferralInput}>
+                    <TextField
+                      label="Referral / Invite Code (Optional)"
+                      placeholder="e.g. ALEX8392"
+                      fullWidth
+                      size="small"
+                      value={referralCode}
+                      onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                      helperText="Enter a friend's code to unlock 10 bonus points on registration"
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <CardGiftcardRoundedIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </Collapse>
+                )}
+              </Box>
+            )}
 
-          <Button
-            type="submit"
-            variant="contained"
-            size="large"
-            fullWidth
-            disabled={submitting}
-            startIcon={<PersonAddAlt1RoundedIcon />}
-          >
-            {submitting ? t('auth.creatingAccount') : t('auth.createAccount')}
-          </Button>
-        </Stack>
-      </Box>
-    </AuthShell>
+            <Button
+              type="submit"
+              variant="contained"
+              size="large"
+              fullWidth
+              disabled={submitting}
+              startIcon={<PersonAddAlt1RoundedIcon />}
+            >
+              {submitting ? t('auth.creatingAccount') : t('auth.createAccount')}
+            </Button>
+          </Stack>
+        </Box>
+      </AuthShell>
     </>
   );
 }

@@ -77,6 +77,9 @@ export function AuthProvider({ children }) {
   const persistSession = useCallback((data) => {
     localStorage.setItem(TOKEN_STORAGE_KEY, data.token);
     setUser(data.user);
+    try {
+      fitnessDataService.clearUserCache();
+    } catch (e) {}
   }, []);
 
   const redirectAfterAuth = useCallback(
@@ -124,13 +127,23 @@ export function AuthProvider({ children }) {
     setUser(nextUser);
   }, []);
 
-  const value = useMemo(
-    () => ({
+  const value = useMemo(() => {
+    const roles = Array.isArray(user?.roles) ? user.roles : (user?.role ? [user.role] : ['USER']);
+    const upperRoles = roles.map((r) => String(r).toUpperCase());
+
+    const isAdmin = Boolean(user?.isAdmin || user?.role === 'ADMIN' || upperRoles.includes('ADMIN'));
+    const isCoach = Boolean(user?.isCoach || user?.role === 'COACH' || upperRoles.includes('COACH'));
+    const isSeller = Boolean(user?.isSeller || user?.role === 'SELLER' || upperRoles.includes('SELLER'));
+    const isStaff = isAdmin || isCoach || isSeller;
+
+    return {
       user,
       isAuthenticated: Boolean(user),
-      isAdmin: user?.role === 'ADMIN',
-      isCoach: user?.role === 'COACH',
-      isStaff: user?.role === 'ADMIN' || user?.role === 'COACH',
+      isAdmin,
+      isCoach,
+      isSeller,
+      isStaff,
+      roles: upperRoles,
       onboardingCompleted,
       setOnboardingCompleted,
       loading,
@@ -138,9 +151,8 @@ export function AuthProvider({ children }) {
       register,
       logout,
       updateUser,
-    }),
-    [user, onboardingCompleted, loading, login, register, logout, updateUser],
-  );
+    };
+  }, [user, onboardingCompleted, loading, login, register, logout, updateUser]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

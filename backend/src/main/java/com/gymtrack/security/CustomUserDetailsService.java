@@ -34,12 +34,14 @@ public class CustomUserDetailsService implements UserDetailsService {
             throw new DisabledException("This account has been banned.");
         }
 
-        String role = user.getRole() != null ? user.getRole() : "USER";
+        List<SimpleGrantedAuthority> authorities = user.getRoles().stream()
+                .map(r -> new SimpleGrantedAuthority("ROLE_" + r.toUpperCase()))
+                .collect(java.util.stream.Collectors.toList());
 
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getEmail())
                 .password(user.getPassword())
-                .authorities(List.of(new SimpleGrantedAuthority("ROLE_" + role)))
+                .authorities(authorities)
                 .build();
     }
 }

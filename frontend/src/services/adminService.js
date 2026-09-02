@@ -25,6 +25,14 @@ export const adminService = {
     return api.patch(`/admin/users/${id}/role`, { role }).then((res) => res.data);
   },
 
+  updateUserCapabilities(id, { roles, isSeller, isCoach, isAdmin, notes }) {
+    return api.patch(`/admin/users/${id}/roles`, { roles, isSeller, isCoach, isAdmin, notes }).then((res) => res.data);
+  },
+
+  getRoleAuditLogs(params = {}) {
+    return api.get('/admin/roles/audit-logs', { params }).then((res) => res.data);
+  },
+
   updateUserMembership(id, { membershipTier, membershipStatus }) {
     return api.patch(`/admin/users/${id}/membership`, { membershipTier, membershipStatus }).then((res) => res.data);
   },

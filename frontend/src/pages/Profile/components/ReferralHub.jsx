@@ -162,8 +162,8 @@ export default function ReferralHub() {
                 sx={{ bgcolor: 'rgba(198,255,62,0.15)', color: '#C6FF3E', fontWeight: 800, border: '1px solid rgba(198,255,62,0.3)' }}
               />
             </Stack>
-            <Typography variant="h4" sx={{ fontWeight: 800, fontFamily: "'Sora', sans-serif", mb: 0.5 }}>
-              Invite Friends, Earn Points 🎁
+            <Typography variant="h4" sx={{ fontWeight: 800, fontFamily: "'Sora', sans-serif", mb: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+              Invite Friends, Earn Points <CardGiftcardRoundedIcon sx={{ fontSize: 32, color: 'primary.main' }} />
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 520 }}>
               Give friends <strong>10 bonus points</strong> when they sign up, and you will earn <strong>5 points</strong> for every member who joins with your link.

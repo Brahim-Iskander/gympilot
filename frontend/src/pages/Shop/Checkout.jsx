@@ -1,0 +1,520 @@
+import { useState } from 'react';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import {
+  Box,
+  Container,
+  Typography,
+  Grid,
+  Card,
+  Stack,
+  TextField,
+  Button,
+  Divider,
+  Radio,
+  RadioGroup,
+  FormControlLabel,
+  FormControl,
+  FormLabel,
+  Avatar,
+  Paper,
+  Alert,
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+} from '@mui/material';
+import LocalShippingRoundedIcon from '@mui/icons-material/LocalShippingRounded';
+import CreditCardRoundedIcon from '@mui/icons-material/CreditCardRounded';
+import PaymentsRoundedIcon from '@mui/icons-material/PaymentsRounded';
+import CheckCircleOutlineRoundedIcon from '@mui/icons-material/CheckCircleOutlineRounded';
+import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
+import LockRoundedIcon from '@mui/icons-material/LockRounded';
+import EmojiEventsRoundedIcon from '@mui/icons-material/EmojiEventsRounded';
+
+import SEO from '../../components/SEO';
+import { useCart } from '../../context/CartContext';
+import { useAuth } from '../../context/AuthContext';
+import { orderService } from '../../services/orderService';
+
+export default function Checkout() {
+  const { items, totals, pointsToUse, clearCart } = useCart();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const [shippingAddress, setShippingAddress] = useState({
+    fullName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '',
+    email: user?.email || '',
+    address: '',
+    city: '',
+    postalCode: '',
+    country: 'United States',
+    phone: '',
+  });
+
+  const [paymentMethod, setPaymentMethod] = useState('CASH_ON_DELIVERY');
+  const [cardDetails, setCardDetails] = useState({
+    cardNumber: '',
+    expiry: '',
+    cvc: '',
+  });
+
+  const [orderNotes, setOrderNotes] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  // Confirmation modal
+  const [confirmedOrder, setConfirmedOrder] = useState(null);
+
+  const handleAddressChange = (field) => (e) => {
+    setShippingAddress((prev) => ({ ...prev, [field]: e.target.value }));
+  };
+
+  const handleSubmitOrder = async (e) => {
+    e.preventDefault();
+    if (!shippingAddress.fullName || !shippingAddress.address || !shippingAddress.city || !shippingAddress.phone) {
+      setError('Please fill in all required shipping details.');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setError('');
+
+      const orderPayload = {
+        items: items.map((i) => ({
+          productId: i.productId,
+          quantity: i.quantity,
+        })),
+        shippingAddress,
+        paymentMethod,
+        pointsToUse,
+        notes: orderNotes,
+      };
+
+      const orderResult = await orderService.createOrder(orderPayload);
+      clearCart();
+      setConfirmedOrder(orderResult);
+    } catch (err) {
+      console.error('Failed to place order:', err);
+      setError(err.response?.data?.message || err.message || 'Failed to complete order. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (items.length === 0 && !confirmedOrder) {
+    return (
+      <Container maxWidth="md" sx={{ py: 10, textAlign: 'center' }}>
+        <Typography variant="h5" sx={{ fontWeight: 800, mb: 2 }}>
+          Your cart is empty
+        </Typography>
+        <Button component={RouterLink} to="/shop" variant="contained">
+          Back to Shop
+        </Button>
+      </Container>
+    );
+  }
+
+  return (
+    <>
+      <SEO title="Secure Checkout — GymPilot Shop" description="Complete your supplement and equipment order." path="/shop/checkout" noIndex />
+
+      <Container maxWidth="xl" sx={{ py: { xs: 3, md: 5 } }}>
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 4 }}>
+          <Button component={RouterLink} to="/shop/cart" startIcon={<ArrowBackRoundedIcon />} sx={{ color: 'text.secondary', fontWeight: 700 }}>
+            Back to Cart
+          </Button>
+        </Stack>
+
+        <Typography variant="h4" sx={{ fontFamily: "'Sora', sans-serif", fontWeight: 800, mb: 4 }}>
+          Secure Checkout
+        </Typography>
+
+        {error && (
+          <Alert severity="error" sx={{ mb: 4 }} onClose={() => setError('')}>
+            {error}
+          </Alert>
+        )}
+
+        <form onSubmit={handleSubmitOrder}>
+          <Grid container spacing={4}>
+            {/* Left Column: Shipping & Payment */}
+            <Grid item xs={12} lg={7}>
+              <Stack spacing={4}>
+                {/* 1. Shipping Address */}
+                <Card elevation={0} sx={{ p: 3.5, borderRadius: 3.5, border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+                  <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 3 }}>
+                    <LocalShippingRoundedIcon sx={{ color: 'primary.main', fontSize: 24 }} />
+                    <Typography variant="h6" sx={{ fontWeight: 800, fontFamily: "'Sora', sans-serif" }}>
+                      1. Delivery Address
+                    </Typography>
+                  </Stack>
+
+                  <Grid container spacing={2.5}>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        label="Full Name *"
+                        value={shippingAddress.fullName}
+                        onChange={handleAddressChange('fullName')}
+                        fullWidth
+                        size="small"
+                        required
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        label="Phone Number *"
+                        value={shippingAddress.phone}
+                        onChange={handleAddressChange('phone')}
+                        fullWidth
+                        size="small"
+                        placeholder="+1 (555) 000-0000"
+                        required
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        label="Street Address *"
+                        value={shippingAddress.address}
+                        onChange={handleAddressChange('address')}
+                        fullWidth
+                        size="small"
+                        placeholder="House / Apt, Street Name"
+                        required
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <TextField
+                        label="City *"
+                        value={shippingAddress.city}
+                        onChange={handleAddressChange('city')}
+                        fullWidth
+                        size="small"
+                        required
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <TextField
+                        label="Postal Code *"
+                        value={shippingAddress.postalCode}
+                        onChange={handleAddressChange('postalCode')}
+                        fullWidth
+                        size="small"
+                        required
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <TextField
+                        label="Country *"
+                        value={shippingAddress.country}
+                        onChange={handleAddressChange('country')}
+                        fullWidth
+                        size="small"
+                        required
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        label="Order Notes / Delivery Instructions (Optional)"
+                        value={orderNotes}
+                        onChange={(e) => setOrderNotes(e.target.value)}
+                        fullWidth
+                        multiline
+                        rows={2}
+                        size="small"
+                        placeholder="e.g., Leave package at front door or call upon arrival"
+                      />
+                    </Grid>
+                  </Grid>
+                </Card>
+
+                {/* 2. Payment Method */}
+                <Card elevation={0} sx={{ p: 3.5, borderRadius: 3.5, border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+                  <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 3 }}>
+                    <CreditCardRoundedIcon sx={{ color: 'primary.main', fontSize: 24 }} />
+                    <Typography variant="h6" sx={{ fontWeight: 800, fontFamily: "'Sora', sans-serif" }}>
+                      2. Payment Method
+                    </Typography>
+                  </Stack>
+
+                  <FormControl component="fieldset" fullWidth>
+                    <RadioGroup value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+                      <Paper
+                        elevation={0}
+                        sx={{
+                          p: 2,
+                          mb: 1.5,
+                          borderRadius: 2,
+                          border: '1px solid',
+                          borderColor: paymentMethod === 'CASH_ON_DELIVERY' ? 'primary.main' : 'divider',
+                          bgcolor: paymentMethod === 'CASH_ON_DELIVERY' ? 'rgba(198,255,62,0.04)' : 'transparent',
+                        }}
+                      >
+                        <FormControlLabel
+                          value="CASH_ON_DELIVERY"
+                          control={<Radio sx={{ color: 'primary.main', '&.Mui-checked': { color: 'primary.main' } }} />}
+                          label={
+                            <Box>
+                              <Typography variant="body2" sx={{ fontWeight: 700 }}>Cash on Delivery / Pay on Hand</Typography>
+                              <Typography variant="caption" color="text.secondary">Pay with cash or card upon delivery to your address.</Typography>
+                            </Box>
+                          }
+                        />
+                      </Paper>
+
+                      <Paper
+                        elevation={0}
+                        sx={{
+                          p: 2,
+                          borderRadius: 2,
+                          border: '1px solid',
+                          borderColor: paymentMethod === 'CREDIT_CARD' ? 'primary.main' : 'divider',
+                          bgcolor: paymentMethod === 'CREDIT_CARD' ? 'rgba(198,255,62,0.04)' : 'transparent',
+                        }}
+                      >
+                        <FormControlLabel
+                          value="CREDIT_CARD"
+                          control={<Radio sx={{ color: 'primary.main', '&.Mui-checked': { color: 'primary.main' } }} />}
+                          label={
+                            <Box>
+                              <Typography variant="body2" sx={{ fontWeight: 700 }}>Credit / Debit Card (Instant Checkout)</Typography>
+                              <Typography variant="caption" color="text.secondary">Encrypted 256-bit secure payment simulation.</Typography>
+                            </Box>
+                          }
+                        />
+
+                        {paymentMethod === 'CREDIT_CARD' && (
+                          <Grid container spacing={2} sx={{ mt: 1 }}>
+                            <Grid item xs={12}>
+                              <TextField
+                                label="Card Number"
+                                placeholder="4242 •••• •••• 4242"
+                                size="small"
+                                fullWidth
+                                value={cardDetails.cardNumber}
+                                onChange={(e) => setCardDetails({ ...cardDetails, cardNumber: e.target.value })}
+                              />
+                            </Grid>
+                            <Grid item xs={6}>
+                              <TextField
+                                label="MM/YY"
+                                placeholder="12/28"
+                                size="small"
+                                fullWidth
+                                value={cardDetails.expiry}
+                                onChange={(e) => setCardDetails({ ...cardDetails, expiry: e.target.value })}
+                              />
+                            </Grid>
+                            <Grid item xs={6}>
+                              <TextField
+                                label="CVC"
+                                placeholder="123"
+                                size="small"
+                                fullWidth
+                                value={cardDetails.cvc}
+                                onChange={(e) => setCardDetails({ ...cardDetails, cvc: e.target.value })}
+                              />
+                            </Grid>
+                          </Grid>
+                        )}
+                      </Paper>
+                    </RadioGroup>
+                  </FormControl>
+                </Card>
+              </Stack>
+            </Grid>
+
+            {/* Right Column: Order Review */}
+            <Grid item xs={12} lg={5}>
+              <Card
+                elevation={0}
+                sx={{
+                  p: 3.5,
+                  borderRadius: 3.5,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  bgcolor: 'background.paper',
+                  position: 'sticky',
+                  top: 90,
+                }}
+              >
+                <Typography variant="h6" sx={{ fontFamily: "'Sora', sans-serif", fontWeight: 800, mb: 2.5 }}>
+                  Order Review ({totals.itemCount} items)
+                </Typography>
+
+                {/* Items preview */}
+                <Stack spacing={2} sx={{ mb: 3, maxHeight: 240, overflowY: 'auto', pr: 1 }}>
+                  {items.map((item) => (
+                    <Stack key={item.productId} direction="row" spacing={1.5} alignItems="center">
+                      <Avatar src={item.image} variant="rounded" sx={{ width: 48, height: 48, borderRadius: 1.5 }} />
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700 }} noWrap>
+                          {item.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {item.quantity}x @ ${Number(item.price).toFixed(2)}
+                        </Typography>
+                      </Box>
+                      <Typography variant="body2" sx={{ fontWeight: 800 }}>
+                        ${(Number(item.price) * item.quantity).toFixed(2)}
+                      </Typography>
+                    </Stack>
+                  ))}
+                </Stack>
+
+                <Divider sx={{ my: 2 }} />
+
+                {/* Totals breakdown */}
+                <Stack spacing={1.5} sx={{ mb: 3 }}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Typography variant="body2" color="text.secondary">Subtotal</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>${totals.subtotal.toFixed(2)}</Typography>
+                  </Stack>
+
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Typography variant="body2" color="text.secondary">Shipping</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: totals.shipping === 0 ? 'success.main' : 'text.primary' }}>
+                      {totals.shipping === 0 ? 'FREE' : `$${totals.shipping.toFixed(2)}`}
+                    </Typography>
+                  </Stack>
+
+                  {totals.pointsDiscount > 0 && (
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <Typography variant="body2" sx={{ color: 'primary.main' }}>Reward Points Discount</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 800, color: 'primary.main' }}>
+                        -${totals.pointsDiscount.toFixed(2)}
+                      </Typography>
+                    </Stack>
+                  )}
+
+                  <Divider />
+
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>Final Total</Typography>
+                    <Typography variant="h5" sx={{ fontWeight: 900, color: 'primary.main', fontFamily: "'Sora', sans-serif" }}>
+                      ${totals.total.toFixed(2)}
+                    </Typography>
+                  </Stack>
+                </Stack>
+
+                <Button
+                  type="submit"
+                  variant="contained"
+                  fullWidth
+                  size="large"
+                  disabled={submitting}
+                  startIcon={submitting ? <CircularProgress size={20} /> : <LockRoundedIcon />}
+                  sx={{ fontWeight: 800, py: 1.5, borderRadius: 2.5 }}
+                >
+                  {submitting ? 'Placing Order...' : `Place Order ($${totals.total.toFixed(2)})`}
+                </Button>
+
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center', mt: 2 }}>
+                  By placing this order you agree to GymPilot's Storefront & Privacy Policies.
+                </Typography>
+              </Card>
+            </Grid>
+          </Grid>
+        </form>
+
+        {/* Order Confirmation Modal */}
+        <Dialog
+          open={!!confirmedOrder}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: {
+              borderRadius: 4,
+              border: '1px solid',
+              borderColor: 'primary.main',
+              bgcolor: 'background.paper',
+              backgroundImage: 'none',
+              p: 2,
+              textAlign: 'center',
+            },
+          }}
+        >
+          <DialogTitle>
+            <Box
+              sx={{
+                width: 72,
+                height: 72,
+                borderRadius: '50%',
+                bgcolor: 'rgba(198,255,62,0.15)',
+                color: 'primary.main',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mx: 'auto',
+                mb: 2,
+              }}
+            >
+              <CheckCircleOutlineRoundedIcon sx={{ fontSize: 44 }} />
+            </Box>
+            <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: "'Sora', sans-serif" }}>
+              Order Confirmed!
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+              Order Reference #{confirmedOrder?.orderNumber}
+            </Typography>
+          </DialogTitle>
+
+          <DialogContent>
+            <Paper elevation={0} sx={{ p: 2.5, my: 2, bgcolor: 'rgba(255,255,255,0.02)', border: '1px solid', borderColor: 'divider', borderRadius: 2.5, textAlign: 'left' }}>
+              <Stack spacing={1}>
+                <Stack direction="row" justifyContent="space-between">
+                  <Typography variant="body2" color="text.secondary">Total Amount Paid:</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 800, color: 'primary.main' }}>
+                    ${confirmedOrder?.totalAmount?.toFixed(2)}
+                  </Typography>
+                </Stack>
+                <Stack direction="row" justifyContent="space-between">
+                  <Typography variant="body2" color="text.secondary">Payment Method:</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                    {confirmedOrder?.paymentMethod === 'CASH_ON_DELIVERY' ? 'Cash on Delivery' : 'Card Payment'}
+                  </Typography>
+                </Stack>
+                <Stack direction="row" justifyContent="space-between">
+                  <Typography variant="body2" color="text.secondary">Estimated Delivery:</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 700 }}>2 - 4 Business Days</Typography>
+                </Stack>
+                {confirmedOrder?.pointsEarned > 0 && (
+                  <Stack direction="row" justifyContent="space-between" sx={{ pt: 1, borderTop: '1px dashed', borderColor: 'divider' }}>
+                    <Typography variant="body2" sx={{ color: '#FFD700', fontWeight: 700 }}>Points Awarded:</Typography>
+                    <Typography variant="body2" sx={{ color: '#FFD700', fontWeight: 800 }}>
+                      +{confirmedOrder.pointsEarned} pts
+                    </Typography>
+                  </Stack>
+                )}
+              </Stack>
+            </Paper>
+
+            <Typography variant="body2" color="text.secondary">
+              We've dispatched your order details to your registered email. You can track this order in your Athlete Profile anytime.
+            </Typography>
+          </DialogContent>
+
+          <DialogActions sx={{ p: 2, justifyContent: 'center', gap: 2 }}>
+            <Button
+              component={RouterLink}
+              to="/shop/orders"
+              variant="contained"
+              sx={{ fontWeight: 700, borderRadius: 2, px: 3 }}
+            >
+              View Order History
+            </Button>
+            <Button
+              component={RouterLink}
+              to="/shop"
+              variant="outlined"
+              sx={{ fontWeight: 700, borderRadius: 2 }}
+            >
+              Continue Shopping
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Container>
+    </>
+  );
+}

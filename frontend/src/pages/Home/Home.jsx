@@ -21,7 +21,14 @@ export default function Home() {
         path="/"
       />
       <Navbar />
-      <Box component="main">
+      <Box
+        component="main"
+        sx={{
+          overflowX: 'hidden',
+          width: '100%',
+          maxWidth: '100vw',
+        }}
+      >
         <MediaShowcaseSlider />
         <HeroSection />
         <PartnersSection />

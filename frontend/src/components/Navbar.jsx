@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   AppBar,
+  Badge,        // ← add this
   Box,
   Button,
   Container,
@@ -17,6 +18,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import ShoppingBagRoundedIcon from '@mui/icons-material/ShoppingBagRounded';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
@@ -31,13 +33,16 @@ import { useAuth } from '../context/AuthContext';
 import { useThemeMode } from '../context/ThemeContext';
 import { useLanguage } from '../i18n';
 import { navigateThenScroll } from '../utils/navigation';
+import { useCart } from '../context/CartContext';
+import CartDrawer from './CartDrawer';
 
 const FEATURES_SECTION_ID = 'features';
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, isSeller, logout } = useAuth();
+  const { itemCount, openCartDrawer } = useCart();
   const { mode, toggleTheme } = useThemeMode();
   const { t, isRtl } = useLanguage();
   const location = useLocation();
@@ -58,14 +63,19 @@ export default function Navbar() {
 
   const navLinks = [
     { label: t('nav.features'), onClick: goFeatures },
+    { label: 'Shop', to: '/shop', onClick: closeDrawer },
   ];
 
   const authNavLinks = isAuthenticated
-    ? [{ label: t('nav.dashboard'), to: '/dashboard', onClick: closeDrawer }]
+    ? [
+      { label: t('nav.dashboard'), to: '/dashboard', onClick: closeDrawer },
+      ...(isSeller ? [{ label: 'Seller Dashboard', to: '/seller', onClick: closeDrawer }] : []),
+    ]
     : [];
 
   return (
     <>
+      <CartDrawer />
       <AppBar
         position="fixed"
         elevation={0}
@@ -94,6 +104,15 @@ export default function Navbar() {
                   {link.label}
                 </Button>
               ))}
+
+              {/* Cart Drawer Trigger */}
+              <Tooltip title="Shopping Cart">
+                <IconButton onClick={openCartDrawer} size="small" sx={{ border: '1px solid', borderColor: 'divider', color: 'text.primary' }}>
+                  <Badge badgeContent={itemCount} color="primary">
+                    <ShoppingBagRoundedIcon fontSize="small" />
+                  </Badge>
+                </IconButton>
+              </Tooltip>
 
               {/* Language selector */}
               <LanguageSelector />

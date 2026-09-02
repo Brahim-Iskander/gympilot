@@ -26,8 +26,12 @@ import com.gymtrack.dto.AdminUserResponse;
 import com.gymtrack.dto.AnalyticsChartResponse;
 import com.gymtrack.dto.AnalyticsChartResponse.DataPoint;
 import com.gymtrack.dto.PagedResponse;
+import com.gymtrack.dto.RoleAuditLogResponse;
+import com.gymtrack.dto.UpdateUserRolesRequest;
 import com.gymtrack.exception.InvalidCredentialsException;
+import com.gymtrack.model.RoleAuditLog;
 import com.gymtrack.model.User;
+import com.gymtrack.repository.RoleAuditLogRepository;
 import com.gymtrack.repository.SiteVisitRepository;
 import com.gymtrack.repository.UserRepository;
 
@@ -38,13 +42,16 @@ public class AdminService {
 
     private final UserRepository userRepository;
     private final SiteVisitRepository siteVisitRepository;
+    private final RoleAuditLogRepository roleAuditLogRepository;
     private final MongoTemplate mongoTemplate;
 
     public AdminService(UserRepository userRepository,
                         SiteVisitRepository siteVisitRepository,
+                        RoleAuditLogRepository roleAuditLogRepository,
                         MongoTemplate mongoTemplate) {
         this.userRepository = userRepository;
         this.siteVisitRepository = siteVisitRepository;
+        this.roleAuditLogRepository = roleAuditLogRepository;
         this.mongoTemplate = mongoTemplate;
     }
 
@@ -140,17 +147,128 @@ public class AdminService {
     }
 
     public AdminUserResponse updateUserRole(String id, String role) {
-        if (role == null || (!role.equalsIgnoreCase("USER") && !role.equalsIgnoreCase("COACH") && !role.equalsIgnoreCase("ADMIN"))) {
-            throw new IllegalArgumentException("Invalid role. Allowed roles: USER, COACH, ADMIN");
+        if (role == null || (!role.equalsIgnoreCase("USER") && !role.equalsIgnoreCase("COACH") && !role.equalsIgnoreCase("SELLER") && !role.equalsIgnoreCase("ADMIN"))) {
+            throw new IllegalArgumentException("Invalid role. Allowed roles: USER, COACH, SELLER, ADMIN");
         }
 
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new InvalidCredentialsException("User not found"));
 
+        java.util.Set<String> prevRoles = new java.util.HashSet<>(user.getRoles());
         user.setRole(role.toUpperCase());
         User saved = userRepository.save(user);
+
+        // Record audit log
+        RoleAuditLog auditLog = new RoleAuditLog(
+                user.getId(),
+                user.getEmail(),
+                (user.getFirstName() + " " + (user.getLastName() != null ? user.getLastName() : "")).trim(),
+                "system-admin",
+                "admin@gympilot.com",
+                prevRoles,
+                saved.getRoles(),
+                "UPDATED_ROLE_" + role.toUpperCase(),
+                "Updated primary role to " + role.toUpperCase()
+        );
+        roleAuditLogRepository.save(auditLog);
+
         log.info("Updated user {} role to {}", saved.getEmail(), role.toUpperCase());
         return AdminUserResponse.from(saved);
+    }
+
+    public AdminUserResponse updateUserCapabilities(String id, UpdateUserRolesRequest request, String adminEmail) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new InvalidCredentialsException("User not found"));
+
+        User admin = adminEmail != null ? userRepository.findByEmail(adminEmail).orElse(null) : null;
+        String adminId = admin != null ? admin.getId() : "system-admin";
+        String adminEmailStr = admin != null ? admin.getEmail() : "admin@gympilot.com";
+
+        java.util.Set<String> prevRoles = new java.util.HashSet<>(user.getRoles());
+        java.util.Set<String> newRoles = new java.util.HashSet<>(user.getRoles());
+
+        if (request.roles() != null) {
+            newRoles = new java.util.HashSet<>(request.roles());
+        }
+
+        if (request.isSeller() != null) {
+            if (request.isSeller()) {
+                newRoles.add("SELLER");
+            } else {
+                newRoles.remove("SELLER");
+            }
+        }
+
+        if (request.isCoach() != null) {
+            if (request.isCoach()) {
+                newRoles.add("COACH");
+            } else {
+                newRoles.remove("COACH");
+            }
+        }
+
+        if (request.isAdmin() != null) {
+            if (request.isAdmin()) {
+                newRoles.add("ADMIN");
+            } else {
+                newRoles.remove("ADMIN");
+            }
+        }
+
+        if (newRoles.isEmpty()) {
+            newRoles.add("USER");
+        }
+
+        user.setRoles(newRoles);
+        User saved = userRepository.save(user);
+
+        // Determine action label
+        String action = "UPDATED_CAPABILITIES";
+        if (newRoles.contains("SELLER") && !prevRoles.contains("SELLER")) {
+            action = "GRANTED_SELLER";
+        } else if (!newRoles.contains("SELLER") && prevRoles.contains("SELLER")) {
+            action = "REVOKED_SELLER";
+        } else if (newRoles.contains("COACH") && !prevRoles.contains("COACH")) {
+            action = "GRANTED_COACH";
+        } else if (!newRoles.contains("COACH") && prevRoles.contains("COACH")) {
+            action = "REVOKED_COACH";
+        } else if (newRoles.contains("ADMIN") && !prevRoles.contains("ADMIN")) {
+            action = "PROMOTED_ADMIN";
+        }
+
+        String userDisplayName = (user.getFirstName() + " " + (user.getLastName() != null ? user.getLastName() : "")).trim();
+        RoleAuditLog auditLog = new RoleAuditLog(
+                user.getId(),
+                user.getEmail(),
+                userDisplayName,
+                adminId,
+                adminEmailStr,
+                prevRoles,
+                newRoles,
+                action,
+                request.notes() != null ? request.notes() : "Updated user capabilities: " + newRoles
+        );
+        roleAuditLogRepository.save(auditLog);
+
+        log.info("Admin {} updated user {} capabilities from {} to {}", adminEmailStr, user.getEmail(), prevRoles, newRoles);
+        return AdminUserResponse.from(saved);
+    }
+
+    public PagedResponse<RoleAuditLogResponse> getRoleAuditLogs(int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<RoleAuditLog> logPage = roleAuditLogRepository.findAllByOrderByCreatedAtDesc(pageRequest);
+
+        List<RoleAuditLogResponse> content = logPage.getContent().stream()
+                .map(RoleAuditLogResponse::from)
+                .collect(Collectors.toList());
+
+        return new PagedResponse<>(
+                content,
+                logPage.getNumber(),
+                logPage.getSize(),
+                logPage.getTotalElements(),
+                logPage.getTotalPages()
+        );
     }
 
     public AdminUserResponse updateUserMembership(String id, com.gymtrack.dto.UpdateMembershipRequest request) {

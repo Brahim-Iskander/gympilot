@@ -9,24 +9,25 @@
  * - AI Calorie Calculator
  */
 
+import { TOKEN_STORAGE_KEY } from '../constants';
+
 const BASE_NUTRITION_KEY = 'gymtrack_daily_nutrition';
 const BASE_WORKOUTS_KEY = 'gymtrack_workout_history';
 const BASE_GOALS_KEY = 'gymtrack_user_goals';
 const BASE_PR_KEY = 'gymtrack_strength_prs';
-const TOKEN_KEY = 'gymtrack_token';
 
 const EVENT_NAME = 'gymtrack_fitness_sync_event';
 
 function getUserScope() {
   try {
-    const token = typeof window !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null;
+    const token = typeof window !== 'undefined' ? localStorage.getItem(TOKEN_STORAGE_KEY) : null;
     if (token) {
       const parts = token.split('.');
       if (parts.length >= 2) {
         const payload = JSON.parse(atob(parts[1]));
         const userIdentifier = payload.sub || payload.id || payload.email;
         if (userIdentifier) {
-          return '_' + userIdentifier.replace(/[^a-zA-Z0-9]/g, '_');
+          return '_' + String(userIdentifier).replace(/[^a-zA-Z0-9]/g, '_');
         }
       }
     }
@@ -49,16 +50,6 @@ function getCleanDailyNutrition() {
     waterTargetLiters: 3.0,
     meals: [],
   };
-}
-
-// Default standard PRs baseline
-function getDefaultPRs() {
-  return [
-    { name: 'Bench Press', currentPR: 80, previousPR: 75, unit: 'kg', lastUpdated: new Date().toISOString() },
-    { name: 'Squat', currentPR: 100, previousPR: 90, unit: 'kg', lastUpdated: new Date().toISOString() },
-    { name: 'Deadlift', currentPR: 120, previousPR: 110, unit: 'kg', lastUpdated: new Date().toISOString() },
-    { name: 'Overhead Press', currentPR: 50, previousPR: 45, unit: 'kg', lastUpdated: new Date().toISOString() },
-  ];
 }
 
 class FitnessDataService {
@@ -257,11 +248,9 @@ class FitnessDataService {
       const key = getScopedKey(BASE_PR_KEY);
       const saved = localStorage.getItem(key);
       if (saved) return JSON.parse(saved);
-      const def = getDefaultPRs();
-      localStorage.setItem(key, JSON.stringify(def));
-      return def;
+      return [];
     } catch (e) {
-      return getDefaultPRs();
+      return [];
     }
   }
 
@@ -301,7 +290,9 @@ class FitnessDataService {
         goals = JSON.parse(saved);
       } else {
         goals = this.generateInitialGoals(aiPlan, latestWeight);
-        localStorage.setItem(key, JSON.stringify(goals));
+        if (goals.length > 0) {
+          localStorage.setItem(key, JSON.stringify(goals));
+        }
       }
 
       const nutritionTotals = this.getTodayTotals();
@@ -346,22 +337,56 @@ class FitnessDataService {
   }
 
   generateInitialGoals(aiPlan, latestWeight) {
-    const curWeight = latestWeight || aiPlan?.weightKg || 75;
+    if (!aiPlan) return [];
+    const curWeight = latestWeight || aiPlan?.weightKg;
     const goalStr = (aiPlan?.goal || 'general fitness').toLowerCase();
     const isGain = goalStr.includes('gain') || goalStr.includes('muscle') || goalStr.includes('bulk');
     const isLoss = goalStr.includes('loss') || goalStr.includes('fat') || goalStr.includes('cut');
 
-    const weightTarget = isGain ? Math.round(curWeight + 4) : isLoss ? Math.round(curWeight - 5) : curWeight;
-    const proteinTarget = aiPlan?.nutritionPlan?.protein || Math.round(curWeight * 2);
+    const weightTarget = curWeight ? (isGain ? Math.round(curWeight + 4) : isLoss ? Math.round(curWeight - 5) : curWeight) : null;
+    const proteinTarget = aiPlan?.nutritionPlan?.protein || (curWeight ? Math.round(curWeight * 2) : 140);
     const daysPerWeek = aiPlan?.daysPerWeek || 4;
 
-    return [
-      { id: 1, title: `Target Body Weight (${weightTarget} kg)`, type: 'weight', target: weightTarget, current: curWeight, unit: 'kg', deadline: '2026-12-31', status: 'active', isAi: true },
-      { id: 2, title: 'Bench Press Milestone (90 kg)', type: 'strength', target: 90, current: 80, unit: 'kg', deadline: '2026-12-31', status: 'active', isAi: true },
-      { id: 3, title: 'Squat Mastery (115 kg)', type: 'strength', target: 115, current: 100, unit: 'kg', deadline: '2027-01-31', status: 'active', isAi: true },
-      { id: 4, title: `Train ${daysPerWeek} sessions per week`, type: 'frequency', target: daysPerWeek, current: 0, unit: 'days/week', deadline: '2026-09-30', status: 'active', isAi: true },
-      { id: 5, title: `Daily Protein Goal (${proteinTarget}g)`, type: 'nutrition', target: proteinTarget, current: 0, unit: 'g', deadline: '2026-09-30', status: 'active', isAi: true },
-    ];
+    const initial = [];
+    if (curWeight && weightTarget) {
+      initial.push({
+        id: 1,
+        title: `Target Body Weight (${weightTarget} kg)`,
+        type: 'weight',
+        target: weightTarget,
+        current: curWeight,
+        unit: 'kg',
+        deadline: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        status: 'active',
+        isAi: true,
+      });
+    }
+    initial.push(
+      {
+        id: 2,
+        title: `Train ${daysPerWeek} sessions per week`,
+        type: 'frequency',
+        target: daysPerWeek,
+        current: 0,
+        unit: 'days/week',
+        deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        status: 'active',
+        isAi: true,
+      },
+      {
+        id: 3,
+        title: `Daily Protein Goal (${proteinTarget}g)`,
+        type: 'nutrition',
+        target: proteinTarget,
+        current: 0,
+        unit: 'g',
+        deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        status: 'active',
+        isAi: true,
+      }
+    );
+
+    return initial;
   }
 }
 

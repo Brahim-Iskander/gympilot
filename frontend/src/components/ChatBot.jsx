@@ -30,6 +30,10 @@ import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import CardMembershipRoundedIcon from '@mui/icons-material/CardMembershipRounded';
 import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
 import AdminPanelSettingsRoundedIcon from '@mui/icons-material/AdminPanelSettingsRounded';
+import LocalFireDepartmentRoundedIcon from '@mui/icons-material/LocalFireDepartmentRounded';
+import FitnessCenterRoundedIcon from '@mui/icons-material/FitnessCenterRounded';
+import RestaurantRoundedIcon from '@mui/icons-material/RestaurantRounded';
+import BoltRoundedIcon from '@mui/icons-material/BoltRounded';
 
 import { aiService } from '../services/aiService';
 import { coachChatService } from '../services/coachChatService';
@@ -106,10 +110,10 @@ const COACH_QUICK_CHIPS = [
 ];
 
 const COMMUNITY_QUICK_CHIPS = [
-  '🔥 Hit a new PR today!',
-  '💪 Who is working out now?',
-  '🥗 Favorite post-workout meal?',
-  '⚡ Leg day motivation!',
+  { label: 'Hit a new PR today!', icon: <LocalFireDepartmentRoundedIcon sx={{ fontSize: 16, color: '#FF6B35' }} /> },
+  { label: 'Who is working out now?', icon: <FitnessCenterRoundedIcon sx={{ fontSize: 16, color: '#C6FF3E' }} /> },
+  { label: 'Favorite post-workout meal?', icon: <RestaurantRoundedIcon sx={{ fontSize: 16, color: '#4CAF50' }} /> },
+  { label: 'Leg day motivation!', icon: <BoltRoundedIcon sx={{ fontSize: 16, color: '#FFD700' }} /> },
 ];
 
 export default function ChatBot() {
@@ -1067,9 +1071,10 @@ export default function ChatBot() {
                     {COMMUNITY_QUICK_CHIPS.map((chip, i) => (
                       <Chip
                         key={i}
-                        label={chip}
+                        icon={chip.icon}
+                        label={chip.label}
                         size="small"
-                        onClick={() => handleSendCommunity(chip)}
+                        onClick={() => handleSendCommunity(chip.label)}
                         sx={{
                           fontSize: '0.68rem',
                           fontWeight: 600,

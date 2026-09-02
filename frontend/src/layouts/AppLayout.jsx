@@ -56,13 +56,19 @@ import {
   ConfirmationNumberRounded,
   CardMembershipRounded,
   AutoAwesomeRounded,
+  ShoppingBagRounded,
+  StorefrontRounded,
+  ReceiptLongRounded,
 } from '@mui/icons-material';
 
 import Logo from '../components/Logo';
 import LanguageSelector from '../components/LanguageSelector';
+import CartDrawer from '../components/CartDrawer';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { useThemeMode } from '../context/ThemeContext';
 import { useLanguage } from '../i18n';
+import { Badge } from '@mui/material';
 
 const SIDEBAR_WIDTH = 260;
 const HEADER_HEIGHT = 64;
@@ -76,7 +82,8 @@ export default function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const { user, isAdmin, isCoach, logout } = useAuth();
+  const { user, isAdmin, isCoach, isSeller, logout } = useAuth();
+  const { itemCount, openCartDrawer } = useCart();
   const { mode, toggleTheme } = useThemeMode();
 
   const NAV_ITEMS = [
@@ -85,6 +92,12 @@ export default function AppLayout() {
       label: t('nav.dashboard'),
       icon: <DashboardRounded />,
       path: '/dashboard',
+    },
+    {
+      id: 'shop',
+      label: 'Shop / Gear',
+      icon: <ShoppingBagRounded />,
+      path: '/shop',
     },
     {
       id: 'workouts',
@@ -131,6 +144,18 @@ export default function AppLayout() {
   ];
 
   const ACCOUNT_ITEMS = [
+    {
+      id: 'my-orders',
+      label: 'My Orders',
+      icon: <ReceiptLongRounded />,
+      path: '/shop/orders',
+    },
+    ...(isSeller ? [{
+      id: 'seller-portal',
+      label: 'Seller Dashboard',
+      icon: <StorefrontRounded sx={{ color: '#8A7CFF' }} />,
+      path: '/seller',
+    }] : []),
     {
       id: 'membership',
       label: t('nav.membership', 'Membership'),
@@ -967,6 +992,24 @@ export default function AppLayout() {
 
                 {/* LANGUAGE SELECTOR */}
                 <LanguageSelector />
+
+                {/* SHOPPING CART */}
+                <Tooltip title="Shopping Cart">
+                  <IconButton
+                    onClick={openCartDrawer}
+                    sx={{
+                      color: 'text.secondary',
+                      '&:hover': {
+                        color: 'text.primary',
+                        bgcolor: 'action.hover',
+                      },
+                    }}
+                  >
+                    <Badge badgeContent={itemCount} color="primary">
+                      <ShoppingBagRounded />
+                    </Badge>
+                  </IconButton>
+                </Tooltip>
 
                 {/* THEME */}
 

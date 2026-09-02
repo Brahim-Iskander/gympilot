@@ -50,9 +50,9 @@ export default function DashboardStats({
     .filter((e) => typeof e.weight === 'number' && e.weight > 0)
     .sort((a, b) => new Date(b.date) - new Date(a.date));
 
-  let currentWeight = aiPlan?.weightKg ?? 75;
-  let weightUnit = aiPlan?.weightKg ? t('common.kg') : 'kg';
-  let weightTrend = 'Onboarding profile';
+  let currentWeight = aiPlan?.weightKg ?? '--';
+  let weightUnit = aiPlan?.weightKg ? (t('common.kg') || 'kg') : '';
+  let weightTrend = aiPlan?.weightKg ? 'Onboarding profile' : 'No logs yet';
 
   if (weightEntries.length > 0) {
     currentWeight = weightEntries[0].weight;
@@ -77,7 +77,7 @@ export default function DashboardStats({
       label: t('dashboard.workouts', 'Workouts Logged'),
       value: String(totalWorkouts),
       icon: <FitnessCenterRoundedIcon />,
-      trend: `${thisWeekWorkouts} sessions this week`,
+      trend: totalWorkouts > 0 ? `${thisWeekWorkouts} sessions this week` : 'Start your first workout',
     },
     {
       id: 'weight',
@@ -92,7 +92,7 @@ export default function DashboardStats({
       label: t('dashboard.personalRecords', 'Personal Records'),
       value: String(totalPrCount),
       icon: <EmojiEventsRoundedIcon />,
-      trend: 'Bench, Squat & Deadlift PRs',
+      trend: totalPrCount > 0 ? `${totalPrCount} personal records tracked` : 'No records yet',
     },
     {
       id: 'streak',
@@ -100,7 +100,7 @@ export default function DashboardStats({
       value: String(workoutStreak),
       unit: t('common.days', 'days'),
       icon: <LocalFireDepartmentRoundedIcon />,
-      trend: `${workoutStreak} day streak active`,
+      trend: workoutStreak > 0 ? `${workoutStreak} day streak active` : 'No active streak',
     },
   ];
 

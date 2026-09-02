@@ -2,7 +2,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useFitnessData } from '../../hooks/useFitnessData';
 import { Container, Card, Button, Stack, Box, Typography } from '@mui/material';
-import CardGiftcardRoundedIcon from '@mui/icons-material/CardGiftcardRounded';
+import RedeemRoundedIcon from '@mui/icons-material/RedeemRounded';
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import DashboardStats from './components/DashboardStats';
 import TodayWorkout from './components/TodayWorkout';
@@ -36,24 +36,10 @@ export default function Dashboard() {
         noIndex
       />
       <Container maxWidth="xl" sx={{ py: 4 }}>
-        <DashboardStats
-          userName={firstName}
-          aiPlan={aiPlan}
-          workoutStreak={workoutStreak}
-          thisWeekWorkouts={thisWeekWorkouts}
-          workoutHistory={workoutHistory}
-          nutritionTotals={nutritionTotals}
-          prs={prs}
-        />
-        <TodayWorkout aiPlan={aiPlan} loading={aiPlanLoading} />
-        <WeeklyProgress aiPlan={aiPlan} workoutHistory={workoutHistory} />
-        <StrengthOverview prs={prs} />
-        <GoalsOverview goals={goals} />
-
         {/* Refer & Earn Quick Banner */}
         <Card
           sx={{
-            mt: 4,
+            mb: 4,
             p: 3,
             borderRadius: 3.5,
             background: 'linear-gradient(135deg, rgba(198, 255, 62, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%)',
@@ -79,11 +65,11 @@ export default function Dashboard() {
                 flexShrink: 0,
               }}
             >
-              <CardGiftcardRoundedIcon sx={{ fontSize: 26 }} />
+              <RedeemRoundedIcon sx={{ fontSize: 26 }} />
             </Box>
             <Box>
               <Typography variant="h6" sx={{ fontWeight: 800, fontFamily: "'Sora', sans-serif" }}>
-                Invite Gym Buddies & Earn Reward Points 🎁
+                Invite Gym Buddies & Earn Reward Points
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Earn 5 points per friend, and your friend gets 10 bonus points upon signup.
@@ -100,6 +86,20 @@ export default function Dashboard() {
             Get Referral Link
           </Button>
         </Card>
+
+        <DashboardStats
+          userName={firstName}
+          aiPlan={aiPlan}
+          workoutStreak={workoutStreak}
+          thisWeekWorkouts={thisWeekWorkouts}
+          workoutHistory={workoutHistory}
+          nutritionTotals={nutritionTotals}
+          prs={prs}
+        />
+        <TodayWorkout aiPlan={aiPlan} loading={aiPlanLoading} />
+        <WeeklyProgress aiPlan={aiPlan} workoutHistory={workoutHistory} />
+        <StrengthOverview prs={prs} />
+        <GoalsOverview goals={goals} />
       </Container>
     </>
   );

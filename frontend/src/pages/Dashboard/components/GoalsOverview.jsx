@@ -96,11 +96,7 @@ function GoalCard({ goal }) {
 }
 
 export default function GoalsOverview({ goals = [] }) {
-  const displayGoals = goals.length > 0 ? goals.slice(0, 3) : [
-    { id: 1, title: 'Target Body Weight (75 kg)', current: 75, target: 75, unit: 'kg', type: 'Weight', status: 'completed' },
-    { id: 2, title: 'Bench Press Milestone (90 kg)', current: 85, target: 90, unit: 'kg', type: 'Strength', status: 'active' },
-    { id: 3, title: 'Train 4 sessions per week', current: 2, target: 4, unit: 'sessions', type: 'Frequency', status: 'active' },
-  ];
+  const displayGoals = goals.slice(0, 3);
 
   return (
     <Box component="section" sx={{ mb: 4 }}>
@@ -124,11 +120,62 @@ export default function GoalsOverview({ goals = [] }) {
         </Button>
       </Stack>
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 3 }}>
-        {displayGoals.map((goal, index) => (
-          <GoalCard key={goal.id || index} goal={goal} />
-        ))}
-      </Box>
+      {displayGoals.length === 0 ? (
+        <Card
+          elevation={0}
+          sx={{
+            p: 4,
+            borderRadius: 3,
+            border: '1px dashed',
+            borderColor: 'divider',
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))',
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 2,
+          }}
+        >
+          <Box
+            sx={{
+              width: 52,
+              height: 52,
+              borderRadius: 3,
+              bgcolor: 'rgba(138,124,255,0.12)',
+              color: '#8A7CFF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <FlagRoundedIcon sx={{ fontSize: 28 }} />
+          </Box>
+          <Box sx={{ maxWidth: 460 }}>
+            <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5 }}>
+              No Active Goals Yet
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Set target milestones for bodyweight, daily nutrition, workout frequency, and strength to keep your momentum going.
+            </Typography>
+          </Box>
+          <Button
+            component={RouterLink}
+            to="/goals"
+            variant="outlined"
+            endIcon={<ArrowForwardRoundedIcon />}
+            sx={{ borderRadius: 2, fontWeight: 700, mt: 1 }}
+          >
+            Create Your First Goal
+          </Button>
+        </Card>
+      ) : (
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 3 }}>
+          {displayGoals.map((goal, index) => (
+            <GoalCard key={goal.id || index} goal={goal} />
+          ))}
+        </Box>
+      )}
     </Box>
   );
 }

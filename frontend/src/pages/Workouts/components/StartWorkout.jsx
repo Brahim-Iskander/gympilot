@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Button, Card, Chip, IconButton, Stack, Typography, styled, TextField, Tabs, Tab, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import EmojiEventsRoundedIcon from '@mui/icons-material/EmojiEventsRounded';
+import CelebrationRoundedIcon from '@mui/icons-material/CelebrationRounded';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import TimerRoundedIcon from '@mui/icons-material/TimerRounded';
@@ -417,8 +418,8 @@ export default function StartWorkout({ aiPlan, loading, addedExercises = [], sel
           >
             <EmojiEventsRoundedIcon sx={{ fontSize: 36 }} />
           </Box>
-          <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: "'Sora', sans-serif" }}>
-            Workout Completed! 🎉
+          <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: "'Sora', sans-serif", display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+            Workout Completed! <CelebrationRoundedIcon sx={{ fontSize: 26, color: 'primary.main' }} />
           </Typography>
         </DialogTitle>
         <DialogContent sx={{ pb: 2 }}>

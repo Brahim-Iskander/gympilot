@@ -18,6 +18,7 @@ import NotFoundPage from '../pages/NotFound/NotFound';
 import ProtectedRoute from './ProtectedRoute';
 import PublicOnlyRoute from './PublicOnlyRoute';
 import AdminRoute from './AdminRoute';
+import SellerRoute from './SellerRoute';
 import AppLayout from '../layouts/AppLayout';
 import AdminLayout from '../layouts/AdminLayout';
 import AdminDashboard from '../pages/Admin/AdminDashboard';
@@ -29,6 +30,19 @@ import SupportTickets from '../pages/Support/SupportTickets';
 import MembershipPage from '../pages/Membership/Membership';
 import ForgotPasswordPage from '../pages/ForgotPassword/ForgotPassword';
 import ResetPasswordPage from '../pages/ResetPassword/ResetPassword';
+
+// Shop Pages
+import Shop from '../pages/Shop/Shop';
+import ProductDetail from '../pages/Shop/ProductDetail';
+import Cart from '../pages/Shop/Cart';
+import Checkout from '../pages/Shop/Checkout';
+import OrderHistory from '../pages/Shop/OrderHistory';
+
+// Seller Pages
+import SellerDashboard from '../pages/Seller/SellerDashboard';
+import SellerOrders from '../pages/Seller/SellerOrders';
+import SellerProducts from '../pages/Seller/SellerProducts';
+import SellerSettings from '../pages/Seller/SellerSettings';
 
 export default function AppRoutes() {
   return (
@@ -69,8 +83,39 @@ export default function AppRoutes() {
       />
       <Route path="/onboarding" element={<OnboardingPage />} />
 
-      {/* User App Layout */}
+      {/* ===================== SHOP ROUTES ===================== */}
+      {/* Shop listing & product detail are public (no auth needed) */}
+      <Route path="/shop" element={<Shop />} />
+      <Route path="/shop/:id" element={<ProductDetail />} />
+
+      {/* Cart, Checkout, Orders require authentication */}
       <Route element={<AppLayout />}>
+        <Route
+          path="/shop/cart"
+          element={
+            <ProtectedRoute>
+              <Cart />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/shop/checkout"
+          element={
+            <ProtectedRoute>
+              <Checkout />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/shop/orders"
+          element={
+            <ProtectedRoute>
+              <OrderHistory />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ===================== USER APP ROUTES ===================== */}
         <Route
           path="/dashboard"
           element={
@@ -166,6 +211,40 @@ export default function AppRoutes() {
             <ProtectedRoute>
               <MembershipPage />
             </ProtectedRoute>
+          }
+        />
+
+        {/* ===================== SELLER ROUTES ===================== */}
+        <Route
+          path="/seller"
+          element={
+            <SellerRoute>
+              <SellerDashboard />
+            </SellerRoute>
+          }
+        />
+        <Route
+          path="/seller/orders"
+          element={
+            <SellerRoute>
+              <SellerOrders />
+            </SellerRoute>
+          }
+        />
+        <Route
+          path="/seller/products"
+          element={
+            <SellerRoute>
+              <SellerProducts />
+            </SellerRoute>
+          }
+        />
+        <Route
+          path="/seller/settings"
+          element={
+            <SellerRoute>
+              <SellerSettings />
+            </SellerRoute>
           }
         />
       </Route>

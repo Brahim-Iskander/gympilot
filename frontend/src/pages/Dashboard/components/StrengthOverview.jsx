@@ -1,6 +1,9 @@
-import { Box, Card, Chip, Stack, Typography, styled } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
+import { Box, Button, Card, Chip, Stack, Typography, styled } from '@mui/material';
 import ShowChartRoundedIcon from '@mui/icons-material/ShowChartRounded';
 import TrendingUpRoundedIcon from '@mui/icons-material/TrendingUpRounded';
+import FitnessCenterRoundedIcon from '@mui/icons-material/FitnessCenterRounded';
+import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import {
   LineChart,
   Line,
@@ -51,9 +54,9 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 function StrengthCard({ lift }) {
-  const currentPR = lift.currentPR || 80;
-  const previousPR = lift.previousPR || (currentPR * 0.9);
-  const improvement = previousPR > 0 ? (((currentPR - previousPR) / previousPR) * 100).toFixed(1) : '5.0';
+  const currentPR = lift.currentPR || 0;
+  const previousPR = lift.previousPR || (currentPR > 0 ? currentPR * 0.9 : 0);
+  const improvement = previousPR > 0 ? (((currentPR - previousPR) / previousPR) * 100).toFixed(1) : '0.0';
 
   const weeksData = [
     { week: 'W1', weight: Math.round(previousPR * 0.95 * 10) / 10 },
@@ -84,12 +87,14 @@ function StrengthCard({ lift }) {
         <Typography variant="h6" sx={{ fontWeight: 800 }}>
           {lift.name}
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <TrendingUpRoundedIcon sx={{ color: lift.color, fontSize: 20 }} />
-          <Typography variant="body2" sx={{ color: lift.color, fontWeight: 700 }}>
-            +{improvement}%
-          </Typography>
-        </Box>
+        {Number(improvement) > 0 && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <TrendingUpRoundedIcon sx={{ color: lift.color, fontSize: 20 }} />
+            <Typography variant="body2" sx={{ color: lift.color, fontWeight: 700 }}>
+              +{improvement}%
+            </Typography>
+          </Box>
+        )}
       </Stack>
 
       <Box sx={{ height: 120, mb: 3 }}>
@@ -126,13 +131,15 @@ function StrengthCard({ lift }) {
           <Box>
             <Typography variant="caption" color="text.secondary">Current PR</Typography>
             <Typography variant="h6" sx={{ fontWeight: 800, fontFamily: "'Sora','Inter',sans-serif" }}>
-              {currentPR} kg
+              {currentPR} {lift.unit || 'kg'}
             </Typography>
           </Box>
-          <Box sx={{ textAlign: 'right' }}>
-            <Typography variant="caption" color="text.secondary">Previous PR</Typography>
-            <Typography variant="body2" fontWeight={600}>{previousPR} kg</Typography>
-          </Box>
+          {previousPR > 0 && (
+            <Box sx={{ textAlign: 'right' }}>
+              <Typography variant="caption" color="text.secondary">Previous PR</Typography>
+              <Typography variant="body2" fontWeight={600}>{previousPR} {lift.unit || 'kg'}</Typography>
+            </Box>
+          )}
         </Stack>
       </Box>
     </Card>
@@ -142,14 +149,10 @@ function StrengthCard({ lift }) {
 export default function StrengthOverview({ prs = [] }) {
   const colors = ['#C6FF3E', '#8A7CFF', '#FF6B6B', '#FFC107'];
 
-  const displayPRs = prs.length > 0 ? prs.slice(0, 3).map((p, i) => ({
+  const displayPRs = prs.map((p, i) => ({
     ...p,
-    color: colors[i % colors.length],
-  })) : [
-    { name: 'Bench Press', color: '#C6FF3E', currentPR: 85, previousPR: 77.5 },
-    { name: 'Squat', color: '#8A7CFF', currentPR: 125, previousPR: 110 },
-    { name: 'Deadlift', color: '#FF6B6B', currentPR: 155, previousPR: 140 },
-  ];
+    color: p.color || colors[i % colors.length],
+  }));
 
   return (
     <Box component="section" sx={{ mb: 5 }}>
@@ -170,11 +173,62 @@ export default function StrengthOverview({ prs = [] }) {
         />
       </Stack>
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 3 }}>
-        {displayPRs.map((lift, index) => (
-          <StrengthCard key={lift.name || index} lift={lift} />
-        ))}
-      </Box>
+      {displayPRs.length === 0 ? (
+        <Card
+          elevation={0}
+          sx={{
+            p: 4,
+            borderRadius: 3,
+            border: '1px dashed',
+            borderColor: 'divider',
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))',
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 2,
+          }}
+        >
+          <Box
+            sx={{
+              width: 52,
+              height: 52,
+              borderRadius: 3,
+              bgcolor: 'rgba(198,255,62,0.12)',
+              color: 'primary.main',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <FitnessCenterRoundedIcon sx={{ fontSize: 28 }} />
+          </Box>
+          <Box sx={{ maxWidth: 460 }}>
+            <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5 }}>
+              No Personal Records Yet
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Complete your first workout session or log your compound lifts in Progress to start charting your strength milestones!
+            </Typography>
+          </Box>
+          <Button
+            component={RouterLink}
+            to="/workouts"
+            variant="outlined"
+            endIcon={<ArrowForwardRoundedIcon />}
+            sx={{ borderRadius: 2, fontWeight: 700, mt: 1 }}
+          >
+            Start Workout
+          </Button>
+        </Card>
+      ) : (
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 3 }}>
+          {displayPRs.map((lift, index) => (
+            <StrengthCard key={lift.name || index} lift={lift} />
+          ))}
+        </Box>
+      )}
     </Box>
   );
 }

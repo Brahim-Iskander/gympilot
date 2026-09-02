@@ -105,7 +105,7 @@ export default function GoalsList({ filter = 'all' }) {
   };
 
   const handleResetAiGoals = () => {
-    const resetGoals = generateAiGoals(aiPlan);
+    const resetGoals = fitnessDataService.generateInitialGoals(aiPlan);
     saveGoalsState(resetGoals);
   };
 
