@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { authService } from '../services/authService';
 import { onboardingService } from '../services/onboardingService';
+import { fitnessDataService } from '../services/fitnessDataService';
 import { AUTH_EXPIRED_EVENT, TOKEN_STORAGE_KEY } from '../constants';
 
 const AuthContext = createContext(null);
@@ -111,6 +112,9 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(() => {
     localStorage.removeItem(TOKEN_STORAGE_KEY);
+    try {
+      fitnessDataService.clearUserCache();
+    } catch (e) {}
     setUser(null);
     setOnboardingCompleted(false);
     navigate('/', { replace: true });

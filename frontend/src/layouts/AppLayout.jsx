@@ -1,12 +1,13 @@
 import { useState, useRef } from 'react';
 
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate, Link as RouterLink } from 'react-router-dom';
 
 import {
   AppBar,
   Avatar,
   Box,
   Button,
+  Chip,
   Container,
   Drawer,
   Divider,
@@ -540,20 +541,34 @@ export default function AppLayout() {
                     my: 0,
                   }}
                   primary={
-                    <Typography
-                      variant="body2"
-                      noWrap
-                      title={`${user?.firstName || ''} ${user?.lastName || ''}`.trim()}
-                      sx={{
-                        fontWeight: 600,
-                        display: 'block',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                    >
-                      {user?.firstName}{' '}
-                      {user?.lastName}
-                    </Typography>
+                    <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 0, overflow: 'hidden' }}>
+                      <Typography
+                        variant="body2"
+                        noWrap
+                        title={`${user?.firstName || ''} ${user?.lastName || ''}`.trim()}
+                        sx={{
+                          fontWeight: 700,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {user?.firstName}{' '}
+                        {user?.lastName}
+                      </Typography>
+                      <Chip
+                        label={`${user?.points ?? 0} pts`}
+                        size="small"
+                        sx={{
+                          height: 20,
+                          fontSize: '0.68rem',
+                          fontWeight: 800,
+                          bgcolor: 'rgba(198, 255, 62, 0.15)',
+                          color: '#C6FF3E',
+                          border: '1px solid rgba(198, 255, 62, 0.3)',
+                          flexShrink: 0,
+                        }}
+                      />
+                    </Stack>
                   }
                   secondary={
                     <Typography
@@ -979,6 +994,34 @@ export default function AppLayout() {
                       <DarkModeRounded />
                     )}
                   </IconButton>
+                </Tooltip>
+
+                {/* USER REWARD POINTS */}
+                <Tooltip title="Reward Points & Referrals">
+                  <Button
+                    component={RouterLink}
+                    to="/dashboard/profile?tab=referrals"
+                    size="small"
+                    startIcon={<EmojiEventsRounded sx={{ color: '#FFD700', fontSize: 18 }} />}
+                    sx={{
+                      bgcolor: 'rgba(198, 255, 62, 0.1)',
+                      color: 'text.primary',
+                      fontWeight: 800,
+                      fontSize: '0.8rem',
+                      borderRadius: 2,
+                      border: '1px solid rgba(198, 255, 62, 0.25)',
+                      px: 1.5,
+                      py: 0.5,
+                      mr: 1.5,
+                      display: { xs: 'none', sm: 'inline-flex' },
+                      '&:hover': {
+                        bgcolor: 'rgba(198, 255, 62, 0.18)',
+                        borderColor: 'primary.main',
+                      },
+                    }}
+                  >
+                    {user?.points ?? 0} pts
+                  </Button>
                 </Tooltip>
 
                 {/* USER */}

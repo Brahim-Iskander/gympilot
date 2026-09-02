@@ -1,6 +1,6 @@
 /**
  * Centralized Fitness Data Synchronization Engine
- * Harmonizes real-time state between:
+ * User-scoped and harmonized between:
  * - Dashboard
  * - Workouts
  * - Nutrition
@@ -9,56 +9,55 @@
  * - AI Calorie Calculator
  */
 
-const NUTRITION_STORAGE_KEY = 'gymtrack_daily_nutrition';
-const WORKOUTS_STORAGE_KEY = 'gymtrack_workout_history';
-const GOALS_STORAGE_KEY = 'gymtrack_user_goals';
-const PR_STORAGE_KEY = 'gymtrack_strength_prs';
+const BASE_NUTRITION_KEY = 'gymtrack_daily_nutrition';
+const BASE_WORKOUTS_KEY = 'gymtrack_workout_history';
+const BASE_GOALS_KEY = 'gymtrack_user_goals';
+const BASE_PR_KEY = 'gymtrack_strength_prs';
+const TOKEN_KEY = 'gymtrack_token';
 
 const EVENT_NAME = 'gymtrack_fitness_sync_event';
 
-// Default initial meals for a new day if none saved
-function getDefaultDailyNutrition() {
+function getUserScope() {
+  try {
+    const token = typeof window !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null;
+    if (token) {
+      const parts = token.split('.');
+      if (parts.length >= 2) {
+        const payload = JSON.parse(atob(parts[1]));
+        const userIdentifier = payload.sub || payload.id || payload.email;
+        if (userIdentifier) {
+          return '_' + userIdentifier.replace(/[^a-zA-Z0-9]/g, '_');
+        }
+      }
+    }
+  } catch (e) {
+    // Fallback if parsing fails
+  }
+  return '_guest';
+}
+
+function getScopedKey(baseKey) {
+  return `${baseKey}${getUserScope()}`;
+}
+
+// Initial clean nutrition for a user on a given day
+function getCleanDailyNutrition() {
   const today = new Date().toISOString().split('T')[0];
   return {
     date: today,
-    waterLiters: 2.5,
-    waterTargetLiters: 3.5,
-    meals: [
-      {
-        id: 'meal_def_1',
-        title: 'Breakfast Power Oats & Eggs',
-        type: 'Breakfast',
-        time: '08:30',
-        calories: 480,
-        protein: 34,
-        carbs: 52,
-        fat: 14,
-        items: '4 Whole eggs scrambled, 60g rolled oats with almond milk and blueberries',
-        aiScanned: false,
-      },
-      {
-        id: 'meal_def_2',
-        title: 'Post-Workout Anabolic Shake',
-        type: 'Snack',
-        time: '11:45',
-        calories: 320,
-        protein: 32,
-        carbs: 38,
-        fat: 4,
-        items: '1 Scoop Whey Protein Isolate, 1 Large Banana, 250ml Oat milk',
-        aiScanned: true,
-      },
-    ],
+    waterLiters: 0,
+    waterTargetLiters: 3.0,
+    meals: [],
   };
 }
 
 // Default standard PRs baseline
 function getDefaultPRs() {
   return [
-    { name: 'Bench Press', currentPR: 85, previousPR: 77.5, unit: 'kg', lastUpdated: new Date().toISOString() },
-    { name: 'Squat', currentPR: 125, previousPR: 110, unit: 'kg', lastUpdated: new Date().toISOString() },
-    { name: 'Deadlift', currentPR: 155, previousPR: 140, unit: 'kg', lastUpdated: new Date().toISOString() },
-    { name: 'Overhead Press', currentPR: 60, previousPR: 52.5, unit: 'kg', lastUpdated: new Date().toISOString() },
+    { name: 'Bench Press', currentPR: 80, previousPR: 75, unit: 'kg', lastUpdated: new Date().toISOString() },
+    { name: 'Squat', currentPR: 100, previousPR: 90, unit: 'kg', lastUpdated: new Date().toISOString() },
+    { name: 'Deadlift', currentPR: 120, previousPR: 110, unit: 'kg', lastUpdated: new Date().toISOString() },
+    { name: 'Overhead Press', currentPR: 50, previousPR: 45, unit: 'kg', lastUpdated: new Date().toISOString() },
   ];
 }
 
@@ -89,23 +88,28 @@ class FitnessDataService {
     }
   }
 
+  clearUserCache() {
+    this.notify();
+  }
+
   // --- NUTRITION ---
   getDailyNutrition() {
     try {
       const today = new Date().toISOString().split('T')[0];
-      const saved = localStorage.getItem(NUTRITION_STORAGE_KEY);
+      const key = getScopedKey(BASE_NUTRITION_KEY);
+      const saved = localStorage.getItem(key);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed.date === today) {
           return parsed;
         }
       }
-      const initial = getDefaultDailyNutrition();
-      localStorage.setItem(NUTRITION_STORAGE_KEY, JSON.stringify(initial));
+      const initial = getCleanDailyNutrition();
+      localStorage.setItem(key, JSON.stringify(initial));
       return initial;
     } catch (e) {
       console.error('Failed reading nutrition store:', e);
-      return getDefaultDailyNutrition();
+      return getCleanDailyNutrition();
     }
   }
 
@@ -143,7 +147,8 @@ class FitnessDataService {
     };
 
     nutrition.meals = [newMeal, ...(nutrition.meals || [])];
-    localStorage.setItem(NUTRITION_STORAGE_KEY, JSON.stringify(nutrition));
+    const key = getScopedKey(BASE_NUTRITION_KEY);
+    localStorage.setItem(key, JSON.stringify(nutrition));
     this.notify();
     return newMeal;
   }
@@ -151,33 +156,28 @@ class FitnessDataService {
   deleteMeal(id) {
     const nutrition = this.getDailyNutrition();
     nutrition.meals = (nutrition.meals || []).filter((m) => m.id !== id);
-    localStorage.setItem(NUTRITION_STORAGE_KEY, JSON.stringify(nutrition));
+    const key = getScopedKey(BASE_NUTRITION_KEY);
+    localStorage.setItem(key, JSON.stringify(nutrition));
     this.notify();
   }
 
   updateWater(liters) {
     const nutrition = this.getDailyNutrition();
     nutrition.waterLiters = Math.max(0, Math.round(liters * 10) / 10);
-    localStorage.setItem(NUTRITION_STORAGE_KEY, JSON.stringify(nutrition));
+    const key = getScopedKey(BASE_NUTRITION_KEY);
+    localStorage.setItem(key, JSON.stringify(nutrition));
     this.notify();
   }
 
   // --- WORKOUTS & STREAK ---
   getWorkoutHistory() {
     try {
-      const saved = localStorage.getItem(WORKOUTS_STORAGE_KEY);
+      const key = getScopedKey(BASE_WORKOUTS_KEY);
+      const saved = localStorage.getItem(key);
       if (saved) {
         return JSON.parse(saved);
       }
-      const now = new Date();
-      const past2Days = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-      const past4Days = new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-      const initial = [
-        { id: 'w1', name: 'Upper Body Hypertrophy', date: past2Days, durationMinutes: 52, exercisesCompleted: 6, totalVolumeKg: 4200 },
-        { id: 'w2', name: 'Legs & Core Power', date: past4Days, durationMinutes: 58, exercisesCompleted: 5, totalVolumeKg: 6800 },
-      ];
-      localStorage.setItem(WORKOUTS_STORAGE_KEY, JSON.stringify(initial));
-      return initial;
+      return [];
     } catch (e) {
       console.error('Failed reading workout history:', e);
       return [];
@@ -197,7 +197,8 @@ class FitnessDataService {
     };
 
     const updated = [newSession, ...history];
-    localStorage.setItem(WORKOUTS_STORAGE_KEY, JSON.stringify(updated));
+    const key = getScopedKey(BASE_WORKOUTS_KEY);
+    localStorage.setItem(key, JSON.stringify(updated));
 
     if (session.exercises) {
       session.exercises.forEach((ex) => {
@@ -253,10 +254,11 @@ class FitnessDataService {
   // --- STRENGTH & PRS ---
   getPRs() {
     try {
-      const saved = localStorage.getItem(PR_STORAGE_KEY);
+      const key = getScopedKey(BASE_PR_KEY);
+      const saved = localStorage.getItem(key);
       if (saved) return JSON.parse(saved);
       const def = getDefaultPRs();
-      localStorage.setItem(PR_STORAGE_KEY, JSON.stringify(def));
+      localStorage.setItem(key, JSON.stringify(def));
       return def;
     } catch (e) {
       return getDefaultPRs();
@@ -267,12 +269,13 @@ class FitnessDataService {
     if (!liftName || !newWeight) return;
     const prs = this.getPRs();
     const existing = prs.find((p) => p.name.toLowerCase() === liftName.toLowerCase());
+    const key = getScopedKey(BASE_PR_KEY);
     if (existing) {
       if (newWeight > existing.currentPR) {
         existing.previousPR = existing.currentPR;
         existing.currentPR = newWeight;
         existing.lastUpdated = new Date().toISOString();
-        localStorage.setItem(PR_STORAGE_KEY, JSON.stringify(prs));
+        localStorage.setItem(key, JSON.stringify(prs));
         this.notify();
       }
     } else {
@@ -283,7 +286,7 @@ class FitnessDataService {
         unit: 'kg',
         lastUpdated: new Date().toISOString(),
       });
-      localStorage.setItem(PR_STORAGE_KEY, JSON.stringify(prs));
+      localStorage.setItem(key, JSON.stringify(prs));
       this.notify();
     }
   }
@@ -291,13 +294,14 @@ class FitnessDataService {
   // --- GOALS WITH REAL DATA BINDING ---
   getGoals(aiPlan, latestWeight) {
     try {
-      const saved = localStorage.getItem(GOALS_STORAGE_KEY);
+      const key = getScopedKey(BASE_GOALS_KEY);
+      const saved = localStorage.getItem(key);
       let goals = [];
       if (saved) {
         goals = JSON.parse(saved);
       } else {
         goals = this.generateInitialGoals(aiPlan, latestWeight);
-        localStorage.setItem(GOALS_STORAGE_KEY, JSON.stringify(goals));
+        localStorage.setItem(key, JSON.stringify(goals));
       }
 
       const nutritionTotals = this.getTodayTotals();
@@ -336,7 +340,8 @@ class FitnessDataService {
   }
 
   saveGoals(goals) {
-    localStorage.setItem(GOALS_STORAGE_KEY, JSON.stringify(goals));
+    const key = getScopedKey(BASE_GOALS_KEY);
+    localStorage.setItem(key, JSON.stringify(goals));
     this.notify();
   }
 
@@ -352,10 +357,10 @@ class FitnessDataService {
 
     return [
       { id: 1, title: `Target Body Weight (${weightTarget} kg)`, type: 'weight', target: weightTarget, current: curWeight, unit: 'kg', deadline: '2026-12-31', status: 'active', isAi: true },
-      { id: 2, title: 'Bench Press Milestone (90 kg)', type: 'strength', target: 90, current: 85, unit: 'kg', deadline: '2026-12-31', status: 'active', isAi: true },
-      { id: 3, title: 'Squat Mastery (130 kg)', type: 'strength', target: 130, current: 125, unit: 'kg', deadline: '2027-01-31', status: 'active', isAi: true },
-      { id: 4, title: `Train ${daysPerWeek} sessions per week`, type: 'frequency', target: daysPerWeek, current: 2, unit: 'days/week', deadline: '2026-09-30', status: 'active', isAi: true },
-      { id: 5, title: `Daily Protein Goal (${proteinTarget}g)`, type: 'nutrition', target: proteinTarget, current: 66, unit: 'g', deadline: '2026-09-30', status: 'active', isAi: true },
+      { id: 2, title: 'Bench Press Milestone (90 kg)', type: 'strength', target: 90, current: 80, unit: 'kg', deadline: '2026-12-31', status: 'active', isAi: true },
+      { id: 3, title: 'Squat Mastery (115 kg)', type: 'strength', target: 115, current: 100, unit: 'kg', deadline: '2027-01-31', status: 'active', isAi: true },
+      { id: 4, title: `Train ${daysPerWeek} sessions per week`, type: 'frequency', target: daysPerWeek, current: 0, unit: 'days/week', deadline: '2026-09-30', status: 'active', isAi: true },
+      { id: 5, title: `Daily Protein Goal (${proteinTarget}g)`, type: 'nutrition', target: proteinTarget, current: 0, unit: 'g', deadline: '2026-09-30', status: 'active', isAi: true },
     ];
   }
 }
