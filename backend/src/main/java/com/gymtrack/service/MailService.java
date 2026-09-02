@@ -34,6 +34,9 @@ public class MailService {
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
 
+    @Value("${brevo.api-key:${BREVO_API_KEY:}}")
+    private String brevoApiKey;
+
     @Value("${resend.api-key:${RESEND_API_KEY:}}")
     private String resendApiKey;
 
@@ -54,8 +57,48 @@ public class MailService {
         this.objectMapper = new ObjectMapper();
     }
 
+    private boolean hasBrevoApi() {
+        return brevoApiKey != null && !brevoApiKey.isBlank();
+    }
+
     private boolean hasResendApi() {
         return resendApiKey != null && !resendApiKey.isBlank();
+    }
+
+    private boolean sendViaBrevo(String to, String subject, String htmlBody) {
+        try {
+            Map<String, Object> body = Map.of(
+                    "sender", Map.of("name", fromName != null ? fromName : "GymPilot", "email", fromAddress),
+                    "to", List.of(Map.of("email", to)),
+                    "subject", subject,
+                    "htmlContent", htmlBody
+            );
+
+            String jsonPayload = objectMapper.writeValueAsString(body);
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.brevo.com/v3/smtp/email"))
+                    .header("api-key", brevoApiKey.trim())
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "application/json")
+                    .header("User-Agent", "GymPilot/1.0")
+                    .timeout(Duration.ofSeconds(10))
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonPayload, StandardCharsets.UTF_8))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                log.info("Email sent successfully via Brevo API (HTTP 443) to: {}", to);
+                return true;
+            } else {
+                log.error("Brevo API error (HTTP {}): {}", response.statusCode(), response.body());
+                return false;
+            }
+        } catch (Exception ex) {
+            log.error("Failed to send email via Brevo API to: {}", to, ex);
+            return false;
+        }
     }
 
     private boolean sendViaResend(String to, String subject, String htmlBody) {
@@ -106,6 +149,12 @@ public class MailService {
     public boolean sendResetPasswordEmail(String to, String resetLink) {
         String subject = "Reset Your GymPilot Password";
         String htmlBody = buildResetPasswordHtml(resetLink);
+
+        if (hasBrevoApi()) {
+            boolean sent = sendViaBrevo(to, subject, htmlBody);
+            if (sent) return true;
+            log.warn("Brevo API failed, checking next provider...");
+        }
 
         if (hasResendApi()) {
             boolean sent = sendViaResend(to, subject, htmlBody);
@@ -205,6 +254,12 @@ public class MailService {
     public boolean sendOtpVerificationEmail(String to, String firstName, String otpCode) {
         String subject = otpCode + " is your GymPilot verification code";
         String htmlBody = buildOtpVerificationHtml(firstName, otpCode);
+
+        if (hasBrevoApi()) {
+            boolean sent = sendViaBrevo(to, subject, htmlBody);
+            if (sent) return true;
+            log.warn("Brevo API failed, checking next provider...");
+        }
 
         if (hasResendApi()) {
             boolean sent = sendViaResend(to, subject, htmlBody);
