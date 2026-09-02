@@ -135,7 +135,7 @@ export default function Cart() {
                               {item.name}
                             </Typography>
                             <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                              ${Number(item.price).toFixed(2)} each · {item.sellerStoreName || 'GymPilot Store'}
+                              {Number(item.price).toFixed(2)} TND each · {item.sellerStoreName || 'GymPilot Store'}
                             </Typography>
                           </Box>
                         </Stack>
@@ -177,7 +177,7 @@ export default function Cart() {
                       {/* Total */}
                       <TableCell align="right">
                         <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'primary.main' }}>
-                          ${(Number(item.price) * item.quantity).toFixed(2)}
+                          {(Number(item.price) * item.quantity).toFixed(2)} TND
                         </Typography>
                       </TableCell>
 
@@ -228,7 +228,7 @@ export default function Cart() {
               <Stack spacing={2} sx={{ mb: 3 }}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Typography variant="body2" color="text.secondary">Subtotal</Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 700 }}>${totals.subtotal.toFixed(2)}</Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 700 }}>{totals.subtotal.toFixed(2)} TND</Typography>
                 </Stack>
 
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -237,7 +237,7 @@ export default function Cart() {
                     <Typography variant="body2" color="text.secondary">Shipping</Typography>
                   </Stack>
                   <Typography variant="body2" sx={{ fontWeight: 700, color: totals.shipping === 0 ? 'success.main' : 'text.primary' }}>
-                    {totals.shipping === 0 ? 'FREE' : `$${totals.shipping.toFixed(2)}`}
+                    {totals.shipping === 0 ? 'FREE' : `${totals.shipping.toFixed(2)} TND`}
                   </Typography>
                 </Stack>
 
@@ -260,7 +260,7 @@ export default function Cart() {
                         </Typography>
                       </Stack>
                       <Typography variant="caption" sx={{ fontWeight: 800, color: 'primary.main' }}>
-                        -${totals.pointsDiscount.toFixed(2)}
+                        -{totals.pointsDiscount.toFixed(2)} TND
                       </Typography>
                     </Stack>
                     <Slider
@@ -272,7 +272,7 @@ export default function Cart() {
                       sx={{ color: 'primary.main' }}
                     />
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'right' }}>
-                      Using {pointsToUse} points for a ${ (pointsToUse * 0.10).toFixed(2) } discount
+                      Using {pointsToUse} points for a { (pointsToUse * 0.10).toFixed(2) } TND discount
                     </Typography>
                   </Paper>
                 )}
@@ -282,7 +282,7 @@ export default function Cart() {
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>Total</Typography>
                   <Typography variant="h5" sx={{ fontWeight: 900, color: 'primary.main', fontFamily: "'Sora', sans-serif" }}>
-                    ${totals.total.toFixed(2)}
+                    {totals.total.toFixed(2)} TND
                   </Typography>
                 </Stack>
 

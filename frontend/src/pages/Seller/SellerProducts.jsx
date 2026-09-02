@@ -328,7 +328,7 @@ export default function SellerProducts() {
                         <Chip label={p.categoryName || 'General'} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
                       </TableCell>
                       <TableCell sx={{ fontWeight: 800, color: 'primary.main' }}>
-                        ${Number(p.price).toFixed(2)}
+                        {Number(p.price).toFixed(2)} TND
                       </TableCell>
                       <TableCell>
                         {p.stockQuantity > 0 ? (

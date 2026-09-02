@@ -89,8 +89,8 @@ export default function SellerDashboard() {
     },
     {
       title: 'Total Sales Revenue',
-      value: `$${(stats?.totalRevenue || 0).toFixed(2)}`,
-      subtext: `$${(stats?.thisMonthRevenue || 0).toFixed(2)} in last 30 days`,
+      value: `${(stats?.totalRevenue || 0).toFixed(2)} TND`,
+      subtext: `${(stats?.thisMonthRevenue || 0).toFixed(2)} TND in last 30 days`,
       icon: <AttachMoneyRoundedIcon sx={{ fontSize: 28, color: '#00E676' }} />,
       bg: 'rgba(0,230,118,0.1)',
       borderColor: 'rgba(0,230,118,0.3)',
@@ -245,7 +245,7 @@ export default function SellerDashboard() {
                       <TableCell>{order.buyerName || order.buyerEmail}</TableCell>
                       <TableCell>{order.items?.length || 1} item(s)</TableCell>
                       <TableCell sx={{ fontWeight: 800, color: 'primary.main' }}>
-                        ${Number(order.totalAmount).toFixed(2)}
+                        {Number(order.totalAmount).toFixed(2)} TND
                       </TableCell>
                       <TableCell>{statusChip(order.status)}</TableCell>
                       <TableCell color="text.secondary">

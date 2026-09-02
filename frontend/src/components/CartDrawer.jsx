@@ -81,7 +81,7 @@ export default function CartDrawer() {
           <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.primary' }}>
             {totals.subtotal >= 50
               ? <><CelebrationRoundedIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5, color: '#C6FF3E' }} /> Free Standard Delivery Unlocked!</>
-              : `Add $${(50 - totals.subtotal).toFixed(2)} more for Free Shipping!`}
+              : `Add ${(50 - totals.subtotal).toFixed(2)} TND more for Free Shipping!`}
           </Typography>
         </Stack>
       </Box>
@@ -150,7 +150,7 @@ export default function CartDrawer() {
                     {item.name}
                   </Typography>
                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                    ${Number(item.price).toFixed(2)} each
+                    {Number(item.price).toFixed(2)} TND each
                   </Typography>
 
                   {/* Quantity controls */}
@@ -184,7 +184,7 @@ export default function CartDrawer() {
                       </IconButton>
                     </Box>
                     <Typography variant="body2" sx={{ fontWeight: 800, color: 'primary.main', ml: 'auto' }}>
-                      ${(Number(item.price) * item.quantity).toFixed(2)}
+                      {(Number(item.price) * item.quantity).toFixed(2)} TND
                     </Typography>
                   </Stack>
                 </Box>
@@ -207,19 +207,19 @@ export default function CartDrawer() {
           <Stack spacing={1.5} sx={{ mb: 2.5 }}>
             <Stack direction="row" justifyContent="space-between" alignItems="center">
               <Typography variant="body2" color="text.secondary">Subtotal</Typography>
-              <Typography variant="body1" sx={{ fontWeight: 700 }}>${totals.subtotal.toFixed(2)}</Typography>
+              <Typography variant="body1" sx={{ fontWeight: 700 }}>{totals.subtotal.toFixed(2)} TND</Typography>
             </Stack>
             <Stack direction="row" justifyContent="space-between" alignItems="center">
               <Typography variant="body2" color="text.secondary">Estimated Shipping</Typography>
               <Typography variant="body2" sx={{ fontWeight: 600, color: totals.shipping === 0 ? 'success.main' : 'text.primary' }}>
-                {totals.shipping === 0 ? 'FREE' : `$${totals.shipping.toFixed(2)}`}
+                {totals.shipping === 0 ? 'FREE' : `${totals.shipping.toFixed(2)} TND`}
               </Typography>
             </Stack>
             <Divider />
             <Stack direction="row" justifyContent="space-between" alignItems="center">
               <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>Estimated Total</Typography>
               <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.main', fontFamily: "'Sora', sans-serif" }}>
-                ${totals.total.toFixed(2)}
+                {totals.total.toFixed(2)} TND
               </Typography>
             </Stack>
           </Stack>

@@ -2,28 +2,28 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <!-- Homepage -->
   <url>
-    <loc>https://gymmpilot.netlify.app/</loc>
+    <loc>https://gympilot.tn/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
 
   <!-- Login Page -->
   <url>
-    <loc>https://gymmpilot.netlify.app/login</loc>
+    <loc>https://gympilot.tn/login</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
 
   <!-- Registration Page -->
   <url>
-    <loc>https://gymmpilot.netlify.app/register</loc>
+    <loc>https://gympilot.tn/register</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
 
   <!-- Forgot Password -->
   <url>
-    <loc>https://gymmpilot.netlify.app/forgot-password</loc>
+    <loc>https://gympilot.tn/forgot-password</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>

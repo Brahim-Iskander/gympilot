@@ -55,6 +55,7 @@ public class MailService {
             return true;
         } catch (Exception ex) {
             log.error("Failed to send password reset email to: {}", to, ex);
+            log.warn("=== [FALLBACK LOG] PASSWORD RESET LINK FOR [{}]: {} ===", to, resetLink);
             return false;
         }
     }
@@ -146,6 +147,7 @@ public class MailService {
             return true;
         } catch (Exception ex) {
             log.error("Failed to send OTP verification email to: {}", to, ex);
+            log.warn("=== [FALLBACK LOG] EMAIL OTP CODE FOR [{}]: {} ===", to, otpCode);
             return false;
         }
     }

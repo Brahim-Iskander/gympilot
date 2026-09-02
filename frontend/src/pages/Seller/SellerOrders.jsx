@@ -149,7 +149,7 @@ export default function SellerOrders() {
                         </Stack>
                       </TableCell>
                       <TableCell sx={{ fontWeight: 800, color: 'primary.main' }}>
-                        ${Number(order.totalAmount).toFixed(2)}
+                        {Number(order.totalAmount).toFixed(2)} TND
                       </TableCell>
                       <TableCell>
                         <Chip

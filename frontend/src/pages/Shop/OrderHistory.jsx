@@ -175,7 +175,7 @@ export default function OrderHistory() {
                       <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Total Paid</Typography>
                         <Typography variant="h6" sx={{ fontWeight: 900, color: 'primary.main', fontFamily: "'Sora', sans-serif" }}>
-                          ${Number(order.totalAmount).toFixed(2)}
+                          {Number(order.totalAmount).toFixed(2)} TND
                         </Typography>
                       </Box>
                       <Button
@@ -205,11 +205,11 @@ export default function OrderHistory() {
                             {item.productName}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            {item.quantity}x @ ${Number(item.price).toFixed(2)} · Sold by {item.sellerName || 'GymPilot Seller'}
+                            {item.quantity}x @ {Number(item.price).toFixed(2)} TND · Sold by {item.sellerName || 'GymPilot Seller'}
                           </Typography>
                         </Box>
                         <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                          ${Number(item.subtotal || item.price * item.quantity).toFixed(2)}
+                          {Number(item.subtotal || item.price * item.quantity).toFixed(2)} TND
                         </Typography>
                       </Stack>
                     ))}
@@ -283,9 +283,9 @@ export default function OrderHistory() {
                       <Avatar src={item.productImage} variant="rounded" sx={{ width: 40, height: 40 }} />
                       <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Typography variant="body2" sx={{ fontWeight: 700 }} noWrap>{item.productName}</Typography>
-                        <Typography variant="caption" color="text.secondary">{item.quantity}x @ ${item.price}</Typography>
+                        <Typography variant="caption" color="text.secondary">{item.quantity}x @ {item.price} TND</Typography>
                       </Box>
-                      <Typography variant="body2" sx={{ fontWeight: 800 }}>${item.subtotal || item.price * item.quantity}</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 800 }}>{item.subtotal || item.price * item.quantity} TND</Typography>
                     </Stack>
                   ))}
                 </Stack>
@@ -296,7 +296,7 @@ export default function OrderHistory() {
                   <Stack direction="row" justifyContent="space-between">
                     <Typography variant="body2" color="text.secondary">Total Paid:</Typography>
                     <Typography variant="subtitle1" sx={{ fontWeight: 900, color: 'primary.main' }}>
-                      ${selectedOrder.totalAmount?.toFixed(2)}
+                      {selectedOrder.totalAmount?.toFixed(2)} TND
                     </Typography>
                   </Stack>
                   {selectedOrder.pointsEarned > 0 && (

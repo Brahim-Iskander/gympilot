@@ -33,6 +33,7 @@ import VerifiedRoundedIcon from '@mui/icons-material/VerifiedRounded';
 import StorefrontRoundedIcon from '@mui/icons-material/StorefrontRounded';
 import FitnessCenterRoundedIcon from '@mui/icons-material/FitnessCenterRounded';
 import TuneRoundedIcon from '@mui/icons-material/TuneRounded';
+import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import AttachMoneyRoundedIcon from '@mui/icons-material/AttachMoneyRounded';
 import DiamondRoundedIcon from '@mui/icons-material/DiamondRounded';
@@ -119,6 +120,15 @@ export default function Shop() {
       <CartDrawer />
 
       <Container maxWidth="xl" sx={{ py: { xs: 3, md: 5 } }}>
+        <Button
+          component={RouterLink}
+          to="/dashboard"
+          startIcon={<ArrowBackRoundedIcon />}
+          sx={{ mb: 2, fontWeight: 700, color: 'text.secondary', '&:hover': { color: 'primary.main' } }}
+        >
+          Back to Dashboard
+        </Button>
+
         {/* ===================== HERO STORE BANNER ===================== */}
         <Card
           sx={{
@@ -470,11 +480,11 @@ export default function Shop() {
                       {/* Price Section */}
                       <Box sx={{ mt: 'auto', pt: 1, display: 'flex', alignItems: 'baseline', gap: 1 }}>
                         <Typography variant="h5" sx={{ fontWeight: 900, color: 'primary.main', fontFamily: "'Sora', sans-serif" }}>
-                          ${Number(product.price).toFixed(2)}
+                          {Number(product.price).toFixed(2)} TND
                         </Typography>
                         {hasDiscount && (
                           <Typography variant="body2" sx={{ color: 'text.secondary', textDecoration: 'line-through' }}>
-                            ${Number(product.originalPrice).toFixed(2)}
+                            {Number(product.originalPrice).toFixed(2)} TND
                           </Typography>
                         )}
                       </Box>

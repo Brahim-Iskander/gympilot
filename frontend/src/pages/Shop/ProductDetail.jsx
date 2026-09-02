@@ -265,11 +265,11 @@ export default function ProductDetail() {
               >
                 <Stack direction="row" alignItems="baseline" spacing={2} sx={{ mb: 1 }}>
                   <Typography variant="h3" sx={{ fontWeight: 900, color: 'primary.main', fontFamily: "'Sora', sans-serif" }}>
-                    ${Number(product.price).toFixed(2)}
+                    {Number(product.price).toFixed(2)} TND
                   </Typography>
                   {hasDiscount && (
                     <Typography variant="h6" sx={{ color: 'text.secondary', textDecoration: 'line-through' }}>
-                      ${Number(product.originalPrice).toFixed(2)}
+                      {Number(product.originalPrice).toFixed(2)} TND
                     </Typography>
                   )}
                   {product.stockQuantity > 0 ? (
@@ -464,7 +464,7 @@ export default function ProductDetail() {
                       {relItem.name}
                     </Typography>
                     <Typography variant="subtitle2" sx={{ color: 'primary.main', fontWeight: 800 }}>
-                      ${Number(relItem.price).toFixed(2)}
+                      {Number(relItem.price).toFixed(2)} TND
                     </Typography>
                   </Card>
                 </Grid>
