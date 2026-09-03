@@ -94,6 +94,49 @@ class AiServiceTest {
         assertDoesNotThrow(() -> {
             JsonNode root = objectMapper.readTree(planJson);
             assertTrue(root.has("supplementPlan"));
+            // Verify triceps exercises are included in the workout
+            String planString = root.get("workoutPlan").toString();
+            assertTrue(planString.toLowerCase().contains("tricep") || planString.toLowerCase().contains("skull crusher") || planString.toLowerCase().contains("dip"));
         });
+    }
+
+    @Test
+    void generatePlan_includesDedicatedTricepsAndPersonalizedDays() {
+        UserOnboarding userA = new UserOnboarding("user-a");
+        userA.setAge(22);
+        userA.setSex("male");
+        userA.setHeightCm(178.0);
+        userA.setWeightKg(72.0);
+        userA.setGoal("build_muscle");
+        userA.setExperienceLevel("intermediate");
+        userA.setDaysPerWeek(3);
+        userA.setPreferredDays(java.util.List.of("monday", "wednesday", "friday"));
+        userA.setEquipment("full_gym");
+
+        String planA = aiService.generatePlan(userA);
+        assertNotNull(planA);
+        // Verify triceps presence in full-body gym routine
+        assertTrue(planA.contains("Tricep") || planA.contains("Skull Crushers"));
+        // Verify preferred day names
+        assertTrue(planA.contains("Monday"));
+        assertTrue(planA.contains("Wednesday"));
+        assertTrue(planA.contains("Friday"));
+
+        UserOnboarding userB = new UserOnboarding("user-b");
+        userB.setAge(30);
+        userB.setSex("male");
+        userB.setHeightCm(185.0);
+        userB.setWeightKg(90.0);
+        userB.setGoal("strength");
+        userB.setExperienceLevel("advanced");
+        userB.setDaysPerWeek(3);
+        userB.setPreferredDays(java.util.List.of("tuesday", "thursday", "saturday"));
+        userB.setEquipment("full_gym");
+
+        String planB = aiService.generatePlan(userB);
+        assertNotNull(planB);
+        assertTrue(planB.contains("Tuesday"));
+        assertTrue(planB.contains("Heavy") || planB.contains("Power"));
+        assertTrue(planB.contains("Tricep") || planB.contains("Close-Grip") || planB.contains("Skull Crushers"));
     }
 }

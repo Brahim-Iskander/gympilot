@@ -105,6 +105,8 @@ public class AiService {
                 "- 4 days per week: 'Upper / Lower' split (Upper A, Lower A, Upper B, Lower B).\n" +
                 "- 5 days per week: 'PPL / Upper Lower Hybrid' split (Push, Pull, Legs, Upper, Lower) OR 'Classic Bro Split' (Chest, Back, Shoulders, Legs, Arms) if Advanced & Hypertrophy.\n" +
                 "- 6 days per week: 'Push / Pull / Legs (PPL)' split (Push A, Pull A, Legs A, Push B, Pull B, Legs B).\n" +
+                "- MANDATORY ARM TRAINING: Every push, upper, and full-body session MUST include dedicated TRICEPS exercises (e.g. Cable Rope Pushdowns, Skull Crushers, Overhead Tricep Extensions, or Dips) and BICEPS work. Do not omit triceps!\n" +
+                "- GOAL SPECIFIC ADAPTATION: Adapt rep ranges, volume, and exercise selection specifically for goal: %s (Hypertrophy: 8-12 reps with muscle pump focus; Strength: 4-6 reps with heavy tricep lockout; Fat Loss/Cut: 10-15 reps with metabolic density).\n" +
                 "Return ONLY a valid JSON object (no markdown formatting, no comments) with this exact structure: " +
                 "{" +
                 "  \"workoutPlan\": [" +
@@ -140,6 +142,7 @@ public class AiService {
                 o.getEquipment() != null ? o.getEquipment() : "Bodyweight",
                 (o.getInjuries() != null && !o.getInjuries().isEmpty() ? o.getInjuries() : "None"),
                 o.getDaysPerWeek() != null ? o.getDaysPerWeek() : 3,
+                o.getGoal() != null ? o.getGoal() : "General Fitness",
                 o.getGoal() != null ? o.getGoal() : "General Fitness"
         );
     }
@@ -183,84 +186,120 @@ public class AiService {
         int carbs = (int) Math.round((calories - protein * 4 - fat * 9) / 4.0);
         if (carbs < 100) carbs = 100;
 
-        // --- WORKOUT: Build workout days based on goal, experience, equipment, daysPerWeek ---
+        // --- WORKOUT: Build workout days dynamically based on goal, experience, equipment, daysPerWeek ---
         StringBuilder workoutPlan = new StringBuilder();
         boolean hasGym = equipment.contains("full") || equipment.contains("gym") || equipment.contains("barbell") || equipment.contains("machine");
         boolean hasDumbbells = hasGym || equipment.contains("dumbbell") || equipment.contains("home");
         boolean isBodyweight = !hasGym && !hasDumbbells;
 
-        int sets = experience.contains("beginner") ? 3 : experience.contains("intermediate") ? 4 : 4;
-        String repsStrength = experience.contains("beginner") ? "8-10" : experience.contains("intermediate") ? "6-10" : "5-8";
-        String repsHyper = experience.contains("beginner") ? "10-12" : "8-12";
-        String repsEndurance = "12-15";
+        boolean isBuildMuscle = goal.contains("gain") || goal.contains("muscle") || goal.contains("bulk") || goal.contains("hypertrophy");
+        boolean isLoseFat = goal.contains("loss") || goal.contains("fat") || goal.contains("cut") || goal.contains("lean");
+        boolean isStrength = goal.contains("strength") || goal.contains("power");
 
-        // Determine specific split type based on user's onboarding info
+        int sets = experience.contains("beginner") ? 3 : (isStrength || isBuildMuscle ? 4 : 3);
+        String repsStrength = isStrength ? "4-6" : (isBuildMuscle ? "6-8" : (isLoseFat ? "8-10" : "6-10"));
+        String repsHyper = isStrength ? "6-8" : (isBuildMuscle ? "8-12" : (isLoseFat ? "10-12" : "8-12"));
+        String repsArm = isStrength ? "6-8" : (isBuildMuscle ? "10-12" : (isLoseFat ? "12-15" : "10-12"));
+        String repsEndurance = isLoseFat ? "15-20" : "12-15";
+
+        List<String> userPreferredDays = (o != null && o.getPreferredDays() != null && !o.getPreferredDays().isEmpty())
+                ? o.getPreferredDays() : List.of();
+
         if (daysPerWeek <= 3 || (daysPerWeek == 4 && experience.contains("beginner") && minutesPerSession <= 40)) {
-            // --- FULL BODY SPLIT (2-3 days or time-restricted beginner) ---
+            // --- FULL BODY SPLIT (2-3 days) with DEDICATED TRICEPS in EVERY session ---
             int actualDays = Math.min(daysPerWeek, 3);
             for (int d = 1; d <= actualDays; d++) {
+                String dayPrefix = (userPreferredDays.size() >= d)
+                        ? capitalize(userPreferredDays.get(d - 1)) + ": "
+                        : "Full Body Day " + d + ": ";
+
+                String dayTitle;
+                if (d == 1) {
+                    dayTitle = isStrength ? "Heavy Push, Squat & Tricep Power"
+                             : (isLoseFat ? "Metabolic Compound & Triceps Sculpt"
+                             : "Chest, Quads & Triceps Hypertrophy");
+                } else if (d == 2) {
+                    dayTitle = isStrength ? "Posterior Chain, Overhead Press & Arms"
+                             : (isLoseFat ? "Back, Shoulders & Long-Head Triceps"
+                             : "Back, Shoulders, Biceps & Skullcrushers");
+                } else {
+                    dayTitle = isStrength ? "Heavy Overload, Rows & Tricep Lockouts"
+                             : (isLoseFat ? "Athletic Conditioning & Arm Definition"
+                             : "Volume Legs, Chest & Overhead Triceps");
+                }
+
                 workoutPlan.append("    {\n");
-                workoutPlan.append("      \"dayName\": \"Full Body Day ").append(d).append("\",\n");
+                workoutPlan.append("      \"dayName\": \"").append(dayPrefix).append(dayTitle).append("\",\n");
                 workoutPlan.append("      \"exercises\": [\n");
+
                 if (d == 1) {
                     if (hasGym) {
-                        workoutPlan.append(exercise("Barbell Squat", sets, repsStrength, "Keep core braced, chest up"));
-                        workoutPlan.append(exercise("Barbell Bench Press", sets, repsStrength, "Retract shoulder blades"));
-                        workoutPlan.append(exercise("Bent-Over Barbell Row", sets, repsHyper, "Pull to lower chest"));
-                        workoutPlan.append(exercise("Overhead Press", 3, repsHyper, "Press slightly behind head at top"));
-                        workoutPlan.append(exerciseLast("Plank", 3, "45-60s", "Maintain neutral spine"));
+                        workoutPlan.append(exercise("Barbell Back Squat", sets, repsStrength, "Brace core tight, drive up explosively"));
+                        workoutPlan.append(exercise("Barbell Bench Press", sets, repsStrength, "Retract scapulae, touch lower chest"));
+                        workoutPlan.append(exercise("Bent-Over Barbell Row", sets, repsHyper, "Pull to navel, squeeze lats"));
+                        workoutPlan.append(exercise("Overhead Barbell Military Press", 3, repsHyper, "Full overhead extension"));
+                        workoutPlan.append(exercise("Cable Rope Tricep Pushdown", sets, repsArm, "Flare rope at bottom, squeeze lateral & medial triceps heads"));
+                        workoutPlan.append(exerciseLast("Plank", 3, "45-60s", "Maintain neutral spine and rigid core"));
                     } else if (hasDumbbells) {
-                        workoutPlan.append(exercise("Goblet Squat", sets, repsStrength, "Hold dumbbell at chest"));
-                        workoutPlan.append(exercise("Dumbbell Bench Press", sets, repsHyper, "Full range of motion"));
-                        workoutPlan.append(exercise("Dumbbell Row", sets, repsHyper, "Squeeze shoulder blade at top"));
-                        workoutPlan.append(exercise("Dumbbell Shoulder Press", 3, repsHyper, "Control the negative"));
+                        workoutPlan.append(exercise("Goblet Squat", sets, repsStrength, "Hold dumbbell tight at chest"));
+                        workoutPlan.append(exercise("Dumbbell Bench Press", sets, repsHyper, "Full range of motion, deep chest stretch"));
+                        workoutPlan.append(exercise("One-Arm Dumbbell Row", sets, repsHyper, "Squeeze lat at top of movement"));
+                        workoutPlan.append(exercise("Dumbbell Shoulder Press", 3, repsHyper, "Press straight overhead with control"));
+                        workoutPlan.append(exercise("Overhead Dumbbell Tricep Extension", sets, repsArm, "Keep elbows tucked forward, deep triceps stretch"));
                         workoutPlan.append(exerciseLast("Plank", 3, "45-60s", "Maintain neutral spine"));
                     } else {
-                        workoutPlan.append(exercise("Bodyweight Squat", sets, "15-20", "Full depth"));
-                        workoutPlan.append(exercise("Push-Ups", sets, "AMRAP", "Keep body straight"));
-                        workoutPlan.append(exercise("Inverted Rows or Door Rows", sets, repsHyper, "Squeeze shoulder blades"));
-                        workoutPlan.append(exercise("Pike Push-Ups", 3, repsHyper, "Target shoulders"));
-                        workoutPlan.append(exerciseLast("Plank", 3, "45-60s", "Maintain neutral spine"));
+                        workoutPlan.append(exercise("Bodyweight Squat", sets, "15-20", "Full depth, explosive tempo"));
+                        workoutPlan.append(exercise("Push-Ups", sets, "AMRAP", "Chest to floor, tight core"));
+                        workoutPlan.append(exercise("Inverted Rows or Door Rows", sets, repsHyper, "Squeeze upper back"));
+                        workoutPlan.append(exercise("Pike Push-Ups", 3, repsHyper, "Target anterior and lateral deltoids"));
+                        workoutPlan.append(exercise("Diamond Push-Ups (Triceps Focus)", sets, repsArm, "Hands touching under chest, lockout triceps firmly"));
+                        workoutPlan.append(exerciseLast("Plank", 3, "45-60s", "Brace core and glutes"));
                     }
                 } else if (d == 2) {
                     if (hasGym) {
-                        workoutPlan.append(exercise("Romanian Deadlift", sets, repsStrength, "Hinge at hips, feel hamstring stretch"));
-                        workoutPlan.append(exercise("Incline Dumbbell Press", sets, repsHyper, "45-degree angle"));
-                        workoutPlan.append(exercise("Lat Pulldown", sets, repsHyper, "Pull to upper chest"));
-                        workoutPlan.append(exercise("Dumbbell Lateral Raises", 3, repsEndurance, "Lead with elbows"));
-                        workoutPlan.append(exerciseLast("Cable Crunches", 3, repsHyper, "Round the spine"));
+                        workoutPlan.append(exercise("Romanian Deadlift", sets, repsStrength, "Hinge hips back, feel hamstring stretch"));
+                        workoutPlan.append(exercise("Incline Dumbbell Press", sets, repsHyper, "30-degree incline for clavicular upper chest"));
+                        workoutPlan.append(exercise("Lat Pulldown (Wide Grip)", sets, repsHyper, "Pull to clavicle, lead with elbows"));
+                        workoutPlan.append(exercise("Dumbbell Lateral Raises", 3, repsEndurance, "Lead with elbows for side delt cap"));
+                        workoutPlan.append(exercise("EZ-Bar Skull Crushers (Lying Tricep Extension)", sets, repsArm, "Lower bar to forehead, full long-head triceps stretch"));
+                        workoutPlan.append(exerciseLast("Incline Dumbbell Bicep Curl", sets, repsArm, "Supinate at top, full bicep contraction"));
                     } else if (hasDumbbells) {
-                        workoutPlan.append(exercise("Dumbbell Romanian Deadlift", sets, repsStrength, "Hinge at hips"));
-                        workoutPlan.append(exercise("Incline Dumbbell Press", sets, repsHyper, "Use pillows for incline"));
-                        workoutPlan.append(exercise("Dumbbell Pullover", sets, repsHyper, "Feel the lat stretch"));
-                        workoutPlan.append(exercise("Dumbbell Lateral Raises", 3, repsEndurance, "Lead with elbows"));
-                        workoutPlan.append(exerciseLast("Crunches", 3, "15-20", "Slow and controlled"));
+                        workoutPlan.append(exercise("Dumbbell Romanian Deadlift", sets, repsStrength, "Hinge at hips, flat back"));
+                        workoutPlan.append(exercise("Incline Dumbbell Press", sets, repsHyper, "Elevate upper torso for upper chest"));
+                        workoutPlan.append(exercise("Dumbbell Pullover", sets, repsHyper, "Feel the lat and serratus stretch"));
+                        workoutPlan.append(exercise("Dumbbell Lateral Raises", 3, repsEndurance, "Strict form, slight forward lean"));
+                        workoutPlan.append(exercise("Dumbbell Skull Crushers (Lying)", sets, repsArm, "Lower dumbbells by ears, extend triceps"));
+                        workoutPlan.append(exerciseLast("Dumbbell Bicep Curl", sets, repsArm, "Control eccentric negative on way down"));
                     } else {
-                        workoutPlan.append(exercise("Single Leg Glute Bridge", sets, "12-15 each", "Squeeze glute at top"));
-                        workoutPlan.append(exercise("Decline Push-Ups", sets, "AMRAP", "Feet elevated"));
-                        workoutPlan.append(exercise("Superman Rows", sets, repsHyper, "Squeeze shoulder blades"));
-                        workoutPlan.append(exercise("Lateral Plank Walk", 3, "10 each side", "Keep hips level"));
-                        workoutPlan.append(exerciseLast("Bicycle Crunches", 3, "20 total", "Slow and controlled"));
+                        workoutPlan.append(exercise("Single Leg Glute Bridge", sets, "12-15 each", "Pause and squeeze glute at peak"));
+                        workoutPlan.append(exercise("Decline Push-Ups", sets, "AMRAP", "Elevate feet to target upper chest and delts"));
+                        workoutPlan.append(exercise("Superman Rows", sets, repsHyper, "Squeeze lats and rhomboids"));
+                        workoutPlan.append(exercise("Chair or Bench Tricep Dips", sets, repsArm, "Torso upright, lock out triceps at top"));
+                        workoutPlan.append(exercise("Chin-Ups or Doorframe Curls", sets, repsArm, "Focus on bicep pulling strength"));
+                        workoutPlan.append(exerciseLast("Bicycle Crunches", 3, "20 total", "Slow and controlled rotations"));
                     }
                 } else {
                     if (hasGym) {
-                        workoutPlan.append(exercise("Leg Press", sets, repsHyper, "Feet shoulder width"));
-                        workoutPlan.append(exercise("Dumbbell Chest Fly", 3, repsHyper, "Deep stretch at bottom"));
-                        workoutPlan.append(exercise("Cable Row", sets, repsHyper, "Squeeze at contraction"));
-                        workoutPlan.append(exercise("Face Pulls", 3, repsEndurance, "External rotate at top"));
-                        workoutPlan.append(exerciseLast("Hanging Leg Raises", 3, "10-12", "Control the swing"));
+                        workoutPlan.append(exercise("Leg Press", sets, repsHyper, "Shoulder-width stance, control negative"));
+                        workoutPlan.append(exercise("Seated Cable Row", sets, repsHyper, "Close grip, squeeze shoulder blades"));
+                        workoutPlan.append(exercise("Cable Chest Flyes", 3, repsHyper, "Deep chest stretch, peak contraction"));
+                        workoutPlan.append(exercise("Face Pulls", 3, repsEndurance, "External rotation at top for rear delts and rotator cuffs"));
+                        workoutPlan.append(exercise("Overhead Cable Tricep Extension", sets, repsArm, "Elbows pinned forward, maximum long-head tricep lockout"));
+                        workoutPlan.append(exerciseLast("Hanging Leg Raises", 3, "12-15", "Control swing, curl pelvis upward"));
                     } else if (hasDumbbells) {
-                        workoutPlan.append(exercise("Bulgarian Split Squat", sets, "10 each", "Keep torso upright"));
-                        workoutPlan.append(exercise("Dumbbell Floor Press", 3, repsHyper, "Pause at bottom"));
-                        workoutPlan.append(exercise("Dumbbell Reverse Fly", 3, repsEndurance, "Bend at hips"));
-                        workoutPlan.append(exercise("Dumbbell Curl to Press", 3, repsHyper, "Combine movements"));
-                        workoutPlan.append(exerciseLast("Leg Raises", 3, "12-15", "Keep lower back flat"));
+                        workoutPlan.append(exercise("Bulgarian Split Squat", sets, "10 each", "Torso upright, deep quad burn"));
+                        workoutPlan.append(exercise("Dumbbell Floor Press", sets, repsHyper, "Pause on floor, explosive press"));
+                        workoutPlan.append(exercise("Dumbbell Reverse Fly", 3, repsEndurance, "Hinged forward, target rear delts"));
+                        workoutPlan.append(exercise("Dumbbell Tricep Kickbacks", sets, repsArm, "Upper arm parallel to floor, squeeze triceps peak"));
+                        workoutPlan.append(exercise("Dumbbell Hammer Curl", sets, repsArm, "Neutral grip for brachialis and forearm thickness"));
+                        workoutPlan.append(exerciseLast("Lying Leg Raises", 3, "12-15", "Keep lower back pressed flat into floor"));
                     } else {
-                        workoutPlan.append(exercise("Pistol Squat Progression", sets, "5-8 each", "Use support if needed"));
-                        workoutPlan.append(exercise("Diamond Push-Ups", sets, "AMRAP", "Target triceps"));
-                        workoutPlan.append(exercise("Towel Rows", sets, repsHyper, "Use a sturdy door"));
-                        workoutPlan.append(exercise("Handstand Wall Hold", 3, "20-30s", "Build shoulder strength"));
-                        workoutPlan.append(exerciseLast("Dead Bug", 3, "10 each side", "Opposite arm and leg"));
+                        workoutPlan.append(exercise("Pistol Squat Progression", sets, "6-8 each", "Single leg strength"));
+                        workoutPlan.append(exercise("Bodyweight Tricep Extensions on Table/Bar", sets, repsArm, "Pivot at elbows, push up through triceps"));
+                        workoutPlan.append(exercise("Towel Door Rows", sets, repsHyper, "Pause at full contraction"));
+                        workoutPlan.append(exercise("Pike Push-Ups or Handstand Hold", 3, "20-30s", "Shoulder pressing strength"));
+                        workoutPlan.append(exercise("Close-Grip Push-Ups", sets, repsArm, "Elbows tucked against ribs, triceps burnout"));
+                        workoutPlan.append(exerciseLast("Dead Bug", 3, "10 each side", "Anti-extension core control"));
                     }
                 }
                 workoutPlan.append("      ]\n");
@@ -269,27 +308,31 @@ public class AiService {
                 workoutPlan.append("\n");
             }
         } else if (daysPerWeek == 4) {
-            // --- UPPER / LOWER SPLIT (4 days) ---
-            String[] splitNames = {"Upper Body A", "Lower Body A", "Upper Body B", "Lower Body B"};
+            // --- UPPER / LOWER SPLIT (4 days) with DUAL TRICEPS ROTATION ---
+            String[] splitBase = {"Upper Body A (Chest, Back & Tricep Pushdown)", "Lower Body A (Quad & Glute Dominant)", "Upper Body B (Shoulders, Chest & Overhead Triceps)", "Lower Body B (Hamstring & Posterior Chain)"};
             String[][][] exercises;
             if (hasGym) {
                 exercises = new String[][][]{
-                    {{"Barbell Bench Press", repsStrength, "Retract shoulder blades"}, {"Bent-Over Row", repsHyper, "Pull to navel"}, {"Overhead Press", repsHyper, "Keep core tight"}, {"Lat Pulldown", repsHyper, "Pull to upper chest"}, {"Dumbbell Curl", repsHyper, "Control the negative"}},
-                    {{"Barbell Squat", repsStrength, "Below parallel"}, {"Romanian Deadlift", repsStrength, "Feel the hamstring stretch"}, {"Leg Press", repsHyper, "Don't lock out knees"}, {"Calf Raises", repsEndurance, "Full range of motion"}, {"Plank", "45-60s", "Maintain neutral spine"}},
-                    {{"Incline Dumbbell Press", repsHyper, "30-45 degree angle"}, {"Cable Row", repsHyper, "Squeeze shoulder blades"}, {"Dumbbell Lateral Raise", repsEndurance, "Lead with elbows"}, {"Tricep Pushdown", repsHyper, "Keep elbows pinned"}, {"Face Pulls", repsEndurance, "External rotate at top"}},
-                    {{"Bulgarian Split Squat", "10 each leg", "Keep torso upright"}, {"Leg Curl", repsHyper, "Squeeze hamstrings"}, {"Hip Thrust", repsHyper, "Squeeze glutes at top"}, {"Leg Extension", repsHyper, "Controlled tempo"}, {"Hanging Leg Raises", "10-12", "Control the swing"}}
+                    {{"Barbell Bench Press", repsStrength, "Retract shoulder blades, powerful chest press"}, {"Bent-Over Barbell Row", repsHyper, "Pull to navel, squeeze lats"}, {"Overhead Barbell Press", repsHyper, "Strict shoulder press"}, {"Lat Pulldown", repsHyper, "Pull to upper chest"}, {"Cable Rope Tricep Pushdown", repsArm, "Spread rope at bottom, squeeze lateral head"}, {"Incline Dumbbell Bicep Curl", repsArm, "Full bicep stretch"}},
+                    {{"Barbell Back Squat", repsStrength, "Below parallel, explosive drive"}, {"Romanian Deadlift", repsStrength, "Feel the hamstring stretch"}, {"Leg Press", repsHyper, "Leg volume, don't lock knees"}, {"Standing Calf Raises", repsEndurance, "Full stretch and pause at peak"}, {"Plank", "45-60s", "Maintain neutral spine"}},
+                    {{"Incline Dumbbell Press", repsHyper, "30-degree angle for upper chest"}, {"Seated Cable Row", repsHyper, "Squeeze mid-back rhomboids"}, {"Dumbbell Lateral Raise", repsEndurance, "Lead with elbows for side delts"}, {"Cable Chest Flyes", repsHyper, "Deep stretch and contraction"}, {"Overhead Cable Tricep Extension", repsArm, "Elbows high, full tricep long-head stretch"}, {"EZ-Bar Skull Crushers", repsArm, "Lower to forehead, explode up"}, {"Face Pulls", repsEndurance, "External rotate at top"}},
+                    {{"Bulgarian Split Squat", "10 each leg", "Keep torso upright"}, {"Lying Leg Curl", repsHyper, "Squeeze hamstrings at contraction"}, {"Barbell Hip Thrust", repsHyper, "Squeeze glutes hard at top"}, {"Leg Extension", repsHyper, "Controlled tempo, peak quad squeeze"}, {"Hanging Leg Raises", "12-15", "Control swing, engage lower abs"}}
                 };
             } else {
                 exercises = new String[][][]{
-                    {{"Push-Ups", "AMRAP", "Vary hand width"}, {"Dumbbell Row", repsHyper, "Squeeze at top"}, {"Dumbbell Shoulder Press", repsHyper, "Full ROM"}, {"Dumbbell Curl", repsHyper, "Slow eccentric"}, {"Tricep Dips on Chair", repsHyper, "Keep elbows close"}},
-                    {{"Goblet Squat", repsHyper, "Deep squat"}, {"Dumbbell RDL", repsStrength, "Hip hinge"}, {"Walking Lunges", "12 each", "Step far"}, {"Calf Raises", repsEndurance, "Pause at top"}, {"Plank", "45-60s", "Tight core"}},
-                    {{"Incline Push-Ups", repsHyper, "Elevate hands"}, {"Dumbbell Pullover", repsHyper, "Feel the stretch"}, {"Lateral Raises", repsEndurance, "Light weight"}, {"Hammer Curl", repsHyper, "Both heads"}, {"Overhead Tricep Extension", repsHyper, "Stretch at bottom"}},
-                    {{"Sumo Squat", repsHyper, "Wide stance"}, {"Single Leg RDL", "10 each", "Balance focus"}, {"Glute Bridge", repsHyper, "Squeeze at top"}, {"Step Ups", "10 each", "Drive with front leg"}, {"Bicycle Crunches", "20 total", "Slow rotation"}}
+                    {{"Push-Ups", "AMRAP", "Chest & triceps power"}, {"Dumbbell Row", repsHyper, "Squeeze back at peak"}, {"Dumbbell Shoulder Press", repsHyper, "Full overhead ROM"}, {"Dumbbell Curl", repsArm, "Strict form, no swing"}, {"Overhead Dumbbell Tricep Extension", repsArm, "Keep elbows tucked, full stretch"}, {"Chair Tricep Dips", repsArm, "Upright posture, tricep lockout"}},
+                    {{"Goblet Squat", repsHyper, "Deep squat depth"}, {"Dumbbell RDL", repsStrength, "Hip hinge hamstring loading"}, {"Walking Lunges", "12 each leg", "Long stride for glutes"}, {"Calf Raises", repsEndurance, "Slow tempo"}, {"Plank", "45-60s", "Tight core"}},
+                    {{"Incline Dumbbell Press", repsHyper, "Upper chest loading"}, {"Dumbbell Pullover", repsHyper, "Feel the lat stretch"}, {"Dumbbell Lateral Raises", repsEndurance, "Side deltoids"}, {"Dumbbell Skull Crushers", repsArm, "Lying on bench/floor, lower to ears"}, {"Dumbbell Kickbacks", repsArm, "Peak triceps squeeze"}, {"Hammer Curl", repsArm, "Brachialis forearm thickness"}},
+                    {{"Sumo Squat", repsHyper, "Wide stance, inner quad focus"}, {"Single Leg RDL", "10 each", "Posterior chain balance"}, {"Glute Bridge", repsHyper, "Squeeze glutes at top"}, {"Step Ups", "10 each", "Drive through lead heel"}, {"Bicycle Crunches", "20 total", "Slow rotation"}}
                 };
             }
             for (int d = 0; d < 4; d++) {
+                String dayPrefix = (userPreferredDays.size() >= d + 1)
+                        ? capitalize(userPreferredDays.get(d)) + ": "
+                        : "";
+
                 workoutPlan.append("    {\n");
-                workoutPlan.append("      \"dayName\": \"").append(splitNames[d]).append("\",\n");
+                workoutPlan.append("      \"dayName\": \"").append(dayPrefix).append(splitBase[d]).append("\",\n");
                 workoutPlan.append("      \"exercises\": [\n");
                 String[][] dayExercises = exercises[d];
                 for (int e = 0; e < dayExercises.length; e++) {
@@ -303,22 +346,26 @@ public class AiService {
             }
         } else if (daysPerWeek == 5) {
             // Check if Bro Split (Classic Bodybuilding) vs PPL / Upper Lower Hybrid
-            boolean isBroSplit = experience.contains("advanced") || goal.contains("build_muscle") || goal.contains("bulk");
+            boolean isBroSplit = experience.contains("advanced") || isBuildMuscle;
 
             if (isBroSplit && hasGym) {
-                // --- BRO SPLIT (5 days: Chest, Back, Shoulders, Legs, Arms) ---
-                String[] dayNames = {"Chest & Abs Day", "Back & Biceps Day", "Shoulders & Traps Day", "Legs & Calves Day", "Arms & Core Day"};
+                // --- BRO SPLIT (5 days) with HUGE TRICEPS & ARMS HYPERTROPHY ---
+                String[] dayNames = {"Chest & Triceps Finisher", "Back & Biceps Thickness", "Shoulders & Triceps Density", "Legs & Calves Power", "Dedicated Arms & Core Hypertrophy"};
                 String[][][] exercises = new String[][][]{
-                    {{"Barbell Bench Press", repsStrength, "Heavy compound"}, {"Incline Dumbbell Press", repsHyper, "Upper chest focus"}, {"Cable Flyes", repsHyper, "Peak contraction"}, {"Push-Ups", "AMRAP", "Burnout"}, {"Hanging Leg Raises", "12-15", "Lower abs"}},
-                    {{"Deadlift or Rack Pull", repsStrength, "Posterior chain"}, {"Lat Pulldown", repsHyper, "Wide grip"}, {"Seated Cable Row", repsHyper, "Mid back squeeze"}, {"Barbell Curl", repsHyper, "Strict form"}, {"Hammer Curls", repsHyper, "Brachialis focus"}},
-                    {{"Overhead Barbell Press", repsStrength, "Strict press"}, {"Dumbbell Lateral Raises", repsEndurance, "Lead with elbows"}, {"Reverse Pec Deck", repsEndurance, "Rear delts"}, {"Dumbbell Shrugs", repsHyper, "Heavy traps hold"}, {"Face Pulls", repsEndurance, "Shoulder health"}},
-                    {{"Barbell Squat", repsStrength, "Deep squat"}, {"Leg Press", repsHyper, "Heavy volume"}, {"Lying Leg Curl", repsHyper, "Hamstrings"}, {"Standing Calf Raise", repsEndurance, "Pause at top"}, {"Ab Wheel Rollouts", "10-12", "Brace core"}},
-                    {{"Close Grip Bench Press", repsHyper, "Triceps compound"}, {"Incline Dumbbell Curl", repsHyper, "Biceps stretch"}, {"Skull Crushers", repsHyper, "Elbow extension"}, {"Preacher Curl", repsHyper, "Peak squeeze"}, {"Plank Hold", "60s", "Tight core"}}
+                    {{"Barbell Bench Press", repsStrength, "Heavy compound chest mass"}, {"Incline Dumbbell Press", repsHyper, "Clavicular head growth"}, {"Cable Flyes", repsHyper, "Peak inner chest squeeze"}, {"Cable Rope Tricep Pushdown", repsArm, "Spread rope at bottom, triceps pump"}, {"Push-Ups", "AMRAP", "Chest burnout"}, {"Hanging Leg Raises", "12-15", "Lower abs"}},
+                    {{"Deadlift or Rack Pull", repsStrength, "Posterior chain power"}, {"Lat Pulldown (Wide)", repsHyper, "Back width"}, {"Seated Cable Row", repsHyper, "Mid-back rhomboid thickness"}, {"Barbell Bicep Curl", repsArm, "Strict mass builder"}, {"Incline Dumbbell Curl", repsArm, "Long-head stretch"}, {"Hammer Curls", repsArm, "Brachialis arm thickness"}},
+                    {{"Overhead Barbell Military Press", repsStrength, "Strict shoulder power"}, {"Dumbbell Lateral Raises", repsEndurance, "Lead with elbows for round caps"}, {"Reverse Pec Deck", repsEndurance, "Rear deltoids"}, {"Overhead Cable Tricep Extension", repsArm, "Deep triceps stretch, full lockout"}, {"Dumbbell Shrugs", repsHyper, "Heavy traps squeeze"}, {"Face Pulls", repsEndurance, "Rotator cuff and posture"}},
+                    {{"Barbell Back Squat", repsStrength, "Deep compound quad drive"}, {"Leg Press", repsHyper, "High volume hypertrophy"}, {"Lying Leg Curl", repsHyper, "Hamstrings"}, {"Standing Calf Raise", repsEndurance, "Pause at top"}, {"Ab Wheel Rollouts", "10-12", "Core anti-extension"}},
+                    {{"Close-Grip Barbell Bench Press", repsHyper, "Elbows tucked, heavy triceps compound overload"}, {"EZ-Bar Skull Crushers", repsArm, "Lying triceps extension to forehead"}, {"Straight-Bar Cable Tricep Pushdown", repsArm, "Lock out hard at bottom"}, {"Preacher Bicep Curl", repsArm, "Isolate bicep peak"}, {"Dumbbell Hammer Curls", repsArm, "Arm width and forearms"}, {"Plank Hold", "60s", "Rigid core"}}
                 };
 
                 for (int d = 0; d < 5; d++) {
+                    String dayPrefix = (userPreferredDays.size() >= d + 1)
+                            ? capitalize(userPreferredDays.get(d)) + ": "
+                            : "";
+
                     workoutPlan.append("    {\n");
-                    workoutPlan.append("      \"dayName\": \"").append(dayNames[d]).append("\",\n");
+                    workoutPlan.append("      \"dayName\": \"").append(dayPrefix).append(dayNames[d]).append("\",\n");
                     workoutPlan.append("      \"exercises\": [\n");
                     String[][] dayExercises = exercises[d];
                     for (int e = 0; e < dayExercises.length; e++) {
@@ -331,30 +378,34 @@ public class AiService {
                     workoutPlan.append("\n");
                 }
             } else {
-                // --- PPL / UPPER LOWER HYBRID (5 days: Push, Pull, Legs, Upper, Lower) ---
-                String[] dayNames = {"Push Day", "Pull Day", "Legs Day", "Upper Body Hypertrophy", "Lower Body Hypertrophy"};
+                // --- PPL / UPPER LOWER HYBRID (5 days) with DUAL TRICEPS ON PUSH & UPPER ---
+                String[] dayNames = {"Push Day (Chest, Shoulders & Triceps)", "Pull Day (Back & Biceps)", "Legs Day (Quads, Hamstrings & Calves)", "Upper Body Hypertrophy (Chest, Lats & Dual Triceps)", "Lower Body & Core"};
                 String[][][] exercises;
                 if (hasGym) {
                     exercises = new String[][][]{
-                        {{"Barbell Bench Press", repsStrength, "Chest focus"}, {"Incline DB Press", repsHyper, "Upper chest"}, {"Dumbbell Lateral Raise", repsEndurance, "Side delts"}, {"Tricep Pushdown", repsHyper, "Triceps"}, {"Plank", "45-60s", "Core"}},
-                        {{"Barbell Row", repsStrength, "Back density"}, {"Lat Pulldown", repsHyper, "Back width"}, {"Face Pulls", repsEndurance, "Rear delts"}, {"Barbell Curl", repsHyper, "Biceps"}, {"Cable Crunches", repsHyper, "Abs"}},
+                        {{"Barbell Bench Press", repsStrength, "Heavy chest compound"}, {"Incline Dumbbell Press", repsHyper, "Upper chest shelf"}, {"Dumbbell Lateral Raise", repsEndurance, "Side delts"}, {"Cable Rope Tricep Pushdown", repsArm, "Flare rope at bottom, triceps squeeze"}, {"Overhead Cable Tricep Extension", repsArm, "Full long-head triceps stretch"}, {"Plank", "45-60s", "Core stability"}},
+                        {{"Barbell Row", repsStrength, "Back density"}, {"Lat Pulldown", repsHyper, "Back width"}, {"Face Pulls", repsEndurance, "Rear delts"}, {"Barbell Curl", repsArm, "Biceps"}, {"Cable Crunches", repsHyper, "Abs"}},
                         {{"Barbell Squat", repsStrength, "Quads & Glutes"}, {"Romanian Deadlift", repsHyper, "Hamstrings"}, {"Leg Press", repsHyper, "Leg volume"}, {"Calf Raises", repsEndurance, "Calves"}, {"Leg Raises", "12-15", "Abs"}},
-                        {{"Overhead Press", repsStrength, "Shoulders"}, {"Weighted Pull-Ups or Pulldown", repsHyper, "Lats"}, {"Dumbbell Chest Fly", repsHyper, "Chest"}, {"Hammer Curl", repsHyper, "Arms"}, {"Overhead Tricep Extension", repsHyper, "Triceps"}},
+                        {{"Overhead Press", repsStrength, "Shoulders"}, {"Weighted Pull-Ups or Pulldown", repsHyper, "Lats"}, {"Dumbbell Chest Fly", repsHyper, "Chest"}, {"EZ-Bar Skull Crushers", repsArm, "Triceps long-head isolation"}, {"Cable Tricep Pushdown", repsArm, "Lateral triceps head pump"}, {"Hammer Curl", repsArm, "Arms & brachialis"}},
                         {{"Bulgarian Split Squat", "10 each", "Single leg strength"}, {"Hip Thrust", repsHyper, "Glutes"}, {"Leg Curl", repsHyper, "Hamstrings"}, {"Seated Calf Raise", repsEndurance, "Calves"}, {"Ab Wheel or Plank", "12-15", "Core"}}
                     };
                 } else {
                     exercises = new String[][][]{
-                        {{"Push-Ups", "AMRAP", "Chest"}, {"Pike Push-Ups", repsHyper, "Shoulders"}, {"Diamond Push-Ups", repsHyper, "Triceps"}, {"Lateral Raises", repsEndurance, "Side delts"}, {"Plank", "60s", "Core"}},
-                        {{"Dumbbell Row", repsHyper, "Back"}, {"Dumbbell Pullover", repsHyper, "Lats"}, {"Reverse Fly", repsEndurance, "Rear delts"}, {"Dumbbell Curl", repsHyper, "Biceps"}, {"Bicycle Crunches", "20 total", "Abs"}},
+                        {{"Push-Ups", "AMRAP", "Chest"}, {"Pike Push-Ups", repsHyper, "Shoulders"}, {"Diamond Push-Ups", repsArm, "Triceps lockout"}, {"Overhead Dumbbell Tricep Extension", repsArm, "Triceps stretch"}, {"Lateral Raises", repsEndurance, "Side delts"}, {"Plank", "60s", "Core"}},
+                        {{"Dumbbell Row", repsHyper, "Back"}, {"Dumbbell Pullover", repsHyper, "Lats"}, {"Reverse Fly", repsEndurance, "Rear delts"}, {"Dumbbell Curl", repsArm, "Biceps"}, {"Bicycle Crunches", "20 total", "Abs"}},
                         {{"Goblet Squat", repsHyper, "Quads"}, {"Dumbbell RDL", repsStrength, "Hamstrings"}, {"Walking Lunges", "12 each", "Legs"}, {"Calf Raises", repsEndurance, "Calves"}, {"Leg Raises", "12-15", "Core"}},
-                        {{"Incline Push-Ups", repsHyper, "Upper chest"}, {"Towel or Door Rows", repsHyper, "Back"}, {"Dumbbell Shoulder Press", repsHyper, "Shoulders"}, {"Hammer Curl", repsHyper, "Biceps"}, {"Tricep Dips", repsHyper, "Triceps"}},
+                        {{"Incline Push-Ups", repsHyper, "Upper chest"}, {"Towel or Door Rows", repsHyper, "Back"}, {"Dumbbell Shoulder Press", repsHyper, "Shoulders"}, {"Chair Tricep Dips", repsArm, "Triceps"}, {"Dumbbell Skull Crushers", repsArm, "Triceps long head"}, {"Hammer Curl", repsArm, "Biceps"}},
                         {{"Sumo Squat", repsHyper, "Inner quads & glutes"}, {"Single Leg RDL", "10 each", "Hamstrings"}, {"Glute Bridge", repsHyper, "Glutes"}, {"Step Ups", "10 each", "Quads"}, {"Side Plank", "30s each", "Obliques"}}
                     };
                 }
 
                 for (int d = 0; d < 5; d++) {
+                    String dayPrefix = (userPreferredDays.size() >= d + 1)
+                            ? capitalize(userPreferredDays.get(d)) + ": "
+                            : "";
+
                     workoutPlan.append("    {\n");
-                    workoutPlan.append("      \"dayName\": \"").append(dayNames[d]).append("\",\n");
+                    workoutPlan.append("      \"dayName\": \"").append(dayPrefix).append(dayNames[d]).append("\",\n");
                     workoutPlan.append("      \"exercises\": [\n");
                     String[][] dayExercises = exercises[d];
                     for (int e = 0; e < dayExercises.length; e++) {
@@ -368,32 +419,36 @@ public class AiService {
                 }
             }
         } else {
-            // --- PUSH / PULL / LEGS 6-DAY SPLIT (6 days) ---
-            String[] dayNames = {"Push Day A", "Pull Day A", "Legs Day A", "Push Day B", "Pull Day B", "Legs Day B"};
+            // --- PUSH / PULL / LEGS 6-DAY SPLIT (6 days) with MULTIPLE TRICEPS PER PUSH DAY ---
+            String[] dayNames = {"Push Day A (Chest, Shoulders & Dual Triceps)", "Pull Day A (Back & Biceps)", "Legs Day A (Quads & Calves)", "Push Day B (Incline, Dips & Skullcrushers)", "Pull Day B (Lats & Arms)", "Legs Day B (Hamstrings & Glutes)"};
             String[][][] exercises;
             if (hasGym) {
                 exercises = new String[][][]{
-                    {{"Barbell Bench Press", repsStrength, "Arch back slightly"}, {"Incline Dumbbell Press", repsHyper, "Feel upper chest"}, {"Cable Chest Fly", repsHyper, "Squeeze at center"}, {"Overhead Press", repsHyper, "Strict form"}, {"Lateral Raises", repsEndurance, "Light weight, high reps"}, {"Tricep Pushdown", repsHyper, "Lock elbows"}},
-                    {{"Deadlift", repsStrength, "Brace core, flat back"}, {"Weighted Pull-Ups", repsStrength, "Full dead hang"}, {"Barbell Row", repsHyper, "Pull to navel"}, {"Face Pulls", repsEndurance, "External rotate"}, {"Barbell Curl", repsHyper, "No swinging"}, {"Hammer Curl", repsHyper, "Brachialis focus"}},
-                    {{"Barbell Squat", repsStrength, "Full depth"}, {"Romanian Deadlift", repsHyper, "Hamstring stretch"}, {"Leg Press", repsHyper, "Feet high for glutes"}, {"Leg Extension", repsHyper, "Squeeze quads"}, {"Lying Leg Curl", repsHyper, "Slow negative"}, {"Standing Calf Raises", repsEndurance, "2s pause at top"}},
-                    {{"Dumbbell Bench Press", repsHyper, "Full ROM"}, {"Cable Incline Fly", repsHyper, "Constant tension"}, {"Arnold Press", repsHyper, "Rotate at top"}, {"Cable Lateral Raise", repsEndurance, "Behind body"}, {"Overhead Tricep Extension", repsHyper, "Long head stretch"}, {"Dips", repsHyper, "Lean forward for chest"}},
-                    {{"Lat Pulldown", repsHyper, "Wide grip"}, {"Cable Row", repsHyper, "Close grip"}, {"Dumbbell Row", repsHyper, "One arm at a time"}, {"Reverse Fly", repsEndurance, "Rear delts"}, {"Preacher Curl", repsHyper, "Peak contraction"}, {"Incline Dumbbell Curl", repsHyper, "Long head stretch"}},
-                    {{"Bulgarian Split Squat", "10 each", "Elevated rear foot"}, {"Hip Thrust", repsHyper, "Squeeze glutes"}, {"Walking Lunges", "12 each", "Long strides"}, {"Leg Curl", repsHyper, "Controlled"}, {"Leg Extension", repsHyper, "Peak squeeze"}, {"Seated Calf Raises", repsEndurance, "Soleus focus"}}
+                    {{"Barbell Bench Press", repsStrength, "Heavy chest power"}, {"Incline Dumbbell Press", repsHyper, "Upper chest shelf"}, {"Overhead Barbell Military Press", repsHyper, "Shoulder mass"}, {"Dumbbell Lateral Raises", repsEndurance, "Side delts"}, {"Cable Rope Tricep Pushdown", repsArm, "Flare rope at bottom, squeeze lateral head"}, {"Overhead Cable Tricep Extension", repsArm, "Full long-head triceps stretch"}},
+                    {{"Barbell Deadlift", repsStrength, "Posterior chain"}, {"Lat Pulldown (Wide)", repsHyper, "Back width"}, {"Seated Cable Row", repsHyper, "Mid-back thickness"}, {"Face Pulls", repsEndurance, "Rear delts"}, {"Barbell Bicep Curl", repsArm, "Strict mass"}, {"Incline Dumbbell Curl", repsArm, "Bicep stretch"}},
+                    {{"Barbell Back Squat", repsStrength, "Deep quad drive"}, {"Leg Press", repsHyper, "Leg volume"}, {"Leg Extension", repsHyper, "Quad peak squeeze"}, {"Romanian Deadlift", repsStrength, "Hamstrings"}, {"Standing Calf Raises", repsEndurance, "Pause at top"}, {"Hanging Knee Raises", "12-15", "Abs"}},
+                    {{"Incline Barbell Bench Press", repsStrength, "Heavy upper chest"}, {"Chest Dips (Parallel Bars)", repsHyper, "Lean forward, explosive tricep & chest push"}, {"Cable Chest Flyes", repsHyper, "Peak contraction"}, {"Arnold Dumbbell Press", repsHyper, "Full shoulder rotation"}, {"EZ-Bar Skull Crushers", repsArm, "Lower to forehead, explode up"}, {"Straight Bar Tricep Cable Pushdown", repsArm, "Pin elbows to side, full triceps lockout"}},
+                    {{"Lat Pulldown", repsHyper, "Wide grip"}, {"Cable Row", repsHyper, "Close grip"}, {"Dumbbell Row", repsHyper, "One arm at a time"}, {"Reverse Fly", repsEndurance, "Rear delts"}, {"Preacher Curl", repsArm, "Peak contraction"}, {"Hammer Curl", repsArm, "Brachialis & forearm thickness"}},
+                    {{"Bulgarian Split Squat", "10 each", "Elevated rear foot"}, {"Hip Thrust", repsHyper, "Squeeze glutes"}, {"Walking Lunges", "12 each", "Long strides"}, {"Lying Leg Curl", repsHyper, "Controlled hamstrings"}, {"Seated Calf Raises", repsEndurance, "Soleus focus"}, {"Plank", "60s", "Core"}}
                 };
             } else {
                 exercises = new String[][][]{
-                    {{"Push-Ups", "AMRAP", "Full ROM"}, {"Pike Push-Ups", repsHyper, "Shoulders"}, {"Diamond Push-Ups", repsHyper, "Triceps"}, {"Dumbbell Lateral Raises", repsEndurance, "Light weight"}, {"Overhead Tricep Extension", repsHyper, "Stretch"}, {"Chest Dips", repsHyper, "Lean forward"}},
-                    {{"Dumbbell Row", repsHyper, "Each arm"}, {"Dumbbell Pullover", repsHyper, "Lat stretch"}, {"Reverse Fly", repsEndurance, "Rear delts"}, {"Dumbbell Curl", repsHyper, "Control"}, {"Hammer Curl", repsHyper, "Both heads"}, {"Shrugs", repsHyper, "Pause at top"}},
+                    {{"Push-Ups", "AMRAP", "Full ROM"}, {"Pike Push-Ups", repsHyper, "Shoulders"}, {"Diamond Push-Ups", repsArm, "Triceps emphasis"}, {"Dumbbell Lateral Raises", repsEndurance, "Light weight"}, {"Overhead Dumbbell Tricep Extension", repsArm, "Full stretch"}, {"Chest Dips on Bench", repsArm, "Lockout triceps"}},
+                    {{"Dumbbell Row", repsHyper, "Each arm"}, {"Dumbbell Pullover", repsHyper, "Lat stretch"}, {"Reverse Fly", repsEndurance, "Rear delts"}, {"Dumbbell Curl", repsArm, "Control"}, {"Hammer Curl", repsArm, "Both heads"}, {"Shrugs", repsHyper, "Pause at top"}},
                     {{"Goblet Squat", repsHyper, "Deep squat"}, {"Dumbbell RDL", repsStrength, "Hip hinge"}, {"Walking Lunges", "12 each", "Long stride"}, {"Calf Raises", repsEndurance, "Pause"}, {"Glute Bridge", repsHyper, "Squeeze"}, {"Leg Raises", "12-15", "Core"}},
-                    {{"Decline Push-Ups", "AMRAP", "Feet elevated"}, {"Dumbbell Floor Press", repsHyper, "Pause at bottom"}, {"Dumbbell Arnold Press", repsHyper, "Rotate"}, {"Front Raises", repsEndurance, "Alternate arms"}, {"Kickbacks", repsHyper, "Squeeze"}, {"Close Grip Push-Ups", repsHyper, "Elbows in"}},
-                    {{"Dumbbell Bent Row", repsHyper, "Wide grip"}, {"Superman Hold", "30-45s", "Squeeze back"}, {"Dumbbell Reverse Fly", repsEndurance, "Bent over"}, {"Incline Curl", repsHyper, "Stretch"}, {"Concentration Curl", repsHyper, "Peak squeeze"}, {"Dumbbell Shrugs", repsHyper, "Heavy"}},
+                    {{"Decline Push-Ups", "AMRAP", "Feet elevated"}, {"Dumbbell Floor Press", repsHyper, "Pause at bottom"}, {"Dumbbell Arnold Press", repsHyper, "Rotate"}, {"Dumbbell Skull Crushers", repsArm, "Lying on floor, lower to ears"}, {"Dumbbell Tricep Kickbacks", repsArm, "Upper arms fixed, squeeze peak"}, {"Close Grip Push-Ups", repsArm, "Elbows tucked in"}},
+                    {{"Dumbbell Bent Row", repsHyper, "Wide grip"}, {"Superman Hold", "30-45s", "Squeeze back"}, {"Dumbbell Reverse Fly", repsEndurance, "Bent over"}, {"Incline Curl", repsArm, "Stretch"}, {"Concentration Curl", repsArm, "Peak squeeze"}, {"Dumbbell Shrugs", repsHyper, "Heavy"}},
                     {{"Sumo Squat", repsHyper, "Wide stance"}, {"Single Leg RDL", "10 each", "Balance"}, {"Step Ups", "10 each", "Quad drive"}, {"Seated Calf Raises", repsEndurance, "Slow"}, {"Hip Thrust", repsHyper, "Pause at top"}, {"Plank", "60s", "Tight core"}}
                 };
             }
             int actualDays = Math.min(daysPerWeek, 6);
             for (int d = 0; d < actualDays; d++) {
+                String dayPrefix = (userPreferredDays.size() >= d + 1)
+                        ? capitalize(userPreferredDays.get(d)) + ": "
+                        : "";
+
                 workoutPlan.append("    {\n");
-                workoutPlan.append("      \"dayName\": \"").append(dayNames[d]).append("\",\n");
+                workoutPlan.append("      \"dayName\": \"").append(dayPrefix).append(dayNames[d]).append("\",\n");
                 workoutPlan.append("      \"exercises\": [\n");
                 String[][] dayExercises = exercises[d % exercises.length];
                 for (int e = 0; e < dayExercises.length; e++) {
@@ -624,6 +679,11 @@ public class AiService {
 
     private String exerciseLast(String name, int sets, String reps, String notes) {
         return "        { \"name\": \"" + name + "\", \"sets\": " + sets + ", \"reps\": \"" + reps + "\", \"notes\": \"" + notes + "\" }\n";
+    }
+
+    private String capitalize(String str) {
+        if (str == null || str.isBlank()) return "";
+        return str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase();
     }
 
     public String chatWithAi(String userMessage) {
