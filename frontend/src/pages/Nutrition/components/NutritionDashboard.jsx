@@ -9,6 +9,7 @@ import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import RemoveRoundedIcon from '@mui/icons-material/RemoveRounded';
 import WaterDropRoundedIcon from '@mui/icons-material/WaterDropRounded';
 import ProgressBar from '../../../components/ui/ProgressBar';
+import RecommendedSupplements from '../../../components/RecommendedSupplements';
 
 const StyledCard = styled(Card)(() => ({
   borderRadius: 16,
@@ -288,6 +289,12 @@ export default function NutritionDashboard({ aiPlan, loading, dailyNutrition, nu
           </Stack>
         )}
       </StyledCard>
+
+      {/* AI Recommended Supplement Blueprint */}
+      <RecommendedSupplements
+        supplementPlan={aiPlan?.supplementPlan}
+        userGoal={aiPlan?.goal}
+      />
     </Box>
   );
 }

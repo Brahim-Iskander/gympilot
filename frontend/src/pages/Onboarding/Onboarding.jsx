@@ -13,11 +13,16 @@ import {
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
+import ShoppingBagRoundedIcon from '@mui/icons-material/ShoppingBagRounded';
+import Grid from '@mui/material/Grid';
+import Chip from '@mui/material/Chip';
+import { Link as RouterLink } from 'react-router-dom';
 
 import Logo from '../../components/Logo';
 import LanguageSelector from '../../components/LanguageSelector';
 import FullScreenLoader from '../../components/FullScreenLoader';
 import SEO from '../../components/SEO';
+import RecommendedSupplements from '../../components/RecommendedSupplements';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../i18n';
 import { onboardingService } from '../../services/onboardingService';
@@ -49,6 +54,8 @@ export default function Onboarding() {
   const [submitting, setSubmitting] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [formError, setFormError] = useState('');
+  const [showPlanSummary, setShowPlanSummary] = useState(false);
+  const [generatedPlan, setGeneratedPlan] = useState(null);
 
   useEffect(() => {
     if (authLoading || !isAuthenticated) return;
@@ -151,7 +158,18 @@ export default function Onboarding() {
       if (step === TOTAL_STEPS || updated.completed) {
         setGenerating(true);
         try {
-          await onboardingService.generateAiPlan();
+          const res = await onboardingService.generateAiPlan();
+          if (res?.aiGeneratedPlan) {
+            try {
+              const parsed = JSON.parse(res.aiGeneratedPlan);
+              setGeneratedPlan(parsed);
+              setShowPlanSummary(true);
+              setGenerating(false);
+              return;
+            } catch (parseErr) {
+              console.error('Failed to parse AI plan JSON', parseErr);
+            }
+          }
         } catch (e) {
           console.error('AI plan generation failed', e);
         }
@@ -179,9 +197,104 @@ export default function Onboarding() {
             Generating your personalized plan...
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 4, textAlign: 'center' }}>
-            Our AI coach is analyzing your profile to build the optimal workout and nutrition plan.
+            Our AI coach is analyzing your profile to build your workout, nutrition, and recommended supplement blueprint.
           </Typography>
           <LinearProgress sx={{ width: '100%', height: 8, borderRadius: 4 }} />
+        </Container>
+      </Box>
+    );
+  }
+
+  if (showPlanSummary) {
+    const handleFinish = () => {
+      setOnboardingCompleted(true);
+      navigate('/dashboard', { replace: true });
+    };
+
+    return (
+      <Box sx={{ minHeight: '100dvh', py: { xs: 4, md: 8 }, bgcolor: 'background.default' }}>
+        <Container maxWidth="md">
+          <Stack spacing={2} alignItems="center" sx={{ textAlign: 'center', mb: 4 }}>
+            <Logo />
+            <Chip
+              icon={<CheckRoundedIcon sx={{ color: '#0A0C0F !important' }} />}
+              label="AI BLUEPRINT READY"
+              sx={{ bgcolor: 'primary.main', color: '#0A0C0F', fontWeight: 900, fontSize: '0.75rem' }}
+            />
+            <Typography variant="h3" sx={{ fontWeight: 900, fontFamily: "'Sora','Inter',sans-serif" }}>
+              Your Custom Training &amp; Supplement Blueprint
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 620 }}>
+              Our AI coach built your workout split and nutritional targets. Below are the recommended supplements tailored specifically to your goal — buy them directly from the GymPilot Shop with Cash on Delivery across Tunisia.
+            </Typography>
+          </Stack>
+
+          {/* Highlights Card */}
+          <Grid container spacing={2} sx={{ mb: 2 }}>
+            <Grid item xs={12} sm={4}>
+              <Paper sx={{ p: 2.5, textAlign: 'center', borderRadius: 3, border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+                <Typography variant="caption" color="text.secondary" fontWeight={700}>TRAINING SPLIT</Typography>
+                <Typography variant="h6" fontWeight={800} sx={{ mt: 0.5 }}>
+                  {values.daysPerWeek ? `${values.daysPerWeek} Days / Week` : '3-4 Days / Week'}
+                </Typography>
+                <Typography variant="caption" color="primary.main" fontWeight={700}>
+                  {generatedPlan?.workoutPlan?.[0]?.dayName || 'Progressive Overload'}
+                </Typography>
+              </Paper>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Paper sx={{ p: 2.5, textAlign: 'center', borderRadius: 3, border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+                <Typography variant="caption" color="text.secondary" fontWeight={700}>DAILY CALORIC TARGET</Typography>
+                <Typography variant="h6" fontWeight={800} sx={{ mt: 0.5 }}>
+                  {generatedPlan?.nutritionPlan?.dailyCalories || 2400} kcal
+                </Typography>
+                <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                  {generatedPlan?.nutritionPlan?.protein || 160}g Protein Target
+                </Typography>
+              </Paper>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Paper sx={{ p: 2.5, textAlign: 'center', borderRadius: 3, border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+                <Typography variant="caption" color="text.secondary" fontWeight={700}>GOAL SUPPLEMENTS</Typography>
+                <Typography variant="h6" fontWeight={800} sx={{ mt: 0.5, color: '#FFB703' }}>
+                  {generatedPlan?.supplementPlan?.length || 3} Key Formulations
+                </Typography>
+                <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                  Tailored to {values.goal || 'Your Goal'}
+                </Typography>
+              </Paper>
+            </Grid>
+          </Grid>
+
+          {/* AI Recommended Supplements */}
+          <RecommendedSupplements
+            supplementPlan={generatedPlan?.supplementPlan}
+            userGoal={values.goal}
+            title="Essential Supplements to Buy from GymPilot Shop"
+            subtitle="To accelerate your strength, hypertrophy, and recovery, our AI recommends this exact stack. Click any product to order directly from our certified store."
+          />
+
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="center" sx={{ mt: 5 }}>
+            <Button
+              component={RouterLink}
+              to="/shop"
+              variant="contained"
+              size="large"
+              startIcon={<ShoppingBagRoundedIcon />}
+              sx={{ fontWeight: 800, px: 4, py: 1.5, borderRadius: 3 }}
+            >
+              Browse Gym Shop Products
+            </Button>
+            <Button
+              onClick={handleFinish}
+              variant="outlined"
+              size="large"
+              endIcon={<ArrowForwardRoundedIcon />}
+              sx={{ fontWeight: 700, px: 3.5, py: 1.5, borderRadius: 3, borderColor: 'divider', color: 'text.primary' }}
+            >
+              Continue to Athlete Dashboard
+            </Button>
+          </Stack>
         </Container>
       </Box>
     );

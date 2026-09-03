@@ -51,12 +51,35 @@ public class MailService {
     @Value("${app.mail.from-name:GymPilot Support}")
     private String fromName;
 
+    @Value("${app.frontend.url:http://localhost:5173}")
+    private String frontendUrl;
+
     public MailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(8))
                 .build();
         this.objectMapper = new ObjectMapper();
+    }
+
+    /**
+     * Returns the absolute URL to the GymPilot logo hosted on the frontend.
+     */
+    private String getLogoUrl() {
+        String base = (frontendUrl != null ? frontendUrl.replaceAll("/+$", "") : "https://gympilot.tn");
+        return base + "/favicon1.png";
+    }
+
+    /**
+     * Builds an HTML block with the GymPilot logo image + brand name for emails.
+     */
+    private String getLogoHtml() {
+        return """
+            <div style="text-align: center; margin-bottom: 24px;">
+              <img src="%s" alt="GymPilot Logo" width="48" height="48" style="display: block; margin: 0 auto 8px auto; border-radius: 10px;" />
+              <span style="font-size: 22px; font-weight: 900; letter-spacing: -0.5px;"><span style="color: #F4F6F8;">Gym</span><span style="color: #C6FF3E;">Pilot</span></span>
+            </div>
+            """.formatted(getLogoUrl());
     }
 
     private boolean hasBrevoApi() {
@@ -198,7 +221,6 @@ public class MailService {
                 body { margin: 0; padding: 0; background-color: #0A0C0F; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #F4F6F8; }
                 .wrapper { width: 100%%; max-width: 600px; margin: 0 auto; padding: 40px 20px; box-sizing: border-box; }
                 .card { background-color: #12151B; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 36px 32px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-                .logo-text { font-size: 26px; font-weight: 900; color: #C6FF3E; letter-spacing: -0.5px; text-align: center; margin-bottom: 24px; }
                 .title { font-size: 20px; font-weight: 700; color: #F4F6F8; margin-top: 0; margin-bottom: 16px; }
                 .text { font-size: 15px; line-height: 1.6; color: #98A1AC; margin-bottom: 24px; }
                 .btn-container { text-align: center; margin: 32px 0; }
@@ -213,7 +235,7 @@ public class MailService {
             <body>
               <div class="wrapper">
                 <div class="card">
-                  <div class="logo-text">⚡ GymPilot</div>
+                  """ + getLogoHtml() + """
                   <h1 class="title">Password Reset Request</h1>
                   <p class="text">
                     We received a request to reset the password for your GymPilot account.
@@ -224,7 +246,7 @@ public class MailService {
                   </div>
                   <div class="notice-box">
                     <p class="notice-text">
-                      ⏱️ <strong>Security Notice:</strong> This reset link is valid for <strong>30 minutes</strong> and can only be used once.
+                      <strong>Security Notice:</strong> This reset link is valid for <strong>30 minutes</strong> and can only be used once.
                     </p>
                   </div>
                   <p class="text" style="font-size: 13px; margin-bottom: 0;">
@@ -304,7 +326,6 @@ public class MailService {
                 body { margin: 0; padding: 0; background-color: #0A0C0F; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #F4F6F8; }
                 .wrapper { width: 100%%; max-width: 600px; margin: 0 auto; padding: 40px 20px; box-sizing: border-box; }
                 .card { background-color: #12151B; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 36px 32px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-                .logo-text { font-size: 26px; font-weight: 900; color: #C6FF3E; letter-spacing: -0.5px; text-align: center; margin-bottom: 24px; }
                 .title { font-size: 22px; font-weight: 800; color: #F4F6F8; margin-top: 0; margin-bottom: 16px; text-align: center; }
                 .text { font-size: 15px; line-height: 1.6; color: #98A1AC; margin-bottom: 24px; }
                 .code-box { background: rgba(198, 255, 62, 0.08); border: 2px dashed #C6FF3E; border-radius: 12px; padding: 24px; text-align: center; margin: 28px 0; }
@@ -318,7 +339,7 @@ public class MailService {
             <body>
               <div class="wrapper">
                 <div class="card">
-                  <div class="logo-text">⚡ GymPilot</div>
+                  """ + getLogoHtml() + """
                   <h1 class="title">Verify Your Email Address</h1>
                   <p class="text">%s</p>
                   <p class="text">
@@ -330,7 +351,7 @@ public class MailService {
                   </div>
                   <div class="notice-box">
                     <p class="notice-text">
-                      ⏱️ <strong>Security Notice:</strong> This code expires in <strong>10 minutes</strong> and can only be used once. Never share this code with anyone.
+                      <strong>Security Notice:</strong> This code expires in <strong>10 minutes</strong> and can only be used once. Never share this code with anyone.
                     </p>
                   </div>
                   <p class="text" style="font-size: 13px; margin-bottom: 0;">
@@ -456,7 +477,6 @@ public class MailService {
                 body { margin: 0; padding: 0; background-color: #0A0C0F; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #F4F6F8; }
                 .wrapper { width: 100%%; max-width: 640px; margin: 0 auto; padding: 32px 16px; box-sizing: border-box; }
                 .card { background-color: #12151B; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 32px 28px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-                .logo-text { font-size: 26px; font-weight: 900; color: #C6FF3E; letter-spacing: -0.5px; text-align: center; margin-bottom: 20px; }
                 .title { font-size: 22px; font-weight: 800; color: #F4F6F8; margin-top: 0; margin-bottom: 8px; text-align: center; }
                 .subtitle { font-size: 14px; color: #98A1AC; text-align: center; margin-bottom: 24px; }
                 .order-badge { display: inline-block; background: rgba(198,255,62,0.12); color: #C6FF3E; border: 1px solid rgba(198,255,62,0.3); border-radius: 8px; padding: 6px 14px; font-weight: 800; font-size: 13px; margin-bottom: 20px; }
@@ -472,7 +492,7 @@ public class MailService {
             <body>
               <div class="wrapper">
                 <div class="card">
-                  <div class="logo-text">⚡ GymPilot</div>
+                  """ + getLogoHtml() + """
                   <h1 class="title">Thank You For Your Order!</h1>
                   <p class="subtitle">Hi %s, your order has been received and is being prepared.</p>
 

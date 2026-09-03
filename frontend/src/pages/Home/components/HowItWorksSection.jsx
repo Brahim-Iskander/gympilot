@@ -1,39 +1,45 @@
-import { Box, Container, Grid, Paper, Stack, Typography } from '@mui/material';
+import { Box, Container, Grid, Paper, Stack, Typography, Chip } from '@mui/material';
+import CardGiftcardRoundedIcon from '@mui/icons-material/CardGiftcardRounded';
 import FitnessCenterRoundedIcon from '@mui/icons-material/FitnessCenterRounded';
-import EditRoundedIcon from '@mui/icons-material/EditRounded';
-import TrendingUpRoundedIcon from '@mui/icons-material/TrendingUpRounded';
+import MonetizationOnRoundedIcon from '@mui/icons-material/MonetizationOnRounded';
 
 import SectionHeading from '../../../components/SectionHeading';
 
 const STEPS = [
   {
     number: '01',
-    title: 'Create Your Account',
-    description: 'Sign up for free in seconds. No credit card required.',
-    icon: <FitnessCenterRoundedIcon />,
+    title: 'Sign Up & Get 14-Day Free Trial',
+    description: 'Create your account in 30 seconds. Every new athlete gets instant access to the Basic Plan trial with zero credit card required.',
+    icon: <CardGiftcardRoundedIcon sx={{ fontSize: 28 }} />,
+    accent: '#C6FF3E',
+    badge: 'NO CARD NEEDED',
   },
   {
     number: '02',
-    title: 'Log Your Workouts',
-    description: 'Record your exercises, sets, reps and weights with an intuitive interface built for the gym floor.',
-    icon: <EditRoundedIcon />,
+    title: 'Log Sets & Master Your Lifts',
+    description: 'Record exercises, sets, reps, and weights with an interface designed for the gym floor. Track progressive overload and celebrate new PRs.',
+    icon: <FitnessCenterRoundedIcon sx={{ fontSize: 28 }} />,
+    accent: '#8A7CFF',
+    badge: 'FAST LOGGING',
   },
   {
     number: '03',
-    title: 'Track Your Progress',
-    description: 'Watch your strength grow. Visualize trends, hit personal records, and stay consistent.',
-    icon: <TrendingUpRoundedIcon />,
+    title: 'Earn Points & Unlock Free VIP Perks',
+    description: 'Earn reward points with every purchase in our fitness store and for referring friends. Redeem your points for free Basic or Premium plans.',
+    icon: <MonetizationOnRoundedIcon sx={{ fontSize: 28 }} />,
+    accent: '#FFD700',
+    badge: 'FREE SUBSCRIPTIONS',
   },
 ];
 
 export default function HowItWorksSection() {
   return (
-    <Box component="section" sx={{ py: { xs: 8, md: 12 } }}>
+    <Box component="section" sx={{ py: { xs: 8, md: 12 }, position: 'relative' }}>
       <Container maxWidth="lg">
         <SectionHeading
-          overline="How It Works"
+          overline="SIMPLE ONBOARDING"
           title="Three Steps to Your Strongest Self"
-          subtitle="Simple. Focused. Effective. Everything you need — nothing you don't."
+          subtitle="Everything you need to transform your training — structured, focused, and rewarded."
         />
 
         <Grid container spacing={3}>
@@ -42,71 +48,82 @@ export default function HowItWorksSection() {
               <Paper
                 elevation={0}
                 sx={{
-                  p: { xs: 3, md: 4 },
+                  p: { xs: 3.5, md: 4 },
                   height: '100%',
                   borderRadius: 4,
                   border: '1px solid',
                   borderColor: 'divider',
-                  background: 'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
-                  transition: 'transform .3s ease, border-color .3s ease, box-shadow .3s ease',
+                  bgcolor: 'background.paper',
+                  backdropFilter: 'blur(16px)',
+                  transition: 'all .35s ease',
+                  position: 'relative',
+                  overflow: 'hidden',
                   '&:hover': {
                     transform: 'translateY(-6px)',
-                    borderColor: 'rgba(198,255,62,0.4)',
-                    boxShadow: '0 20px 50px rgba(0,0,0,0.35)',
+                    borderColor: `${step.accent}55`,
+                    boxShadow: (theme) =>
+                      theme.palette.mode === 'dark'
+                        ? `0 20px 50px rgba(0,0,0,0.4), 0 0 24px ${step.accent}18`
+                        : `0 16px 36px rgba(0,0,0,0.06)`,
                   },
                 }}
               >
-                <Stack direction="row" alignItems="center" gap={1.5} sx={{ mb: 2.5 }}>
+                {/* Step header */}
+                <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
                   <Box
                     sx={{
-                      flexShrink: 0,
                       width: 44,
                       height: 44,
                       borderRadius: 2.5,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      bgcolor: 'rgba(198,255,62,0.12)',
-                      color: 'primary.main',
-                      fontWeight: 800,
+                      bgcolor: `${step.accent}14`,
+                      color: step.accent,
+                      fontWeight: 900,
                       fontSize: 16,
                       fontFamily: "'Sora','Inter',sans-serif",
+                      border: `1px solid ${step.accent}33`,
                     }}
                   >
                     {step.number}
                   </Box>
-                  <Box
-                    component="span"
-                    aria-hidden
+                  <Chip
+                    label={step.badge}
+                    size="small"
                     sx={{
-                      flex: 1,
-                      height: 2,
-                      borderRadius: 1,
-                      background: 'linear-gradient(90deg, rgba(198,255,62,0.4), transparent)',
+                      bgcolor: `${step.accent}12`,
+                      color: step.accent,
+                      fontWeight: 800,
+                      fontSize: '0.66rem',
+                      letterSpacing: 0.5,
+                      border: `1px solid ${step.accent}26`,
+                      height: 22,
                     }}
                   />
                 </Stack>
 
                 <Box
                   sx={{
-                    width: 56,
-                    height: 56,
+                    width: 58,
+                    height: 58,
                     borderRadius: 3,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    bgcolor: 'rgba(198,255,62,0.10)',
-                    color: 'primary.main',
+                    bgcolor: `${step.accent}10`,
+                    color: step.accent,
                     mb: 2.5,
+                    border: `1px solid ${step.accent}22`,
                   }}
                 >
                   {step.icon}
                 </Box>
 
-                <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, mb: 1.2, color: 'text.primary' }}>
                   {step.title}
                 </Typography>
-                <Typography variant="body2" color="text.secondary" lineHeight={1.7}>
+                <Typography variant="body2" color="text.secondary" lineHeight={1.75}>
                   {step.description}
                 </Typography>
               </Paper>

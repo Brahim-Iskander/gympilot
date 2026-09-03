@@ -5,10 +5,10 @@
  */
 
 export const dashboardStats = [
-  { id: 'workouts', label: 'Workouts', value: '24', iconKey: 'workout', trend: '+3 this week' },
-  { id: 'weight', label: 'Current Weight', value: '78', unit: 'kg', iconKey: 'weight' },
-  { id: 'records', label: 'Personal Records', value: '12', iconKey: 'record', trend: '+2 this month' },
-  { id: 'streak', label: 'Training Streak', value: '14', unit: 'days', iconKey: 'streak' },
+  { id: 'workouts', label: 'Workouts Logged', value: '28', iconKey: 'workout', trend: '+4 this week' },
+  { id: 'records', label: 'Personal Records', value: '14', iconKey: 'record', trend: '+3 this month' },
+  { id: 'streak', label: 'Training Streak', value: '18', unit: 'days', iconKey: 'streak', trend: '18 Days Active' },
+  { id: 'points', label: 'Reward Points', value: '520', unit: 'pts', iconKey: 'points', trend: 'Free Sub Eligible' },
 ];
 
 export const latestLifts = [

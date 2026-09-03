@@ -116,7 +116,18 @@ public class AiService {
                 "    \"carbs\": 250," +
                 "    \"fat\": 80," +
                 "    \"mealSuggestions\": [\"Breakfast: Oatmeal\", \"Lunch: Chicken Salad\"]" +
-                "  }" +
+                "  }," +
+                "  \"supplementPlan\": [" +
+                "    {" +
+                "      \"name\": \"Creatine Monohydrate\"," +
+                "      \"category\": \"CREATINE\"," +
+                "      \"dosage\": \"5g daily with water\"," +
+                "      \"purpose\": \"Increases ATP strength, power output, and muscle volume\"," +
+                "      \"priority\": \"ESSENTIAL\"," +
+                "      \"shopSearch\": \"creatine\"," +
+                "      \"targetBenefits\": [\"+15% Strength\", \"Faster Recovery\", \"Muscle Fullness\"]" +
+                "    }" +
+                "  ]" +
                 "}",
                 o.getAge() != null ? o.getAge() : 25, 
                 o.getSex() != null ? o.getSex() : "unspecified", 
@@ -416,8 +427,195 @@ public class AiService {
                "    \"carbs\": " + carbs + ",\n" +
                "    \"fat\": " + fat + ",\n" +
                "    \"mealSuggestions\": [" + meals + "]\n" +
-               "  }\n" +
+               "  },\n" +
+               "  \"supplementPlan\": [\n" +
+               buildFallbackSupplements(goal, weight) + "\n" +
+               "  ]\n" +
                "}";
+    }
+
+    private String buildFallbackSupplements(String goal, double weight) {
+        StringBuilder sb = new StringBuilder();
+        if (goal.contains("gain") || goal.contains("muscle") || goal.contains("bulk") || goal.contains("hypertrophy")) {
+            if (weight < 65.0) {
+                sb.append("    {\n")
+                  .append("      \"name\": \"Mass Gainer Extreme Matrix\",\n")
+                  .append("      \"category\": \"MASS_GAINER\",\n")
+                  .append("      \"dosage\": \"1 serving (2 scoops) between meals in 400ml milk\",\n")
+                  .append("      \"purpose\": \"Supplies high-density surplus calories and protein to overcome fast metabolism and pack on solid mass\",\n")
+                  .append("      \"priority\": \"ESSENTIAL\",\n")
+                  .append("      \"shopSearch\": \"gainer\",\n")
+                  .append("      \"targetBenefits\": [\"+650 Surplus Kcal\", \"45g Quality Protein\", \"Fast Weight Gain\"]\n")
+                  .append("    },\n")
+                  .append("    {\n")
+                  .append("      \"name\": \"Creatine Monohydrate 200 Mesh\",\n")
+                  .append("      \"category\": \"CREATINE\",\n")
+                  .append("      \"dosage\": \"5g daily with water or shake\",\n")
+                  .append("      \"purpose\": \"Increases cellular hydration, phosphocreatine ATP energy, and explosive compound lifting power\",\n")
+                  .append("      \"priority\": \"ESSENTIAL\",\n")
+                  .append("      \"shopSearch\": \"creatine\",\n")
+                  .append("      \"targetBenefits\": [\"+12% Power Output\", \"Cellular Hydration\", \"Faster Strength Gains\"]\n")
+                  .append("    },\n")
+                  .append("    {\n")
+                  .append("      \"name\": \"100% Pure Whey Protein\",\n")
+                  .append("      \"category\": \"PROTEIN\",\n")
+                  .append("      \"dosage\": \"1 scoop (30g) within 45 minutes post-workout\",\n")
+                  .append("      \"purpose\": \"High biological value protein with essential amino acids to jumpstart muscle tissue repair\",\n")
+                  .append("      \"priority\": \"HIGH\",\n")
+                  .append("      \"shopSearch\": \"protein\",\n")
+                  .append("      \"targetBenefits\": [\"24g Bioavailable Protein\", \"5.5g Natural BCAAs\", \"Accelerated Muscle Repair\"]\n")
+                  .append("    },\n")
+                  .append("    {\n")
+                  .append("      \"name\": \"Pre-Workout Explosive Energy\",\n")
+                  .append("      \"category\": \"PRE_WORKOUT\",\n")
+                  .append("      \"dosage\": \"1 scoop 20 minutes before training\",\n")
+                  .append("      \"purpose\": \"Sharpens mental focus and muscular endurance for high-volume progressive overload sets\",\n")
+                  .append("      \"priority\": \"RECOMMENDED\",\n")
+                  .append("      \"shopSearch\": \"pre workout\",\n")
+                  .append("      \"targetBenefits\": [\"Laser Focus\", \"Enhanced Blood Flow Pump\", \"Fights Fatigue\"]\n")
+                  .append("    }");
+            } else {
+                sb.append("    {\n")
+                  .append("      \"name\": \"100% Whey Protein Isolate\",\n")
+                  .append("      \"category\": \"PROTEIN\",\n")
+                  .append("      \"dosage\": \"1-2 scoops daily (post-workout and morning)\",\n")
+                  .append("      \"purpose\": \"Ultra-filtered fast-digesting protein to hit your daily protein target and maximize muscle protein synthesis\",\n")
+                  .append("      \"priority\": \"ESSENTIAL\",\n")
+                  .append("      \"shopSearch\": \"protein\",\n")
+                  .append("      \"targetBenefits\": [\"27g Pure Protein\", \"0g Added Sugar\", \"Lean Muscle Growth\"]\n")
+                  .append("    },\n")
+                  .append("    {\n")
+                  .append("      \"name\": \"Creatine Monohydrate 200 Mesh\",\n")
+                  .append("      \"category\": \"CREATINE\",\n")
+                  .append("      \"dosage\": \"5g daily with water consistently\",\n")
+                  .append("      \"purpose\": \"Proven gold-standard supplement for progressive overload, power output, and muscle fullness\",\n")
+                  .append("      \"priority\": \"ESSENTIAL\",\n")
+                  .append("      \"shopSearch\": \"creatine\",\n")
+                  .append("      \"targetBenefits\": [\"ATP Resynthesis\", \"Strength & PR Boost\", \"Muscle Volumization\"]\n")
+                  .append("    },\n")
+                  .append("    {\n")
+                  .append("      \"name\": \"Pre-Workout Pump & Focus Matrix\",\n")
+                  .append("      \"category\": \"PRE_WORKOUT\",\n")
+                  .append("      \"dosage\": \"1 scoop 25 minutes prior to training\",\n")
+                  .append("      \"purpose\": \"Nitric oxide boosters and clean stimulants to fuel high-intensity hypertrophy sessions\",\n")
+                  .append("      \"priority\": \"RECOMMENDED\",\n")
+                  .append("      \"shopSearch\": \"pre workout\",\n")
+                  .append("      \"targetBenefits\": [\"Massive Muscle Pumps\", \"Peak Power\", \"Sustained Energy\"]\n")
+                  .append("    },\n")
+                  .append("    {\n")
+                  .append("      \"name\": \"Omega-3 Fish Oil & Multivitamin\",\n")
+                  .append("      \"category\": \"HEALTH\",\n")
+                  .append("      \"dosage\": \"2 softgels daily with your largest meal\",\n")
+                  .append("      \"purpose\": \"Reduces exercise-induced inflammation, protects joints under heavy loads, and supports hormonal balance\",\n")
+                  .append("      \"priority\": \"RECOMMENDED\",\n")
+                  .append("      \"shopSearch\": \"vitamins\",\n")
+                  .append("      \"targetBenefits\": [\"Joint Protection\", \"Immune System Support\", \"Cardiovascular Health\"]\n")
+                  .append("    }");
+            }
+        } else if (goal.contains("loss") || goal.contains("fat") || goal.contains("cut") || goal.contains("lean")) {
+            sb.append("    {\n")
+              .append("      \"name\": \"100% Whey Isolate Zero-Carb\",\n")
+              .append("      \"category\": \"PROTEIN\",\n")
+              .append("      \"dosage\": \"1 scoop post-workout or as a low-calorie high-protein snack\",\n")
+              .append("      \"purpose\": \"Preserves lean muscle mass and curbs hunger while maintaining a strict caloric deficit\",\n")
+              .append("      \"priority\": \"ESSENTIAL\",\n")
+              .append("      \"shopSearch\": \"protein\",\n")
+              .append("      \"targetBenefits\": [\"Protects Lean Muscle\", \"Under 110 Calories\", \"High Satiety\"]\n")
+              .append("    },\n")
+              .append("    {\n")
+              .append("      \"name\": \"Creatine Monohydrate\",\n")
+              .append("      \"category\": \"CREATINE\",\n")
+              .append("      \"dosage\": \"5g daily with water\",\n")
+              .append("      \"purpose\": \"Prevents strength loss and maintains training volume during calorie-restricted cutting phases\",\n")
+              .append("      \"priority\": \"ESSENTIAL\",\n")
+              .append("      \"shopSearch\": \"creatine\",\n")
+              .append("      \"targetBenefits\": [\"Maintains 100% Strength\", \"Prevents Muscle Flatness\", \"Zero Calories\"]\n")
+              .append("    },\n")
+              .append("    {\n")
+              .append("      \"name\": \"L-Carnitine & Green Tea Extract\",\n")
+              .append("      \"category\": \"FAT_BURNER\",\n")
+              .append("      \"dosage\": \"1 serving 30 mins before morning workout or cardio\",\n")
+              .append("      \"purpose\": \"Supports fatty acid oxidation and metabolic rate to optimize stubborn body fat loss\",\n")
+              .append("      \"priority\": \"RECOMMENDED\",\n")
+              .append("      \"shopSearch\": \"carnitine\",\n")
+              .append("      \"targetBenefits\": [\"Fatty Acid Transport\", \"Clean Metabolic Energy\", \"Thermogenesis Support\"]\n")
+              .append("    },\n")
+              .append("    {\n")
+              .append("      \"name\": \"Essential Multivitamin & Minerals\",\n")
+              .append("      \"category\": \"HEALTH\",\n")
+              .append("      \"dosage\": \"1 tablet daily with breakfast\",\n")
+              .append("      \"purpose\": \"Guarantees 100% micronutrient sufficiency when food intake is reduced\",\n")
+              .append("      \"priority\": \"RECOMMENDED\",\n")
+              .append("      \"shopSearch\": \"vitamins\",\n")
+              .append("      \"targetBenefits\": [\"All Micronutrients Covered\", \"Prevents Deficiencies\", \"Immune Shield\"]\n")
+              .append("    }");
+        } else if (goal.contains("strength") || goal.contains("power")) {
+            sb.append("    {\n")
+              .append("      \"name\": \"Creatine Monohydrate 200 Mesh\",\n")
+              .append("      \"category\": \"CREATINE\",\n")
+              .append("      \"dosage\": \"5g daily with water or carb beverage\",\n")
+              .append("      \"purpose\": \"The most researched supplement for maximal 1RM strength, explosive bar speed, and heavy compound power\",\n")
+              .append("      \"priority\": \"ESSENTIAL\",\n")
+              .append("      \"shopSearch\": \"creatine\",\n")
+              .append("      \"targetBenefits\": [\"+15% Maximal Strength\", \"Fast ATP Restoration\", \"Heavy PR Support\"]\n")
+              .append("    },\n")
+              .append("    {\n")
+              .append("      \"name\": \"Whey Protein Complex\",\n")
+              .append("      \"category\": \"PROTEIN\",\n")
+              .append("      \"dosage\": \"1-2 scoops post-workout\",\n")
+              .append("      \"purpose\": \"Repairs heavy muscle micro-tears and accelerates connective tissue recovery\",\n")
+              .append("      \"priority\": \"ESSENTIAL\",\n")
+              .append("      \"shopSearch\": \"protein\",\n")
+              .append("      \"targetBenefits\": [\"Deep Muscle Recovery\", \"Complete Amino Spectrum\", \"Anti-Catabolic\"]\n")
+              .append("    },\n")
+              .append("    {\n")
+              .append("      \"name\": \"High-Stim Pre-Workout Focus\",\n")
+              .append("      \"category\": \"PRE_WORKOUT\",\n")
+              .append("      \"dosage\": \"1 scoop 30 mins before heavy barbell sessions\",\n")
+              .append("      \"purpose\": \"Amplifies CNS recruitment and neurological drive for heavy squat, bench, and deadlift attempts\",\n")
+              .append("      \"priority\": \"HIGH\",\n")
+              .append("      \"shopSearch\": \"pre workout\",\n")
+              .append("      \"targetBenefits\": [\"Peak Neural Drive\", \"Maximum Intensity\", \"PR Breakthrough\"]\n")
+              .append("    },\n")
+              .append("    {\n")
+              .append("      \"name\": \"Joint Support & Collagen Glucosamine\",\n")
+              .append("      \"category\": \"HEALTH\",\n")
+              .append("      \"dosage\": \"Daily with water\",\n")
+              .append("      \"purpose\": \"Protects knees, shoulders, and lower back joints under heavy axial loading\",\n")
+              .append("      \"priority\": \"RECOMMENDED\",\n")
+              .append("      \"shopSearch\": \"joint\",\n")
+              .append("      \"targetBenefits\": [\"Cartilage Integrity\", \"Smooth Joint Mobility\", \"Injury Prevention\"]\n")
+              .append("    }");
+        } else {
+            sb.append("    {\n")
+              .append("      \"name\": \"100% Whey Protein\",\n")
+              .append("      \"category\": \"PROTEIN\",\n")
+              .append("      \"dosage\": \"1 scoop daily with water or milk\",\n")
+              .append("      \"purpose\": \"Convenient way to hit your daily protein goal, support athletic toning, and speed up recovery\",\n")
+              .append("      \"priority\": \"RECOMMENDED\",\n")
+              .append("      \"shopSearch\": \"protein\",\n")
+              .append("      \"targetBenefits\": [\"Athletic Recovery\", \"Lean Body Composition\", \"Delicious & Convenient\"]\n")
+              .append("    },\n")
+              .append("    {\n")
+              .append("      \"name\": \"Creatine Monohydrate\",\n")
+              .append("      \"category\": \"CREATINE\",\n")
+              .append("      \"dosage\": \"3-5g daily with water\",\n")
+              .append("      \"purpose\": \"Supports physical stamina, daily cognitive focus, and lean functional muscle tissue\",\n")
+              .append("      \"priority\": \"RECOMMENDED\",\n")
+              .append("      \"shopSearch\": \"creatine\",\n")
+              .append("      \"targetBenefits\": [\"All-Round Energy\", \"Physical Stamina\", \"Cognitive Vitality\"]\n")
+              .append("    },\n")
+              .append("    {\n")
+              .append("      \"name\": \"Complete Multivitamins & Minerals\",\n")
+              .append("      \"category\": \"HEALTH\",\n")
+              .append("      \"dosage\": \"1 tablet daily with a meal\",\n")
+              .append("      \"purpose\": \"Supports full-body immunity, daily vitality, and prevents micronutrient deficits\",\n")
+              .append("      \"priority\": \"RECOMMENDED\",\n")
+              .append("      \"shopSearch\": \"vitamins\",\n")
+              .append("      \"targetBenefits\": [\"Immune Defense\", \"Natural Energy\", \"Vital Minerals\"]\n")
+              .append("    }");
+        }
+        return sb.toString();
     }
 
     private String exercise(String name, int sets, String reps, String notes) {

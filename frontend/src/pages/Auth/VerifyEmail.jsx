@@ -15,6 +15,7 @@ import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
+import AccessTimeRoundedIcon from '@mui/icons-material/AccessTimeRounded';
 
 import AuthShell from '../../components/AuthShell';
 import SEO from '../../components/SEO';
@@ -340,9 +341,12 @@ export default function VerifyEmail() {
             </Button>
           </Paper>
 
-          <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
-            ⏱️ Code expires in <strong>10 minutes</strong>. Maximum 5 verification attempts allowed.
-          </Typography>
+          <Stack direction="row" spacing={0.75} alignItems="center" justifyContent="center" sx={{ color: 'text.secondary' }}>
+            <AccessTimeRoundedIcon sx={{ fontSize: 16 }} />
+            <Typography variant="caption" color="text.secondary">
+              Code expires in <strong>10 minutes</strong>. Maximum 5 verification attempts allowed.
+            </Typography>
+          </Stack>
         </Stack>
       </AuthShell>
     </>

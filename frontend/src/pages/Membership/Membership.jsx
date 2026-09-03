@@ -205,7 +205,7 @@ export default function MembershipPage() {
           <Stack direction="row" spacing={1.5} alignItems="center">
             <MonetizationOnRounded sx={{ color: '#FFD700', fontSize: 28 }} />
             <Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#F4F6F8' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>
                 Your Reward Points Balance
               </Typography>
               <Typography variant="caption" color="text.secondary">

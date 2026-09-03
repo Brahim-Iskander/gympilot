@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -50,6 +50,7 @@ import CartDrawer from '../../components/CartDrawer';
 
 export default function Shop() {
   const { addToCart, itemCount, openCartDrawer } = useCart();
+  const [searchParams] = useSearchParams();
 
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
@@ -57,10 +58,24 @@ export default function Shop() {
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(0);
 
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState(() => searchParams.get('category') || 'all');
+  const [searchQuery, setSearchQuery] = useState(() => searchParams.get('search') || '');
   const [sortOption, setSortOption] = useState('popularity');
   const [inStockOnly, setInStockOnly] = useState(false);
+
+  // Sync with URL query parameters when navigating from external links (e.g. AI supplement recommendations)
+  useEffect(() => {
+    const q = searchParams.get('search');
+    if (q !== null && q !== searchQuery) {
+      setSearchQuery(q);
+      setPage(0);
+    }
+    const cat = searchParams.get('category');
+    if (cat !== null && cat !== selectedCategory) {
+      setSelectedCategory(cat);
+      setPage(0);
+    }
+  }, [searchParams]);
 
   const [loading, setLoading] = useState(true);
   const [featuredProducts, setFeaturedProducts] = useState([]);

@@ -21,6 +21,7 @@ import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded';
 import PhotoCameraRoundedIcon from '@mui/icons-material/PhotoCameraRounded';
 import CardGiftcardRoundedIcon from '@mui/icons-material/CardGiftcardRounded';
 import PersonRoundedIcon from '@mui/icons-material/PersonRounded';
+import RecommendedSupplements from '../../components/RecommendedSupplements';
 
 import { useAuth } from '../../context/AuthContext';
 import { authService } from '../../services/authService';
@@ -533,6 +534,13 @@ export default function Profile() {
                       </li>
                     ))}
                   </ul>
+
+                  {/* Goal-Tailored Supplement Recommendation */}
+                  <Divider sx={{ my: 3 }} />
+                  <RecommendedSupplements
+                    supplementPlan={aiPlan.supplementPlan}
+                    userGoal={onboarding?.goal}
+                  />
                 </Card>
               </Grid>
             )}

@@ -55,7 +55,7 @@ export default function Footer() {
         mt: { xs: 8, md: 14 },
         pt: { xs: 6, md: 9 },
         pb: { xs: 4, md: 6 },
-        bgcolor: '#080A0D',
+        bgcolor: (theme) => (theme.palette.mode === 'dark' ? '#080A0D' : '#F1F5F9'),
         position: 'relative',
         '&::before': {
           content: '""',
@@ -94,7 +94,7 @@ export default function Footer() {
                     rel="noopener noreferrer"
                     size="small"
                     sx={{
-                      bgcolor: 'rgba(255,255,255,0.04)',
+                      bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(15,23,42,0.04)'),
                       border: '1px solid',
                       borderColor: 'divider',
                       color: 'text.secondary',
@@ -120,7 +120,7 @@ export default function Footer() {
               variant="subtitle2"
               sx={{
                 fontWeight: 800,
-                color: '#F4F6F8',
+                color: 'text.primary',
                 letterSpacing: 0.8,
                 textTransform: 'uppercase',
                 fontSize: '0.8rem',
@@ -186,7 +186,7 @@ export default function Footer() {
               variant="subtitle2"
               sx={{
                 fontWeight: 800,
-                color: '#F4F6F8',
+                color: 'text.primary',
                 letterSpacing: 0.8,
                 textTransform: 'uppercase',
                 fontSize: '0.8rem',
@@ -250,7 +250,7 @@ export default function Footer() {
               variant="subtitle2"
               sx={{
                 fontWeight: 800,
-                color: '#F4F6F8',
+                color: 'text.primary',
                 letterSpacing: 0.8,
                 textTransform: 'uppercase',
                 fontSize: '0.8rem',
@@ -308,7 +308,7 @@ export default function Footer() {
           </Grid>
         </Grid>
 
-        <Divider sx={{ my: { xs: 4, md: 5 }, borderColor: 'rgba(255,255,255,0.06)' }} />
+        <Divider sx={{ my: { xs: 4, md: 5 }, borderColor: 'divider' }} />
 
         {/* Bottom Bar */}
         <Stack
@@ -319,7 +319,7 @@ export default function Footer() {
           sx={{ textAlign: { xs: 'center', sm: 'left' } }}
         >
           <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-            &copy; {new Date().getFullYear()} <strong>GymPilot</strong> (GymTrack SARL). All rights reserved.
+            &copy; {new Date().getFullYear()} <strong>GymPilot</strong> . All rights reserved.
           </Typography>
 
           <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" justifyContent="center">
