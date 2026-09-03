@@ -125,7 +125,7 @@ public class AiService {
                 "      \"purpose\": \"Increases ATP strength, power output, and muscle volume\"," +
                 "      \"priority\": \"ESSENTIAL\"," +
                 "      \"shopSearch\": \"creatine\"," +
-                "      \"targetBenefits\": [\"+15% Strength\", \"Faster Recovery\", \"Muscle Fullness\"]" +
+                "      \"targetBenefits\": [\"+15%% Strength\", \"Faster Recovery\", \"Muscle Fullness\"]" +
                 "    }" +
                 "  ]" +
                 "}",
