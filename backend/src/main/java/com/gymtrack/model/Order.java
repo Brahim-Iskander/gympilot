@@ -32,6 +32,7 @@ public class Order {
 
     private double totalAmount;
     private double discountAmount = 0.0;
+    private String voucherCode;
     private double shippingFee = 0.0;
     private int pointsUsed = 0;
     private int pointsEarned = 0;
@@ -199,6 +200,14 @@ public class Order {
 
     public void setPaymentStatus(String paymentStatus) {
         this.paymentStatus = paymentStatus;
+    }
+
+    public String getVoucherCode() {
+        return voucherCode;
+    }
+
+    public void setVoucherCode(String voucherCode) {
+        this.voucherCode = voucherCode;
     }
 
     public String getNotes() {

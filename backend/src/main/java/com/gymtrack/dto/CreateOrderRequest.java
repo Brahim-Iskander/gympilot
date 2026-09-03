@@ -15,6 +15,8 @@ public record CreateOrderRequest(
 
         int pointsToUse,
 
+        String voucherCode,
+
         String notes
 ) {
 }

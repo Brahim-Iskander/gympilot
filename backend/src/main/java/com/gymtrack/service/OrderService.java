@@ -43,15 +43,18 @@ public class OrderService {
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final MailService mailService;
+    private final VoucherService voucherService;
 
     public OrderService(OrderRepository orderRepository,
                         ProductRepository productRepository,
                         UserRepository userRepository,
-                        MailService mailService) {
+                        MailService mailService,
+                        VoucherService voucherService) {
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
         this.userRepository = userRepository;
         this.mailService = mailService;
+        this.voucherService = voucherService;
     }
 
     @Transactional
@@ -117,6 +120,17 @@ public class OrderService {
             buyer.setPoints(buyer.getPoints() - pointsToDeduct);
         }
 
+        // Apply Voucher Discount if provided (optional)
+        String appliedVoucherCode = null;
+        if (request.voucherCode() != null && !request.voucherCode().isBlank()) {
+            double voucherDiscount = voucherService.applyAndConsumeVoucher(request.voucherCode(), subtotal);
+            appliedVoucherCode = request.voucherCode().trim().toUpperCase();
+            discountAmount = Math.round((discountAmount + voucherDiscount) * 100.0) / 100.0;
+            if (discountAmount > subtotal) {
+                discountAmount = subtotal;
+            }
+        }
+
         // Compute shipping fee: free if subtotal >= 150 TND, otherwise 7 TND
         double shippingFee = (subtotal >= FREE_SHIPPING_THRESHOLD || subtotal == 0) ? 0.0 : STANDARD_SHIPPING_FEE;
 
@@ -143,6 +157,7 @@ public class OrderService {
                 request.paymentMethod() != null ? request.paymentMethod() : "CASH_ON_DELIVERY"
         );
         order.setShippingFee(shippingFee);
+        order.setVoucherCode(appliedVoucherCode);
         order.setPointsEarned(pointsEarned);
         order.setNotes(request.notes());
 

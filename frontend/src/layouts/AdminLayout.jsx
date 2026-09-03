@@ -31,6 +31,7 @@ import {
   ArrowBackRounded,
   SupportAgentRounded,
   ConfirmationNumberRounded,
+  LocalOfferRounded,
 } from '@mui/icons-material';
 
 import Logo from '../components/Logo';
@@ -76,6 +77,12 @@ const ADMIN_NAV = [
     label: 'Partner Management',
     icon: <HandshakeRounded />,
     path: '/admin/partners',
+  },
+  {
+    id: 'admin-vouchers',
+    label: 'Store Vouchers',
+    icon: <LocalOfferRounded />,
+    path: '/admin/vouchers',
   },
 ];
 

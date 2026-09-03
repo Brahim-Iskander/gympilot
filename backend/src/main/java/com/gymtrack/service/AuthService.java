@@ -174,6 +174,7 @@ public class AuthService {
 
     public AuthResponse register(RegisterRequest request) {
         String email = normalizeEmail(request.email());
+        com.gymtrack.util.DisposableEmailValidator.validateNotDisposable(email);
 
         if (userRepository.existsByEmail(email)) {
             throw new EmailAlreadyExistsException();

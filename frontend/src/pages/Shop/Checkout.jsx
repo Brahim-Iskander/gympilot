@@ -32,11 +32,14 @@ import CheckCircleOutlineRoundedIcon from '@mui/icons-material/CheckCircleOutlin
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 import LockRoundedIcon from '@mui/icons-material/LockRounded';
 import EmojiEventsRoundedIcon from '@mui/icons-material/EmojiEventsRounded';
+import LocalOfferRoundedIcon from '@mui/icons-material/LocalOfferRounded';
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 
 import SEO from '../../components/SEO';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { orderService } from '../../services/orderService';
+import { voucherService } from '../../services/voucherService';
 
 export default function Checkout() {
   const { items, totals, pointsToUse, clearCart } = useCart();
@@ -59,12 +62,48 @@ export default function Checkout() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  // Voucher discount state (optional)
+  const [voucherCodeInput, setVoucherCodeInput] = useState('');
+  const [appliedVoucher, setAppliedVoucher] = useState(null);
+  const [voucherLoading, setVoucherLoading] = useState(false);
+  const [voucherError, setVoucherError] = useState('');
+
   // Confirmation modal
   const [confirmedOrder, setConfirmedOrder] = useState(null);
 
   const handleAddressChange = (field) => (e) => {
     setShippingAddress((prev) => ({ ...prev, [field]: e.target.value }));
   };
+
+  const handleApplyVoucher = async () => {
+    if (!voucherCodeInput.trim()) return;
+    try {
+      setVoucherLoading(true);
+      setVoucherError('');
+      const res = await voucherService.validateVoucher(
+        voucherCodeInput.trim().toUpperCase(),
+        totals.subtotal
+      );
+      if (res?.valid) {
+        setAppliedVoucher(res);
+      } else {
+        setVoucherError(res?.message || 'Invalid voucher code.');
+      }
+    } catch (err) {
+      setVoucherError(err.response?.data?.message || err.message || 'Invalid or expired voucher code.');
+    } finally {
+      setVoucherLoading(false);
+    }
+  };
+
+  const handleRemoveVoucher = () => {
+    setAppliedVoucher(null);
+    setVoucherCodeInput('');
+    setVoucherError('');
+  };
+
+  const voucherDiscount = appliedVoucher ? (Number(appliedVoucher.discountAmount) || 0) : 0;
+  const finalPayableTotal = Math.max(0, totals.total - voucherDiscount);
 
   const handleSubmitOrder = async (e) => {
     e.preventDefault();
@@ -86,6 +125,7 @@ export default function Checkout() {
         paymentMethod,
         pointsToUse,
         notes: orderNotes,
+        voucherCode: appliedVoucher ? appliedVoucher.code : undefined,
       };
 
       const orderResult = await orderService.createOrder(orderPayload);
@@ -349,6 +389,99 @@ export default function Checkout() {
 
                 <Divider sx={{ my: 2 }} />
 
+                {/* Optional Promo / Voucher Code */}
+                <Box sx={{ mb: 2.5, p: 2, borderRadius: 2.5, bgcolor: 'rgba(255,255,255,0.03)', border: '1px solid', borderColor: 'divider' }}>
+                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
+                    <LocalOfferRoundedIcon sx={{ color: 'primary.main', fontSize: 18 }} />
+                    <Typography variant="caption" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.secondary' }}>
+                      Discount Voucher (Optional)
+                    </Typography>
+                  </Stack>
+
+                  {appliedVoucher ? (
+                    <Box
+                      sx={{
+                        p: 1.5,
+                        borderRadius: 2,
+                        bgcolor: 'rgba(198, 255, 62, 0.08)',
+                        border: '1px solid',
+                        borderColor: 'primary.main',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <LocalOfferRoundedIcon sx={{ color: 'primary.main', fontSize: 18 }} />
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 800, color: 'primary.main', letterSpacing: 0.5 }}>
+                            {appliedVoucher.code}
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+                            {appliedVoucher.message || `Savings of TND ${voucherDiscount.toFixed(2)}`}
+                          </Typography>
+                        </Box>
+                      </Stack>
+                      <Button
+                        size="small"
+                        color="inherit"
+                        onClick={handleRemoveVoucher}
+                        startIcon={<CloseRoundedIcon fontSize="small" />}
+                        sx={{ fontSize: '0.75rem', fontWeight: 700, color: 'text.secondary', '&:hover': { color: 'error.main' } }}
+                      >
+                        Remove
+                      </Button>
+                    </Box>
+                  ) : (
+                    <Stack spacing={1}>
+                      <Stack direction="row" spacing={1}>
+                        <TextField
+                          size="small"
+                          fullWidth
+                          placeholder="e.g. PILOT10"
+                          value={voucherCodeInput}
+                          onChange={(e) => {
+                            setVoucherCodeInput(e.target.value.toUpperCase());
+                            setVoucherError('');
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleApplyVoucher();
+                            }
+                          }}
+                          disabled={voucherLoading}
+                          inputProps={{ style: { textTransform: 'uppercase', fontWeight: 700, fontSize: '0.85rem' } }}
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              borderRadius: 2,
+                            },
+                          }}
+                        />
+                        <Button
+                          variant="outlined"
+                          onClick={handleApplyVoucher}
+                          disabled={!voucherCodeInput.trim() || voucherLoading}
+                          sx={{
+                            fontWeight: 800,
+                            borderRadius: 2,
+                            px: 2.5,
+                            whiteSpace: 'nowrap',
+                            borderColor: 'divider',
+                          }}
+                        >
+                          {voucherLoading ? <CircularProgress size={16} /> : 'Apply'}
+                        </Button>
+                      </Stack>
+                      {voucherError && (
+                        <Typography variant="caption" sx={{ color: 'error.main', fontWeight: 600, px: 0.5 }}>
+                          {voucherError}
+                        </Typography>
+                      )}
+                    </Stack>
+                  )}
+                </Box>
+
                 {/* Totals breakdown */}
                 <Stack spacing={1.5} sx={{ mb: 3 }}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -372,12 +505,23 @@ export default function Checkout() {
                     </Stack>
                   )}
 
+                  {voucherDiscount > 0 && (
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <Typography variant="body2" sx={{ color: 'success.main', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <LocalOfferRoundedIcon sx={{ fontSize: 16 }} /> Voucher ({appliedVoucher?.code})
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 800, color: 'success.main' }}>
+                        -TND {voucherDiscount.toFixed(2)}
+                      </Typography>
+                    </Stack>
+                  )}
+
                   <Divider />
 
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
                     <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>Final Total</Typography>
                     <Typography variant="h5" sx={{ fontWeight: 900, color: 'primary.main', fontFamily: "'Sora', sans-serif" }}>
-                      TND {totals.total.toFixed(2)}
+                      TND {finalPayableTotal.toFixed(2)}
                     </Typography>
                   </Stack>
                 </Stack>
@@ -386,7 +530,7 @@ export default function Checkout() {
                   title={
                     submitting
                       ? 'Securely transmitting your order...'
-                      : `Confirm and place your order for TND ${totals.total.toFixed(2)} (Cash on Delivery)`
+                      : `Confirm and place your order for TND ${finalPayableTotal.toFixed(2)} (Cash on Delivery)`
                   }
                   arrow
                   placement="top"
@@ -408,7 +552,7 @@ export default function Checkout() {
                     }}
                   >
                     <Typography component="span" sx={{ fontWeight: 800, fontSize: '1rem', lineHeight: 1.2 }}>
-                      {submitting ? 'Confirming Order...' : `Place Order (TND ${totals.total.toFixed(2)})`}
+                      {submitting ? 'Confirming Order...' : `Place Order (TND ${finalPayableTotal.toFixed(2)})`}
                     </Typography>
                     <Typography component="span" sx={{ fontSize: '0.72rem', opacity: 0.85, fontWeight: 600, textTransform: 'none' }}>
                       Cash on Delivery · Standard 7 TND / Free &ge; 150 TND
@@ -475,6 +619,14 @@ export default function Checkout() {
                     TND {confirmedOrder?.totalAmount?.toFixed(2)}
                   </Typography>
                 </Stack>
+                {confirmedOrder?.voucherCode && (
+                  <Stack direction="row" justifyContent="space-between">
+                    <Typography variant="body2" color="text.secondary">Voucher Applied:</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 800, color: 'success.main' }}>
+                      {confirmedOrder.voucherCode}
+                    </Typography>
+                  </Stack>
+                )}
                 <Stack direction="row" justifyContent="space-between">
                   <Typography variant="body2" color="text.secondary">Payment Method:</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 700 }}>

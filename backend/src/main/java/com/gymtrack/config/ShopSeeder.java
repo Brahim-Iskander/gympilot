@@ -26,19 +26,41 @@ public class ShopSeeder implements CommandLineRunner {
     private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final com.gymtrack.repository.VoucherRepository voucherRepository;
 
     public ShopSeeder(CategoryRepository categoryRepository,
                       ProductRepository productRepository,
-                      UserRepository userRepository) {
+                      UserRepository userRepository,
+                      com.gymtrack.repository.VoucherRepository voucherRepository) {
         this.categoryRepository = categoryRepository;
         this.productRepository = productRepository;
         this.userRepository = userRepository;
+        this.voucherRepository = voucherRepository;
     }
 
     @Override
     public void run(String... args) {
         seedCategories();
         cleanupStaticProducts();
+        seedVouchers();
+    }
+
+    private void seedVouchers() {
+        if (!voucherRepository.existsByCodeIgnoreCase("PILOT10")) {
+            com.gymtrack.model.Voucher v = new com.gymtrack.model.Voucher(
+                    "PILOT10",
+                    "PERCENTAGE",
+                    10.0,
+                    30.0,
+                    30.0,
+                    1000,
+                    "Official GymPilot welcome voucher: 10% discount on orders over 30 TND",
+                    java.time.Instant.now().plus(365, java.time.temporal.ChronoUnit.DAYS),
+                    "system"
+            );
+            voucherRepository.save(v);
+            log.info("Seeded official welcome voucher: PILOT10 (10% off)");
+        }
     }
 
     private void seedCategories() {
