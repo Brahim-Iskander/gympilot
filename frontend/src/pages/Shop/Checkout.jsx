@@ -23,6 +23,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Tooltip,
 } from '@mui/material';
 import LocalShippingRoundedIcon from '@mui/icons-material/LocalShippingRounded';
 import CreditCardRoundedIcon from '@mui/icons-material/CreditCardRounded';
@@ -381,17 +382,39 @@ export default function Checkout() {
                   </Stack>
                 </Stack>
 
-                <Button
-                  type="submit"
-                  variant="contained"
-                  fullWidth
-                  size="large"
-                  disabled={submitting}
-                  startIcon={submitting ? <CircularProgress size={20} /> : <LockRoundedIcon />}
-                  sx={{ fontWeight: 800, py: 1.5, borderRadius: 2.5 }}
+                <Tooltip
+                  title={
+                    submitting
+                      ? 'Securely transmitting your order...'
+                      : `Confirm and place your order for TND ${totals.total.toFixed(2)} (Cash on Delivery)`
+                  }
+                  arrow
+                  placement="top"
                 >
-                  {submitting ? 'Placing Order...' : `Place Order (TND ${totals.total.toFixed(2)})`}
-                </Button>
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    fullWidth
+                    size="large"
+                    disabled={submitting}
+                    startIcon={submitting ? <CircularProgress size={20} color="inherit" /> : <LockRoundedIcon />}
+                    sx={{
+                      fontWeight: 800,
+                      py: 1.3,
+                      borderRadius: 2.5,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 0.25,
+                    }}
+                  >
+                    <Typography component="span" sx={{ fontWeight: 800, fontSize: '1rem', lineHeight: 1.2 }}>
+                      {submitting ? 'Confirming Order...' : `Place Order (TND ${totals.total.toFixed(2)})`}
+                    </Typography>
+                    <Typography component="span" sx={{ fontSize: '0.72rem', opacity: 0.85, fontWeight: 600, textTransform: 'none' }}>
+                      Cash on Delivery · Standard 7 TND / Free &ge; 150 TND
+                    </Typography>
+                  </Button>
+                </Tooltip>
 
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center', mt: 2 }}>
                   By placing this order you agree to GymPilot's Storefront & Privacy Policies.

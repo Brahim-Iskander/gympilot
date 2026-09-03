@@ -51,11 +51,17 @@ public class User {
     /** Last successful login timestamp. */
     private Instant lastLoginAt;
 
-    /** FREE, BASIC, or PREMIUM. Defaults to FREE for all registrations. */
-    private String membershipTier = "FREE";
+    /** FREE, BASIC, or PREMIUM. Defaults to BASIC for 2-week free trial on registration. */
+    private String membershipTier = "BASIC";
 
-    /** ACTIVE or INACTIVE. Defaults to INACTIVE. */
-    private String membershipStatus = "INACTIVE";
+    /** ACTIVE or INACTIVE. Defaults to ACTIVE during trial. */
+    private String membershipStatus = "ACTIVE";
+
+    /** Expiration timestamp for the 2-week Basic plan free trial. */
+    private Instant trialEndsAt;
+
+    /** Expiration timestamp for paid or points-purchased subscription. */
+    private Instant membershipExpiresAt;
 
     /** Profile avatar image (Base64 data URL or external URL). */
     private String avatar;
@@ -77,6 +83,7 @@ public class User {
     private Instant createdAt;
 
     public User() {
+        this.trialEndsAt = Instant.now().plus(java.time.Duration.ofDays(14));
     }
 
     public User(String firstName, String lastName, String email, String password) {
@@ -86,6 +93,9 @@ public class User {
         this.password = password;
         this.roles = new java.util.HashSet<>(java.util.Set.of("USER"));
         this.role = "USER";
+        this.membershipTier = "BASIC";
+        this.membershipStatus = "ACTIVE";
+        this.trialEndsAt = Instant.now().plus(java.time.Duration.ofDays(14));
     }
 
     public String getId() {
@@ -248,7 +258,40 @@ public class User {
         this.createdAt = createdAt;
     }
 
+    public Instant getTrialEndsAt() {
+        return trialEndsAt;
+    }
+
+    public void setTrialEndsAt(Instant trialEndsAt) {
+        this.trialEndsAt = trialEndsAt;
+    }
+
+    public Instant getMembershipExpiresAt() {
+        return membershipExpiresAt;
+    }
+
+    public void setMembershipExpiresAt(Instant membershipExpiresAt) {
+        this.membershipExpiresAt = membershipExpiresAt;
+    }
+
+    public boolean isMembershipSubscriptionActive() {
+        return membershipExpiresAt != null && Instant.now().isBefore(membershipExpiresAt);
+    }
+
+    public boolean isTrialActive() {
+        if (isMembershipSubscriptionActive()) {
+            return false;
+        }
+        return trialEndsAt != null && Instant.now().isBefore(trialEndsAt);
+    }
+
     public String getMembershipTier() {
+        if (isMembershipSubscriptionActive()) {
+            return membershipTier != null ? membershipTier : "FREE";
+        }
+        if (trialEndsAt != null && Instant.now().isAfter(trialEndsAt) && "BASIC".equalsIgnoreCase(membershipTier)) {
+            return "FREE";
+        }
         return membershipTier != null ? membershipTier : "FREE";
     }
 
@@ -257,6 +300,12 @@ public class User {
     }
 
     public String getMembershipStatus() {
+        if (isMembershipSubscriptionActive()) {
+            return membershipStatus != null ? membershipStatus : "ACTIVE";
+        }
+        if (trialEndsAt != null && Instant.now().isAfter(trialEndsAt) && "BASIC".equalsIgnoreCase(membershipTier)) {
+            return "INACTIVE";
+        }
         return membershipStatus != null ? membershipStatus : "INACTIVE";
     }
 
@@ -265,7 +314,13 @@ public class User {
     }
 
     public boolean hasActiveMembership() {
-        return "ACTIVE".equalsIgnoreCase(membershipStatus) && membershipTier != null && !"FREE".equalsIgnoreCase(membershipTier);
+        if (isMembershipSubscriptionActive()) {
+            return "ACTIVE".equalsIgnoreCase(membershipStatus) && !"FREE".equalsIgnoreCase(membershipTier);
+        }
+        if (isTrialActive()) {
+            return true;
+        }
+        return "ACTIVE".equalsIgnoreCase(getMembershipStatus()) && !"FREE".equalsIgnoreCase(getMembershipTier());
     }
 
     public String getAvatar() {

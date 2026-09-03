@@ -32,6 +32,7 @@ public class Order {
 
     private double totalAmount;
     private double discountAmount = 0.0;
+    private double shippingFee = 0.0;
     private int pointsUsed = 0;
     private int pointsEarned = 0;
 
@@ -142,6 +143,14 @@ public class Order {
 
     public void setDiscountAmount(double discountAmount) {
         this.discountAmount = discountAmount;
+    }
+
+    public double getShippingFee() {
+        return shippingFee;
+    }
+
+    public void setShippingFee(double shippingFee) {
+        this.shippingFee = shippingFee;
     }
 
     public int getPointsUsed() {

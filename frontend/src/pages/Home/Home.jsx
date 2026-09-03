@@ -35,7 +35,6 @@ export default function Home() {
         <FeaturesSection />
         <WorkoutVideosSection />
         <HowItWorksSection />
-        <AdsSection />
         <CtaSection />
       </Box>
       <Footer />

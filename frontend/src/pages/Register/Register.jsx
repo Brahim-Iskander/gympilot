@@ -136,6 +136,29 @@ export default function Register() {
       >
         <Box component="form" onSubmit={handleSubmit} noValidate>
           <Stack spacing={2.5}>
+            {/* 2-Week Free Trial Banner */}
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: 2.5,
+                bgcolor: 'rgba(198,255,62,0.08)',
+                border: '1px solid rgba(198,255,62,0.25)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.25,
+              }}
+            >
+              <CelebrationRoundedIcon sx={{ color: 'primary.main', fontSize: 24, flexShrink: 0 }} />
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#F4F6F8', fontSize: '0.85rem' }}>
+                  2-Week Free Trial Included!
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.3 }}>
+                  All new members automatically receive a <strong>14-day free trial</strong> of the Basic Plan. No credit card required.
+                </Typography>
+              </Box>
+            </Box>
+
             {formError && (
               <Alert severity="error" variant="outlined">
                 {formError}

@@ -12,7 +12,8 @@ public record UserResponse(String id, String firstName, String lastName, String 
                            String role, Set<String> roles, boolean isSeller, boolean isCoach, boolean isAdmin,
                            boolean banned, boolean isVerified, String membershipTier,
                            String membershipStatus, boolean hasActiveMembership, Instant createdAt,
-                           String avatar, int points, String referralCode, String storeName) {
+                           String avatar, int points, String referralCode, String storeName,
+                           Instant trialEndsAt, boolean isTrialActive, Instant membershipExpiresAt) {
 
     public static UserResponse from(User user) {
         return new UserResponse(
@@ -34,6 +35,9 @@ public record UserResponse(String id, String firstName, String lastName, String 
                 user.getAvatar(),
                 user.getPoints(),
                 user.getReferralCode(),
-                user.getStoreName());
+                user.getStoreName(),
+                user.getTrialEndsAt(),
+                user.isTrialActive(),
+                user.getMembershipExpiresAt());
     }
 }

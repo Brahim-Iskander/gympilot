@@ -25,7 +25,10 @@ public record AdminUserResponse(
         String membershipStatus,
         boolean hasActiveMembership,
         Instant createdAt,
-        String avatar
+        String avatar,
+        Instant trialEndsAt,
+        boolean isTrialActive,
+        Instant membershipExpiresAt
 ) {
 
     public static AdminUserResponse from(User user) {
@@ -46,6 +49,9 @@ public record AdminUserResponse(
                 user.getMembershipStatus(),
                 user.hasActiveMembership(),
                 user.getCreatedAt(),
-                user.getAvatar());
+                user.getAvatar(),
+                user.getTrialEndsAt(),
+                user.isTrialActive(),
+                user.getMembershipExpiresAt());
     }
 }

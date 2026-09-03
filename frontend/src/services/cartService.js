@@ -115,7 +115,7 @@ export const cartService = {
     const items = this.getCart();
     const subtotal = items.reduce((acc, i) => acc + Number(i.price) * (Number(i.quantity) || 1), 0);
 
-    const shipping = subtotal >= 50 || subtotal === 0 ? 0 : 5.99;
+    const shipping = subtotal >= 150 || subtotal === 0 ? 0 : 7;
 
     let pointsDiscount = 0;
     if (pointsToUse > 0 && userPoints > 0) {

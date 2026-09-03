@@ -40,19 +40,27 @@ import {
   VerifiedUserRounded,
   BoltRounded,
   ConfirmationNumberRounded,
+  MonetizationOnRounded,
+  StarRounded,
 } from '@mui/icons-material';
 
 import { ticketService } from '../../services/ticketService';
+import { membershipService } from '../../services/membershipService';
 import { useAuth } from '../../context/AuthContext';
 import SEO from '../../components/SEO';
 
 export default function MembershipPage() {
   const theme = useTheme();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
+
+  const BASIC_POINTS_COST = 250;
+  const PREMIUM_POINTS_COST = 500;
 
   const [loading, setLoading] = useState(false);
+  const [redeemingTier, setRedeemingTier] = useState(null);
   const [successTicket, setSuccessTicket] = useState(null);
+  const [successRedeem, setSuccessRedeem] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [confirmationOpen, setConfirmationOpen] = useState(false);
 
@@ -94,6 +102,25 @@ export default function MembershipPage() {
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRedeemWithPoints = async (tier) => {
+    try {
+      setRedeemingTier(tier);
+      setErrorMessage('');
+
+      const updatedUser = await membershipService.redeemPlanWithPoints(tier);
+      updateUser(updatedUser);
+      setSuccessRedeem(tier);
+    } catch (err) {
+      console.error('Failed to redeem membership with points:', err);
+      setErrorMessage(
+        err.response?.data?.message ||
+          `Failed to redeem ${tier} plan. Please try again.`
+      );
+    } finally {
+      setRedeemingTier(null);
     }
   };
 
@@ -159,6 +186,47 @@ export default function MembershipPage() {
         </Typography>
       </Box>
 
+      {/* Points Balance Banner */}
+      {user && (
+        <Box
+          sx={{
+            mb: 4,
+            p: 2.5,
+            borderRadius: 3,
+            bgcolor: 'rgba(255,215,0,0.06)',
+            border: '1px solid rgba(255,215,0,0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 2,
+          }}
+        >
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <MonetizationOnRounded sx={{ color: '#FFD700', fontSize: 28 }} />
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#F4F6F8' }}>
+                Your Reward Points Balance
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Use your points to unlock membership plans instantly
+              </Typography>
+            </Box>
+          </Stack>
+          <Chip
+            label={`${user?.points ?? 0} pts`}
+            sx={{
+              bgcolor: 'rgba(255,215,0,0.15)',
+              color: '#FFD700',
+              fontWeight: 900,
+              fontSize: '1rem',
+              px: 1.5,
+              height: 36,
+            }}
+          />
+        </Box>
+      )}
+
       {/* Global Alerts */}
       {errorMessage && (
         <Alert
@@ -167,6 +235,19 @@ export default function MembershipPage() {
           sx={{ mb: 4, borderRadius: 3 }}
         >
           {errorMessage}
+        </Alert>
+      )}
+
+      {successRedeem && (
+        <Alert
+          severity="success"
+          onClose={() => setSuccessRedeem(null)}
+          sx={{ mb: 4, borderRadius: 3 }}
+        >
+          You have successfully activated the <strong>{successRedeem}</strong> plan for 30 days using your reward points!
+          {user?.membershipExpiresAt && (
+            <> Your plan is active until <strong>{new Date(user.membershipExpiresAt).toLocaleDateString()}</strong>.</>
+          )}
         </Alert>
       )}
 
@@ -213,9 +294,15 @@ export default function MembershipPage() {
               },
             }}
           >
-            {/* Available Badge */}
+            {/* Available / Active Badge */}
             <Chip
-              label="AVAILABLE NOW"
+              label={
+                user?.isTrialActive
+                  ? 'ACTIVE 2-WEEK FREE TRIAL'
+                  : user?.membershipTier === 'BASIC' && user?.membershipStatus === 'ACTIVE'
+                  ? 'CURRENT ACTIVE PLAN'
+                  : 'AVAILABLE NOW'
+              }
               size="small"
               sx={{
                 position: 'absolute',
@@ -267,7 +354,7 @@ export default function MembershipPage() {
                   </Typography>
                 </Stack>
                 <Typography variant="caption" color="text.secondary">
-                  Billed monthly • No long-term commitment
+                  Billed monthly • Includes 14-day free trial on signup
                 </Typography>
               </Box>
 
@@ -296,31 +383,106 @@ export default function MembershipPage() {
               </List>
 
               <Box sx={{ pt: 2, mt: 'auto' }}>
-                <Button
-                  fullWidth
-                  variant="contained"
-                  size="large"
-                  onClick={handleSubscribeBasic}
-                  disabled={loading}
-                  startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <BoltRounded />}
-                  sx={{
-                    py: 1.5,
-                    bgcolor: 'primary.main',
-                    color: '#000',
-                    fontWeight: 800,
-                    fontSize: '1rem',
-                    borderRadius: 3,
-                    boxShadow: '0 8px 24px rgba(198,255,62,0.3)',
-                    '&:hover': {
-                      bgcolor: '#b3f520',
-                    },
-                  }}
-                >
-                  {loading ? 'Submitting Request...' : 'Subscribe'}
-                </Button>
-                <Typography variant="caption" color="text.secondary" align="center" display="block" sx={{ mt: 1 }}>
-                  Clicking will notify our team to activate your plan.
-                </Typography>
+                {user?.isTrialActive ? (
+                  <>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      size="large"
+                      disabled
+                      startIcon={<CheckCircleRounded sx={{ color: '#C6FF3E' }} />}
+                      sx={{
+                        py: 1.5,
+                        color: 'text.primary',
+                        fontWeight: 800,
+                        fontSize: '0.95rem',
+                        borderRadius: 3,
+                        borderColor: 'primary.main',
+                        bgcolor: 'rgba(198,255,62,0.08)',
+                      }}
+                    >
+                      Free Trial Active
+                    </Button>
+                    <Typography variant="caption" color="primary.main" align="center" display="block" sx={{ mt: 1, fontWeight: 700 }}>
+                      {user?.trialEndsAt
+                        ? `Enjoy full Basic access until ${new Date(user.trialEndsAt).toLocaleDateString()}`
+                        : '14-day free trial active'}
+                    </Typography>
+                  </>
+                ) : user?.membershipTier === 'BASIC' && user?.membershipStatus === 'ACTIVE' ? (
+                  <>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      size="large"
+                      disabled
+                      startIcon={<CheckCircleRounded sx={{ color: '#C6FF3E' }} />}
+                      sx={{
+                        py: 1.5,
+                        color: 'text.primary',
+                        fontWeight: 800,
+                        fontSize: '0.95rem',
+                        borderRadius: 3,
+                        borderColor: 'primary.main',
+                        bgcolor: 'rgba(198,255,62,0.08)',
+                      }}
+                    >
+                      Current Plan Active
+                    </Button>
+                  </>
+                ) : (
+                  <Stack spacing={1.5}>
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      size="large"
+                      onClick={() => handleRedeemWithPoints('BASIC')}
+                      disabled={redeemingTier === 'BASIC' || (user?.points ?? 0) < BASIC_POINTS_COST}
+                      startIcon={redeemingTier === 'BASIC' ? <CircularProgress size={20} color="inherit" /> : <MonetizationOnRounded />}
+                      sx={{
+                        py: 1.5,
+                        bgcolor: 'primary.main',
+                        color: '#000',
+                        fontWeight: 800,
+                        fontSize: '0.95rem',
+                        borderRadius: 3,
+                        boxShadow: '0 8px 24px rgba(198,255,62,0.3)',
+                        '&:hover': {
+                          bgcolor: '#b3f520',
+                        },
+                      }}
+                    >
+                      {redeemingTier === 'BASIC' ? 'Activating...' : `Redeem for ${BASIC_POINTS_COST} Points`}
+                    </Button>
+                    {(user?.points ?? 0) < BASIC_POINTS_COST && (
+                      <Typography variant="caption" color="error.main" align="center" display="block" sx={{ fontWeight: 600 }}>
+                        You need {BASIC_POINTS_COST - (user?.points ?? 0)} more points to redeem this plan.
+                      </Typography>
+                    )}
+                    <Divider sx={{ my: 0.5 }}><Chip label="OR" size="small" sx={{ fontSize: '0.65rem', fontWeight: 700 }} /></Divider>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      size="large"
+                      onClick={handleSubscribeBasic}
+                      disabled={loading}
+                      startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <BoltRounded />}
+                      sx={{
+                        py: 1.25,
+                        fontWeight: 700,
+                        fontSize: '0.9rem',
+                        borderRadius: 3,
+                        borderColor: 'primary.main',
+                        color: 'primary.main',
+                      }}
+                    >
+                      {loading ? 'Submitting...' : 'Request via Support'}
+                    </Button>
+                    <Typography variant="caption" color="text.secondary" align="center" display="block">
+                      Our team will manually activate your plan.
+                    </Typography>
+                  </Stack>
+                )}
               </Box>
             </CardContent>
           </Card>
@@ -341,16 +503,19 @@ export default function MembershipPage() {
               position: 'relative',
               overflow: 'visible',
               transition: 'all 0.3s ease',
-              opacity: 0.92,
               '&:hover': {
                 borderColor: '#8A7CFF',
                 boxShadow: '0 12px 32px rgba(138,124,255,0.12)',
               },
             }}
           >
-            {/* Coming Soon Badge */}
+            {/* Badge */}
             <Chip
-              label="COMING SOON"
+              label={
+                user?.membershipTier === 'PREMIUM' && user?.membershipStatus === 'ACTIVE'
+                  ? 'CURRENT ACTIVE PLAN'
+                  : 'REDEEM WITH POINTS'
+              }
               size="small"
               sx={{
                 position: 'absolute',
@@ -444,31 +609,70 @@ export default function MembershipPage() {
               </List>
 
               <Box sx={{ pt: 2, mt: 'auto' }}>
-                <Tooltip title="The Premium subscription plan is currently in development and will be available soon.">
-                  <span>
+                {user?.membershipTier === 'PREMIUM' && user?.membershipStatus === 'ACTIVE' ? (
+                  <>
                     <Button
                       fullWidth
                       variant="outlined"
                       size="large"
-                      disabled={true}
-                      startIcon={<LockRounded />}
+                      disabled
+                      startIcon={<CheckCircleRounded sx={{ color: '#8A7CFF' }} />}
                       sx={{
                         py: 1.5,
+                        color: 'text.primary',
                         fontWeight: 800,
-                        fontSize: '1rem',
+                        fontSize: '0.95rem',
                         borderRadius: 3,
-                        borderColor: 'divider',
-                        color: 'text.disabled',
-                        bgcolor: 'action.disabledBackground',
+                        borderColor: '#8A7CFF',
+                        bgcolor: 'rgba(138,124,255,0.08)',
                       }}
                     >
-                      Coming Soon
+                      Current Plan Active
                     </Button>
-                  </span>
-                </Tooltip>
-                <Typography variant="caption" color="text.secondary" align="center" display="block" sx={{ mt: 1 }}>
-                  Premium tier registration will open soon.
-                </Typography>
+                    {user?.membershipExpiresAt && (
+                      <Typography variant="caption" sx={{ color: '#8A7CFF', fontWeight: 700, display: 'block', textAlign: 'center', mt: 1 }}>
+                        Active until {new Date(user.membershipExpiresAt).toLocaleDateString()}
+                      </Typography>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      size="large"
+                      onClick={() => handleRedeemWithPoints('PREMIUM')}
+                      disabled={redeemingTier === 'PREMIUM' || (user?.points ?? 0) < PREMIUM_POINTS_COST}
+                      startIcon={redeemingTier === 'PREMIUM' ? <CircularProgress size={20} color="inherit" /> : <StarRounded />}
+                      sx={{
+                        py: 1.5,
+                        background: 'linear-gradient(135deg, #8A7CFF 0%, #6B5CEF 100%)',
+                        color: '#FFFFFF',
+                        fontWeight: 800,
+                        fontSize: '0.95rem',
+                        borderRadius: 3,
+                        boxShadow: '0 8px 24px rgba(138,124,255,0.3)',
+                        '&:hover': {
+                          background: 'linear-gradient(135deg, #9B8FFF 0%, #7C6EFF 100%)',
+                        },
+                        '&.Mui-disabled': {
+                          background: 'rgba(138,124,255,0.3)',
+                          color: 'rgba(255,255,255,0.5)',
+                        },
+                      }}
+                    >
+                      {redeemingTier === 'PREMIUM' ? 'Activating...' : `Redeem for ${PREMIUM_POINTS_COST} Points`}
+                    </Button>
+                    {(user?.points ?? 0) < PREMIUM_POINTS_COST && (
+                      <Typography variant="caption" color="error.main" align="center" display="block" sx={{ mt: 1, fontWeight: 600 }}>
+                        You need {PREMIUM_POINTS_COST - (user?.points ?? 0)} more points to redeem this plan.
+                      </Typography>
+                    )}
+                    <Typography variant="caption" color="text.secondary" align="center" display="block" sx={{ mt: 1 }}>
+                      Unlocks all premium features for 30 days.
+                    </Typography>
+                  </>
+                )}
               </Box>
             </CardContent>
           </Card>
@@ -582,19 +786,19 @@ export default function MembershipPage() {
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.5 }}>
-              How does the subscription request work?
+              How do I redeem with points?
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              When you click "Subscribe", an automated ticket is submitted to our team. Our administration staff verifies your account and contacts you with the final onboarding details.
+              If you have enough reward points, click "Redeem for X Points" on the plan you want. Your points are deducted instantly and the plan is activated for 30 days. You earn points by shopping in the marketplace (1 point per 2 TND spent) and by referring friends.
             </Typography>
           </Grid>
 
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.5 }}>
-              When will the Premium Plan be available?
+              How many points do I need?
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Our Premium tier featuring AI-powered workout plans and real-time Coach desk is currently in testing and will be released in the upcoming update.
+              The Basic Plan costs 250 points and the Premium Plan costs 500 points. Each redemption activates the plan for 30 days. If you already have an active plan of the same tier, the 30 days are added to your remaining time.
             </Typography>
           </Grid>
         </Grid>

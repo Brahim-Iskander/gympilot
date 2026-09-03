@@ -34,16 +34,24 @@ public class OrderService {
 
     private static final Logger log = LoggerFactory.getLogger(OrderService.class);
 
+    /** Standard delivery fee in TND */
+    private static final double STANDARD_SHIPPING_FEE = 7.0;
+    /** Orders with subtotal >= this threshold get free delivery */
+    private static final double FREE_SHIPPING_THRESHOLD = 150.0;
+
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final MailService mailService;
 
     public OrderService(OrderRepository orderRepository,
                         ProductRepository productRepository,
-                        UserRepository userRepository) {
+                        UserRepository userRepository,
+                        MailService mailService) {
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
         this.userRepository = userRepository;
+        this.mailService = mailService;
     }
 
     @Transactional
@@ -109,7 +117,10 @@ public class OrderService {
             buyer.setPoints(buyer.getPoints() - pointsToDeduct);
         }
 
-        double finalTotal = Math.max(0, Math.round((subtotal - discountAmount) * 100.0) / 100.0);
+        // Compute shipping fee: free if subtotal >= 150 TND, otherwise 7 TND
+        double shippingFee = (subtotal >= FREE_SHIPPING_THRESHOLD || subtotal == 0) ? 0.0 : STANDARD_SHIPPING_FEE;
+
+        double finalTotal = Math.max(0, Math.round((subtotal - discountAmount + shippingFee) * 100.0) / 100.0);
 
         // Award 5% points reward on completed purchase
         int pointsEarned = (int) Math.round(finalTotal * 0.5); // 1 point per $2 spent
@@ -131,11 +142,19 @@ public class OrderService {
                 request.shippingAddress(),
                 request.paymentMethod() != null ? request.paymentMethod() : "CASH_ON_DELIVERY"
         );
+        order.setShippingFee(shippingFee);
         order.setPointsEarned(pointsEarned);
         order.setNotes(request.notes());
 
         Order saved = orderRepository.save(order);
-        log.info("Created order {} for user {} with total ${}", orderNumber, buyerEmail, finalTotal);
+        log.info("Created order {} for user {} with total {} TND (shipping: {} TND)", orderNumber, buyerEmail, finalTotal, shippingFee);
+
+        // Send order confirmation email asynchronously (failure should not break order)
+        try {
+            mailService.sendOrderConfirmationEmail(saved);
+        } catch (Exception ex) {
+            log.error("Failed to send order confirmation email for order {}: {}", orderNumber, ex.getMessage());
+        }
 
         return OrderResponse.from(saved);
     }

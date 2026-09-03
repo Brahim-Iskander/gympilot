@@ -186,10 +186,13 @@ public class AuthService {
                 passwordEncoder.encode(request.password()));
 
         user.setVerified(false);
+        user.setMembershipTier("BASIC");
+        user.setMembershipStatus("ACTIVE");
+        user.setTrialEndsAt(Instant.now().plus(java.time.Duration.ofDays(14)));
         user.setReferralCode(referralService.generateUniqueReferralCode(user));
 
         User saved = userRepository.save(user);
-        log.info("Registered new unverified user with referral code '{}': {}", saved.getReferralCode(), saved.getEmail());
+        log.info("Registered new user with 2-week Basic trial and referral code '{}': {}", saved.getReferralCode(), saved.getEmail());
 
         // Process referral bonus if code provided
         if (request.referralCode() != null && !request.referralCode().isBlank()) {

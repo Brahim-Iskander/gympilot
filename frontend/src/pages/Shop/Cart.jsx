@@ -21,6 +21,7 @@ import {
   Paper,
   Chip,
   Slider,
+  Tooltip,
 } from '@mui/material';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
@@ -31,6 +32,7 @@ import ShoppingBagRoundedIcon from '@mui/icons-material/ShoppingBagRounded';
 import LocalShippingRoundedIcon from '@mui/icons-material/LocalShippingRounded';
 import EmojiEventsRoundedIcon from '@mui/icons-material/EmojiEventsRounded';
 import MonetizationOnRoundedIcon from '@mui/icons-material/MonetizationOnRounded';
+import LockRoundedIcon from '@mui/icons-material/LockRounded';
 
 import SEO from '../../components/SEO';
 import { useCart } from '../../context/CartContext';
@@ -293,16 +295,31 @@ export default function Cart() {
                 </Box>
               </Stack>
 
-              <Button
-                variant="contained"
-                fullWidth
-                size="large"
-                endIcon={<ArrowForwardRoundedIcon />}
-                onClick={() => navigate('/shop/checkout')}
-                sx={{ fontWeight: 800, py: 1.5, borderRadius: 2.5 }}
-              >
-                Proceed to Checkout
-              </Button>
+              <Tooltip title="Continue to enter delivery coordinates & complete order" arrow placement="top">
+                <Button
+                  variant="contained"
+                  fullWidth
+                  size="large"
+                  startIcon={<LockRoundedIcon />}
+                  endIcon={<ArrowForwardRoundedIcon />}
+                  onClick={() => navigate('/shop/checkout')}
+                  sx={{
+                    fontWeight: 800,
+                    py: 1.3,
+                    borderRadius: 2.5,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 0.25,
+                  }}
+                >
+                  <Typography component="span" sx={{ fontWeight: 800, fontSize: '1rem', lineHeight: 1.2 }}>
+                    Proceed to Checkout ({totals.total.toFixed(2)} TND)
+                  </Typography>
+                  <Typography component="span" sx={{ fontSize: '0.72rem', opacity: 0.85, fontWeight: 600, textTransform: 'none' }}>
+                    Secure checkout · Pay Cash on Delivery
+                  </Typography>
+                </Button>
+              </Tooltip>
             </Card>
           </Grid>
         </Grid>

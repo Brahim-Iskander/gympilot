@@ -24,6 +24,7 @@ import {
   Breadcrumbs,
   Link,
   Alert,
+  Tooltip,
 } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import RemoveRoundedIcon from '@mui/icons-material/RemoveRounded';
@@ -36,6 +37,7 @@ import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import FlashOnRoundedIcon from '@mui/icons-material/FlashOnRounded';
 
 import SEO from '../../components/SEO';
+import Footer from '../../components/Footer';
 import { productService } from '../../services/productService';
 import { useCart } from '../../context/CartContext';
 import CartDrawer from '../../components/CartDrawer';
@@ -286,13 +288,13 @@ export default function ProductDetail() {
                   )}
                 </Stack>
                 <Typography variant="caption" color="text.secondary">
-                  Taxes included. Free standard delivery on orders over $50.
+                  Taxes included · Standard delivery <strong>7 TND</strong> (Free on orders &ge; <strong>150 TND</strong>)
                 </Typography>
               </Paper>
 
               {/* Quantity Selector & CTA Buttons */}
               <Box sx={{ mb: 4 }}>
-                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center" sx={{ mb: 2 }}>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="stretch" sx={{ mb: 2 }}>
                   {/* Quantity Stepper */}
                   <Box
                     sx={{
@@ -305,6 +307,7 @@ export default function ProductDetail() {
                       p: 0.5,
                       width: { xs: '100%', sm: 'auto' },
                       justifyContent: 'space-between',
+                      alignSelf: { xs: 'stretch', sm: 'center' },
                     }}
                   >
                     <IconButton
@@ -327,30 +330,82 @@ export default function ProductDetail() {
                   </Box>
 
                   {/* Add to Cart */}
-                  <Button
-                    variant="contained"
-                    fullWidth
-                    size="large"
-                    disabled={product.stockQuantity <= 0}
-                    startIcon={<ShoppingBagRoundedIcon />}
-                    onClick={() => addToCart(product, quantity)}
-                    sx={{ fontWeight: 800, py: 1.5, borderRadius: 2 }}
+                  <Tooltip
+                    title={
+                      product.stockQuantity <= 0
+                        ? 'This item is currently out of stock'
+                        : `Add ${quantity} unit${quantity > 1 ? 's' : ''} to your basket (${(product.price * quantity).toFixed(2)} TND)`
+                    }
+                    arrow
+                    placement="top"
                   >
-                    Add to Cart
-                  </Button>
+                    <span style={{ flex: 1, display: 'flex' }}>
+                      <Button
+                        variant="contained"
+                        fullWidth
+                        size="large"
+                        disabled={product.stockQuantity <= 0}
+                        startIcon={<ShoppingBagRoundedIcon />}
+                        onClick={() => addToCart(product, quantity)}
+                        sx={{
+                          fontWeight: 800,
+                          py: 1.2,
+                          borderRadius: 2,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 0.25,
+                        }}
+                      >
+                        <Typography component="span" sx={{ fontWeight: 800, fontSize: '0.95rem', lineHeight: 1.2 }}>
+                          {product.stockQuantity > 0 ? 'Add to Cart' : 'Out of Stock'}
+                        </Typography>
+                        {product.stockQuantity > 0 && (
+                          <Typography component="span" sx={{ fontSize: '0.7rem', opacity: 0.85, fontWeight: 600, textTransform: 'none' }}>
+                            {quantity} &times; {Number(product.price).toFixed(2)} = {(product.price * quantity).toFixed(2)} TND
+                          </Typography>
+                        )}
+                      </Button>
+                    </span>
+                  </Tooltip>
 
                   {/* Buy Now */}
-                  <Button
-                    variant="outlined"
-                    fullWidth
-                    size="large"
-                    disabled={product.stockQuantity <= 0}
-                    startIcon={<FlashOnRoundedIcon sx={{ color: '#C6FF3E' }} />}
-                    onClick={handleBuyNow}
-                    sx={{ fontWeight: 800, py: 1.5, borderRadius: 2 }}
+                  <Tooltip
+                    title={
+                      product.stockQuantity <= 0
+                        ? 'Item unavailable for instant purchase'
+                        : 'Skip cart and proceed directly to checkout'
+                    }
+                    arrow
+                    placement="top"
                   >
-                    Buy Now
-                  </Button>
+                    <span style={{ flex: 1, display: 'flex' }}>
+                      <Button
+                        variant="outlined"
+                        fullWidth
+                        size="large"
+                        disabled={product.stockQuantity <= 0}
+                        startIcon={<FlashOnRoundedIcon sx={{ color: product.stockQuantity > 0 ? '#C6FF3E' : 'inherit' }} />}
+                        onClick={handleBuyNow}
+                        sx={{
+                          fontWeight: 800,
+                          py: 1.2,
+                          borderRadius: 2,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 0.25,
+                        }}
+                      >
+                        <Typography component="span" sx={{ fontWeight: 800, fontSize: '0.95rem', lineHeight: 1.2 }}>
+                          Buy Now
+                        </Typography>
+                        {product.stockQuantity > 0 && (
+                          <Typography component="span" sx={{ fontSize: '0.7rem', opacity: 0.85, fontWeight: 600, textTransform: 'none' }}>
+                            Direct Checkout · Cash on Delivery
+                          </Typography>
+                        )}
+                      </Button>
+                    </span>
+                  </Tooltip>
                 </Stack>
               </Box>
 
@@ -473,6 +528,7 @@ export default function ProductDetail() {
           </Box>
         )}
       </Container>
+      <Footer />
     </>
   );
 }

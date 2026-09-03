@@ -24,6 +24,7 @@ import {
   Badge,
   IconButton,
   Pagination,
+  Tooltip,
 } from '@mui/material';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import ShoppingBagRoundedIcon from '@mui/icons-material/ShoppingBagRounded';
@@ -41,6 +42,7 @@ import StarRoundedIcon from '@mui/icons-material/StarRounded';
 import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded';
 
 import SEO from '../../components/SEO';
+import Footer from '../../components/Footer';
 import { productService } from '../../services/productService';
 import { categoryService } from '../../services/categoryService';
 import { useCart } from '../../context/CartContext';
@@ -492,20 +494,32 @@ export default function Shop() {
 
                     {/* Actions */}
                     <CardActions sx={{ px: 2.5, pb: 2.5, pt: 0 }}>
-                      <Button
-                        variant="contained"
-                        fullWidth
-                        startIcon={<AddShoppingCartRoundedIcon />}
-                        disabled={product.stockQuantity <= 0}
-                        onClick={() => addToCart(product, 1)}
-                        sx={{
-                          fontWeight: 700,
-                          borderRadius: 2,
-                          py: 1,
-                        }}
+                      <Tooltip
+                        title={
+                          product.stockQuantity <= 0
+                            ? 'Currently out of stock — restocking soon'
+                            : `Add 1 unit to your basket (${Number(product.price).toFixed(2)} TND)`
+                        }
+                        arrow
+                        placement="top"
                       >
-                        {product.stockQuantity > 0 ? 'Add to Cart' : 'Sold Out'}
-                      </Button>
+                        <span style={{ width: '100%' }}>
+                          <Button
+                            variant="contained"
+                            fullWidth
+                            startIcon={<AddShoppingCartRoundedIcon />}
+                            disabled={product.stockQuantity <= 0}
+                            onClick={() => addToCart(product, 1)}
+                            sx={{
+                              fontWeight: 700,
+                              borderRadius: 2,
+                              py: 1,
+                            }}
+                          >
+                            {product.stockQuantity > 0 ? 'Add to Cart' : 'Sold Out'}
+                          </Button>
+                        </span>
+                      </Tooltip>
                     </CardActions>
                   </Card>
                 </Grid>
@@ -545,6 +559,7 @@ export default function Shop() {
           </Badge>
         </Fab>
       </Container>
+      <Footer />
     </>
   );
 }

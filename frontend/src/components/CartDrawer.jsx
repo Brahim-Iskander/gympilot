@@ -10,6 +10,7 @@ import {
   Avatar,
   Badge,
   Chip,
+  Tooltip,
 } from '@mui/material';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import ShoppingBagRoundedIcon from '@mui/icons-material/ShoppingBagRounded';
@@ -19,6 +20,7 @@ import RemoveRoundedIcon from '@mui/icons-material/RemoveRounded';
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import LocalShippingRoundedIcon from '@mui/icons-material/LocalShippingRounded';
 import CelebrationRoundedIcon from '@mui/icons-material/CelebrationRounded';
+import LockRoundedIcon from '@mui/icons-material/LockRounded';
 import { useCart } from '../context/CartContext';
 
 export default function CartDrawer() {
@@ -79,9 +81,9 @@ export default function CartDrawer() {
         <Stack direction="row" spacing={1} alignItems="center">
           <LocalShippingRoundedIcon sx={{ color: 'primary.main', fontSize: 20 }} />
           <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.primary' }}>
-            {totals.subtotal >= 50
-              ? <><CelebrationRoundedIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5, color: '#C6FF3E' }} /> Free Standard Delivery Unlocked!</>
-              : `Add ${(50 - totals.subtotal).toFixed(2)} TND more for Free Shipping!`}
+            {totals.subtotal >= 150
+              ? <><CelebrationRoundedIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5, color: '#C6FF3E' }} /> Free Delivery Unlocked (&ge; 150 TND)!</>
+              : `Add ${(150 - totals.subtotal).toFixed(2)} TND more for Free Delivery! (Standard: 7 TND)`}
           </Typography>
         </Stack>
       </Box>
@@ -225,24 +227,42 @@ export default function CartDrawer() {
           </Stack>
 
           <Stack spacing={1.5}>
-            <Button
-              variant="contained"
-              fullWidth
-              size="large"
-              endIcon={<ArrowForwardRoundedIcon />}
-              onClick={handleCheckout}
-              sx={{ fontWeight: 800, py: 1.4, borderRadius: 2 }}
-            >
-              Checkout Now
-            </Button>
-            <Button
-              variant="outlined"
-              fullWidth
-              onClick={handleViewCart}
-              sx={{ fontWeight: 700, borderRadius: 2 }}
-            >
-              View Full Cart
-            </Button>
+            <Tooltip title="Proceed to enter delivery details and place order" arrow placement="top">
+              <Button
+                variant="contained"
+                fullWidth
+                size="large"
+                startIcon={<LockRoundedIcon />}
+                endIcon={<ArrowForwardRoundedIcon />}
+                onClick={handleCheckout}
+                sx={{
+                  fontWeight: 800,
+                  py: 1.2,
+                  borderRadius: 2,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 0.25,
+                }}
+              >
+                <Typography component="span" sx={{ fontWeight: 800, fontSize: '0.95rem', lineHeight: 1.2 }}>
+                  Checkout Now ({totals.total.toFixed(2)} TND)
+                </Typography>
+                <Typography component="span" sx={{ fontSize: '0.7rem', opacity: 0.85, fontWeight: 600, textTransform: 'none' }}>
+                  Cash on Delivery · Standard 7 TND / Free &ge; 150 TND
+                </Typography>
+              </Button>
+            </Tooltip>
+            <Tooltip title="Review items, update quantities, or redeem reward points" arrow placement="bottom">
+              <Button
+                variant="outlined"
+                fullWidth
+                startIcon={<ShoppingBagRoundedIcon fontSize="small" />}
+                onClick={handleViewCart}
+                sx={{ fontWeight: 700, borderRadius: 2, py: 1 }}
+              >
+                View Full Cart &amp; Redeem Points
+              </Button>
+            </Tooltip>
           </Stack>
         </Box>
       )}
