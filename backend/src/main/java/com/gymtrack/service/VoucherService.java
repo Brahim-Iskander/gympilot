@@ -21,9 +21,11 @@ public class VoucherService {
     private static final Logger log = LoggerFactory.getLogger(VoucherService.class);
 
     private final VoucherRepository voucherRepository;
+    private final com.gymtrack.repository.OrderRepository orderRepository;
 
-    public VoucherService(VoucherRepository voucherRepository) {
+    public VoucherService(VoucherRepository voucherRepository, com.gymtrack.repository.OrderRepository orderRepository) {
         this.voucherRepository = voucherRepository;
+        this.orderRepository = orderRepository;
     }
 
     public List<VoucherResponse> getAllVouchers() {
@@ -185,5 +187,24 @@ public class VoucherService {
 
         discount = Math.min(discount, orderAmount);
         return Math.round(discount * 100.0) / 100.0;
+    }
+
+    public List<com.gymtrack.dto.VoucherDtos.VoucherUsageOrderDto> getOrdersUsingVoucher(String code) {
+        if (code == null || code.isBlank()) {
+            return List.of();
+        }
+        return orderRepository.findByVoucherCodeOrderByCreatedAtDesc(code.trim().toUpperCase())
+                .stream()
+                .map(o -> new com.gymtrack.dto.VoucherDtos.VoucherUsageOrderDto(
+                        o.getId(),
+                        o.getOrderNumber(),
+                        o.getBuyerName(),
+                        o.getBuyerEmail(),
+                        o.getTotalAmount(),
+                        o.getDiscountAmount(),
+                        o.getStatus(),
+                        o.getCreatedAt()
+                ))
+                .collect(Collectors.toList());
     }
 }

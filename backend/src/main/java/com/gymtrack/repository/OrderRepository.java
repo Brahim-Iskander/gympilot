@@ -32,4 +32,9 @@ public interface OrderRepository extends MongoRepository<Order, String> {
 
     @Query(value = "{ 'items.sellerId': ?0 }", count = true)
     long countOrdersBySellerId(String sellerId);
+
+    List<Order> findByVoucherCodeOrderByCreatedAtDesc(String voucherCode);
+
+    long countByVoucherCode(String voucherCode);
 }
+

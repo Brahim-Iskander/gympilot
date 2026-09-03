@@ -29,4 +29,9 @@ export const voucherService = {
   deleteAdminVoucher: async (id) => {
     await api.delete(`/api/admin/vouchers/${id}`);
   },
+
+  getVoucherOrders: async (code) => {
+    const response = await api.get(`/api/admin/vouchers/${code}/orders`);
+    return response.data;
+  },
 };

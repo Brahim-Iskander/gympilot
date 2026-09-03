@@ -27,6 +27,7 @@ import {
   Tooltip,
   Alert,
   CircularProgress,
+  LinearProgress,
 } from '@mui/material';
 import {
   AddRounded,
@@ -39,6 +40,8 @@ import {
   TrendingUpRounded,
   AccessTimeRounded,
   EventBusyRounded,
+  VisibilityRounded,
+  ReceiptLongRounded,
 } from '@mui/icons-material';
 
 import SEO from '../../components/SEO';
@@ -71,8 +74,29 @@ export default function AdminVouchers() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // View Redemptions modal state
+  const [selectedVoucherForUsage, setSelectedVoucherForUsage] = useState(null);
+  const [voucherOrders, setVoucherOrders] = useState([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+  const [usageDialogOpen, setUsageDialogOpen] = useState(false);
+
   // Copy code feedback
   const [copiedCode, setCopiedCode] = useState(null);
+
+  const handleViewUsage = async (voucher) => {
+    setSelectedVoucherForUsage(voucher);
+    setUsageDialogOpen(true);
+    setVoucherOrders([]);
+    try {
+      setLoadingOrders(true);
+      const orders = await voucherService.getVoucherOrders(voucher.code);
+      setVoucherOrders(Array.isArray(orders) ? orders : []);
+    } catch (err) {
+      console.error('Failed to load voucher redemption orders:', err);
+    } finally {
+      setLoadingOrders(false);
+    }
+  };
 
   const fetchVouchers = useCallback(async () => {
     try {
@@ -295,7 +319,7 @@ export default function AdminVouchers() {
                   <TableCell sx={{ fontWeight: 800 }}>Code</TableCell>
                   <TableCell sx={{ fontWeight: 800 }}>Discount</TableCell>
                   <TableCell sx={{ fontWeight: 800 }}>Min Order</TableCell>
-                  <TableCell sx={{ fontWeight: 800 }}>Usages</TableCell>
+                  <TableCell sx={{ fontWeight: 800 }}>Times Used / Redemptions</TableCell>
                   <TableCell sx={{ fontWeight: 800 }}>Expiry</TableCell>
                   <TableCell sx={{ fontWeight: 800 }}>Active</TableCell>
                   <TableCell align="right" sx={{ fontWeight: 800 }}>Actions</TableCell>
@@ -373,14 +397,69 @@ export default function AdminVouchers() {
                           </Typography>
                         </TableCell>
 
-                        {/* Usages */}
-                        <TableCell>
-                          <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                            {v.usedCount} / {v.maxUses != null ? v.maxUses : '∞'}
-                          </Typography>
-                          {isMaxedOut && (
-                            <Chip size="small" label="Maxed out" color="warning" sx={{ height: 20, fontSize: '0.68rem', mt: 0.5 }} />
-                          )}
+                        {/* Times Used / Redemptions */}
+                        <TableCell sx={{ minWidth: 170 }}>
+                          <Stack spacing={0.6}>
+                            <Stack direction="row" spacing={1} alignItems="center">
+                              <Chip
+                                size="small"
+                                label={`${v.usedCount} time${v.usedCount === 1 ? '' : 's'} used`}
+                                sx={{
+                                  fontWeight: 800,
+                                  fontSize: '0.75rem',
+                                  bgcolor: v.usedCount > 0 ? 'rgba(198, 255, 62, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                                  color: v.usedCount > 0 ? 'primary.main' : 'text.secondary',
+                                  border: '1px solid',
+                                  borderColor: v.usedCount > 0 ? 'primary.main' : 'divider',
+                                }}
+                              />
+                              {isMaxedOut && (
+                                <Chip size="small" label="Limit Reached" color="error" sx={{ height: 22, fontSize: '0.68rem', fontWeight: 700 }} />
+                              )}
+                            </Stack>
+
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.72rem' }}>
+                              {v.maxUses != null ? `${v.usedCount} of ${v.maxUses} max usages` : 'Unlimited max usages'}
+                            </Typography>
+
+                            {v.maxUses != null && (
+                              <Box sx={{ width: '100%', pr: 1 }}>
+                                <LinearProgress
+                                  variant="determinate"
+                                  value={Math.min(100, Math.round((v.usedCount / v.maxUses) * 100))}
+                                  sx={{
+                                    height: 5,
+                                    borderRadius: 3,
+                                    bgcolor: 'rgba(255,255,255,0.08)',
+                                    '& .MuiLinearProgress-bar': {
+                                      bgcolor: isMaxedOut ? 'error.main' : 'primary.main',
+                                    },
+                                  }}
+                                />
+                              </Box>
+                            )}
+
+                            {v.usedCount > 0 && (
+                              <Button
+                                size="small"
+                                variant="text"
+                                startIcon={<VisibilityRounded sx={{ fontSize: '0.85rem !important' }} />}
+                                onClick={() => handleViewUsage(v)}
+                                sx={{
+                                  fontSize: '0.72rem',
+                                  fontWeight: 700,
+                                  color: 'primary.main',
+                                  p: 0,
+                                  justifyContent: 'flex-start',
+                                  textTransform: 'none',
+                                  minWidth: 0,
+                                  '&:hover': { textDecoration: 'underline', bgcolor: 'transparent' },
+                                }}
+                              >
+                                View {v.usedCount} order{v.usedCount === 1 ? '' : 's'}
+                              </Button>
+                            )}
+                          </Stack>
                         </TableCell>
 
                         {/* Expiry */}
@@ -417,15 +496,26 @@ export default function AdminVouchers() {
 
                         {/* Actions */}
                         <TableCell align="right">
-                          <Tooltip title="Delete Voucher" arrow>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleDeletePrompt(v)}
-                              sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}
-                            >
-                              <DeleteOutlineRounded fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
+                          <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                            <Tooltip title="View Redemptions" arrow>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleViewUsage(v)}
+                                sx={{ color: 'text.secondary', '&:hover': { color: 'primary.main' } }}
+                              >
+                                <VisibilityRounded fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Delete Voucher" arrow>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleDeletePrompt(v)}
+                                sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}
+                              >
+                                <DeleteOutlineRounded fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Stack>
                         </TableCell>
                       </TableRow>
                     );
@@ -607,7 +697,143 @@ export default function AdminVouchers() {
             </Button>
           </DialogActions>
         </Dialog>
+
+        {/* Voucher Redemption History Dialog */}
+        <Dialog
+          open={usageDialogOpen}
+          onClose={() => setUsageDialogOpen(false)}
+          maxWidth="md"
+          fullWidth
+          PaperProps={{
+            sx: {
+              borderRadius: 3.5,
+              border: '1px solid',
+              borderColor: 'divider',
+              bgcolor: 'background.paper',
+            },
+          }}
+        >
+          <DialogTitle sx={{ fontWeight: 800, fontFamily: "'Sora', sans-serif", pb: 1 }}>
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <ReceiptLongRounded sx={{ color: 'primary.main', fontSize: 28 }} />
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                  Redemption History: {selectedVoucherForUsage?.code}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  This voucher has been used <strong>{selectedVoucherForUsage?.usedCount || 0} times</strong> across customer store orders.
+                </Typography>
+              </Box>
+            </Stack>
+          </DialogTitle>
+          <DialogContent dividers sx={{ p: 0 }}>
+            {loadingOrders ? (
+              <Box sx={{ py: 6, textAlign: 'center' }}>
+                <CircularProgress size={32} color="primary" />
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+                  Loading order redemptions...
+                </Typography>
+              </Box>
+            ) : voucherOrders.length === 0 ? (
+              <Box sx={{ py: 6, textAlign: 'center' }}>
+                <LocalOfferRounded sx={{ fontSize: 44, color: 'text.secondary', opacity: 0.4, mb: 1 }} />
+                <Typography variant="body1" sx={{ fontWeight: 700 }}>
+                  No order redemptions recorded
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  This voucher hasn't been redeemed by any customer yet.
+                </Typography>
+              </Box>
+            ) : (
+              <TableContainer sx={{ maxHeight: 420 }}>
+                <Table stickyHeader size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 800 }}>Order #</TableCell>
+                      <TableCell sx={{ fontWeight: 800 }}>Customer</TableCell>
+                      <TableCell sx={{ fontWeight: 800 }}>Order Total</TableCell>
+                      <TableCell sx={{ fontWeight: 800 }}>Discount Saved</TableCell>
+                      <TableCell sx={{ fontWeight: 800 }}>Status</TableCell>
+                      <TableCell sx={{ fontWeight: 800 }}>Date</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {voucherOrders.map((order) => (
+                      <TableRow key={order.id || order.orderNumber} hover>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: 'monospace' }}>
+                            #{order.orderNumber}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {order.buyerName || 'Customer'}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                            {order.buyerEmail}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                            TND {Number(order.totalAmount).toFixed(2)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ fontWeight: 800, color: 'primary.main' }}>
+                            -TND {Number(order.discountAmount).toFixed(2)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            size="small"
+                            label={order.status}
+                            sx={{
+                              fontSize: '0.68rem',
+                              fontWeight: 700,
+                              height: 22,
+                              bgcolor:
+                                order.status === 'DELIVERED'
+                                  ? 'rgba(198, 255, 62, 0.15)'
+                                  : order.status === 'CANCELLED'
+                                  ? 'rgba(255, 75, 75, 0.15)'
+                                  : 'rgba(255, 255, 255, 0.08)',
+                              color:
+                                order.status === 'DELIVERED'
+                                  ? 'primary.main'
+                                  : order.status === 'CANCELLED'
+                                  ? 'error.main'
+                                  : 'text.secondary',
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="caption" color="text.secondary">
+                            {order.createdAt
+                              ? new Date(order.createdAt).toLocaleString(undefined, {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })
+                              : '—'}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={() => setUsageDialogOpen(false)} variant="outlined" sx={{ fontWeight: 700 }}>
+              Close
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Container>
     </>
   );
 }
+

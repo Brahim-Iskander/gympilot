@@ -82,4 +82,13 @@ public class VoucherController {
         voucherService.deleteVoucher(id);
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * Admin endpoint: list all orders that redeemed a specific voucher code.
+     */
+    @GetMapping("/admin/vouchers/{code}/orders")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<com.gymtrack.dto.VoucherDtos.VoucherUsageOrderDto>> getVoucherOrders(@PathVariable String code) {
+        return ResponseEntity.ok(voucherService.getOrdersUsingVoucher(code));
+    }
 }

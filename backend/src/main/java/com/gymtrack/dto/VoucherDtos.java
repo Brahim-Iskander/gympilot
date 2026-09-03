@@ -88,4 +88,16 @@ public class VoucherDtos {
             );
         }
     }
+
+    public record VoucherUsageOrderDto(
+            String id,
+            String orderNumber,
+            String buyerName,
+            String buyerEmail,
+            double totalAmount,
+            double discountAmount,
+            String status,
+            Instant createdAt
+    ) {}
 }
+

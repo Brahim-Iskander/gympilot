@@ -31,11 +31,14 @@ class VoucherServiceTest {
     @Mock
     private VoucherRepository voucherRepository;
 
+    @Mock
+    private com.gymtrack.repository.OrderRepository orderRepository;
+
     private VoucherService voucherService;
 
     @BeforeEach
     void setUp() {
-        voucherService = new VoucherService(voucherRepository);
+        voucherService = new VoucherService(voucherRepository, orderRepository);
     }
 
     @Test
@@ -126,5 +129,26 @@ class VoucherServiceTest {
         assertEquals(10.0, discount);
         assertEquals(3, v.getUsedCount());
         verify(voucherRepository).save(v);
+    }
+
+    @Test
+    void getOrdersUsingVoucher_returnsOrders() {
+        com.gymtrack.model.Order order = new com.gymtrack.model.Order();
+        order.setId("order-1");
+        order.setOrderNumber("ORD-1001");
+        order.setBuyerName("John Doe");
+        order.setBuyerEmail("john@example.com");
+        order.setTotalAmount(90.0);
+        order.setDiscountAmount(10.0);
+        order.setStatus("DELIVERED");
+        order.setVoucherCode("USEME");
+
+        when(orderRepository.findByVoucherCodeOrderByCreatedAtDesc("USEME"))
+                .thenReturn(java.util.List.of(order));
+
+        var result = voucherService.getOrdersUsingVoucher("useme");
+        assertEquals(1, result.size());
+        assertEquals("ORD-1001", result.get(0).orderNumber());
+        assertEquals("John Doe", result.get(0).buyerName());
     }
 }
