@@ -11,6 +11,7 @@ import {
   Chip,
   IconButton,
   Tooltip,
+  Avatar,
 } from '@mui/material';
 import LocalFireDepartmentRoundedIcon from '@mui/icons-material/LocalFireDepartmentRounded';
 import AddShoppingCartRoundedIcon from '@mui/icons-material/AddShoppingCartRounded';
@@ -56,6 +57,10 @@ export default function SpecialOffersSection() {
       images: pack.images,
       stockQuantity: pack.stockQuantity || 20,
       categoryName: 'Special Offer Pack',
+      sellerId: pack.sellerId,
+      sellerName: pack.sellerName,
+      sellerStoreName: pack.sellerStoreName,
+      sellerStoreLogo: pack.sellerStoreLogo,
     });
     setAddedPackIds((prev) => new Set(prev).add(pack.id));
     openCartDrawer();
@@ -238,6 +243,30 @@ export default function SpecialOffersSection() {
                     >
                       {pack.name}
                     </Typography>
+
+                    {(pack.sellerStoreName || pack.sellerName) && (
+                      <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 1.5 }}>
+                        <Avatar
+                          src={pack.sellerStoreLogo}
+                          alt={pack.sellerStoreName || 'Seller'}
+                          sx={{
+                            width: 20,
+                            height: 20,
+                            bgcolor: 'rgba(138,124,255,0.2)',
+                            color: '#8A7CFF',
+                            fontSize: '0.65rem',
+                            fontWeight: 800,
+                            border: '1px solid rgba(138,124,255,0.3)',
+                          }}
+                        >
+                          {(pack.sellerStoreName || pack.sellerName || 'S').charAt(0).toUpperCase()}
+                        </Avatar>
+                        <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                          {pack.sellerStoreName || pack.sellerName}
+                        </Typography>
+                        <VerifiedRoundedIcon sx={{ fontSize: 13, color: 'primary.main' }} />
+                      </Stack>
+                    )}
 
                     {pack.tagline && (
                       <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5, fontSize: '0.85rem', lineHeight: 1.5 }}>

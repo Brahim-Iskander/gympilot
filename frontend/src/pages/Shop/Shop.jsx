@@ -25,6 +25,7 @@ import {
   IconButton,
   Pagination,
   Tooltip,
+  Avatar,
 } from '@mui/material';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import ShoppingBagRoundedIcon from '@mui/icons-material/ShoppingBagRounded';
@@ -101,6 +102,10 @@ export default function Shop() {
       images: pack.images,
       stockQuantity: pack.stockQuantity || 20,
       categoryName: 'Special Offer Pack',
+      sellerId: pack.sellerId,
+      sellerName: pack.sellerName,
+      sellerStoreName: pack.sellerStoreName,
+      sellerStoreLogo: pack.sellerStoreLogo,
     });
     setAddedPackIds((prev) => new Set(prev).add(pack.id));
     openCartDrawer();
@@ -457,6 +462,41 @@ export default function Shop() {
                           <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.3, mb: 0.5 }}>
                             {pack.name}
                           </Typography>
+
+                          {(pack.sellerStoreName || pack.sellerName) && (
+                            <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 1.5 }}>
+                              <Avatar
+                                src={pack.sellerStoreLogo}
+                                alt={pack.sellerStoreName || 'Store'}
+                                sx={{
+                                  width: 18,
+                                  height: 18,
+                                  bgcolor: 'rgba(138,124,255,0.2)',
+                                  color: '#8A7CFF',
+                                  fontSize: '0.62rem',
+                                  fontWeight: 800,
+                                  border: '1px solid rgba(138,124,255,0.35)',
+                                }}
+                              >
+                                {(pack.sellerStoreName || pack.sellerName || 'S').charAt(0).toUpperCase()}
+                              </Avatar>
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: 'text.secondary',
+                                  fontWeight: 600,
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                  maxWidth: 160,
+                                }}
+                              >
+                                {pack.sellerStoreName || pack.sellerName}
+                              </Typography>
+                              <VerifiedRoundedIcon sx={{ fontSize: 13, color: 'primary.main', flexShrink: 0 }} />
+                            </Stack>
+                          )}
+
                           {pack.tagline && (
                             <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block', lineHeight: 1.4 }}>
                               {pack.tagline}
@@ -757,12 +797,37 @@ export default function Shop() {
                             {product.name}
                           </Typography>
 
-                          <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 2 }}>
-                            <StorefrontRoundedIcon sx={{ fontSize: 15, color: '#8A7CFF' }} />
-                            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+                            <Avatar
+                              src={product.sellerStoreLogo}
+                              alt={product.sellerStoreName || 'Store'}
+                              sx={{
+                                width: 20,
+                                height: 20,
+                                bgcolor: 'rgba(138,124,255,0.2)',
+                                color: '#8A7CFF',
+                                fontSize: '0.65rem',
+                                fontWeight: 800,
+                                border: '1px solid rgba(138,124,255,0.35)',
+                                flexShrink: 0,
+                              }}
+                            >
+                              {(product.sellerStoreName || product.sellerName || 'S').charAt(0).toUpperCase()}
+                            </Avatar>
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: 'text.secondary',
+                                fontWeight: 600,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                maxWidth: 140,
+                              }}
+                            >
                               {product.sellerStoreName || product.sellerName || 'GymPilot Official'}
                             </Typography>
-                            <VerifiedRoundedIcon sx={{ fontSize: 13, color: 'primary.main' }} />
+                            <VerifiedRoundedIcon sx={{ fontSize: 13, color: 'primary.main', flexShrink: 0 }} />
                           </Stack>
 
                           {/* Price Section */}

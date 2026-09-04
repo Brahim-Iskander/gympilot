@@ -25,6 +25,7 @@ import {
   Link,
   Alert,
   Tooltip,
+  Avatar,
 } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import RemoveRoundedIcon from '@mui/icons-material/RemoveRounded';
@@ -422,21 +423,25 @@ export default function ProductDetail() {
                 }}
               >
                 <Stack direction="row" spacing={2} alignItems="center">
-                  <Box
+                  <Avatar
+                    src={product.sellerStoreLogo}
+                    alt={product.sellerStoreName || 'Store'}
+                    variant="rounded"
                     sx={{
-                      width: 48,
-                      height: 48,
+                      width: 52,
+                      height: 52,
                       borderRadius: 2.5,
                       bgcolor: 'rgba(138,124,255,0.15)',
                       color: '#8A7CFF',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      fontSize: '1.25rem',
+                      fontWeight: 800,
+                      border: '1.5px solid rgba(138,124,255,0.3)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
                       flexShrink: 0,
                     }}
                   >
-                    <StorefrontRoundedIcon sx={{ fontSize: 26 }} />
-                  </Box>
+                    <StorefrontRoundedIcon sx={{ fontSize: 28 }} />
+                  </Avatar>
                   <Box sx={{ flex: 1 }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 0.75 }}>
                       Sold & Shipped by {product.sellerStoreName || product.sellerName || 'GymPilot Official'}

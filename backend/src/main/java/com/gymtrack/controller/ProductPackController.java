@@ -1,5 +1,6 @@
 package com.gymtrack.controller;
 
+import java.security.Principal;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -114,5 +115,56 @@ public class ProductPackController {
     @PatchMapping("/admin/packs/{id}/toggle-featured")
     public ResponseEntity<ProductPack> toggleFeatured(@PathVariable String id) {
         return ResponseEntity.ok(productPackService.toggleFeatured(id));
+    }
+
+    // ==========================================
+    // SELLER CRUD ENDPOINTS
+    // ==========================================
+
+    /**
+     * Seller: list packs created by this seller.
+     */
+    @GetMapping("/seller/packs")
+    public ResponseEntity<List<ProductPack>> getSellerPacks(Principal principal) {
+        return ResponseEntity.ok(productPackService.getSellerPacks(principal.getName()));
+    }
+
+    /**
+     * Seller: create new product pack / offer.
+     */
+    @PostMapping("/seller/packs")
+    public ResponseEntity<ProductPack> createSellerPack(@Valid @RequestBody PackRequestDto dto, Principal principal) {
+        ProductPack created = productPackService.createPackForSeller(dto, principal.getName());
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    /**
+     * Seller: update existing pack / offer (only if owner).
+     */
+    @PutMapping("/seller/packs/{id}")
+    public ResponseEntity<ProductPack> updateSellerPack(
+            @PathVariable String id,
+            @Valid @RequestBody PackRequestDto dto,
+            Principal principal
+    ) {
+        ProductPack updated = productPackService.updatePackForSeller(id, dto, principal.getName(), false);
+        return ResponseEntity.ok(updated);
+    }
+
+    /**
+     * Seller: delete pack / offer (only if owner).
+     */
+    @DeleteMapping("/seller/packs/{id}")
+    public ResponseEntity<Void> deleteSellerPack(@PathVariable String id, Principal principal) {
+        productPackService.deletePackForSeller(id, principal.getName(), false);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Seller: toggle active status (only if owner).
+     */
+    @PatchMapping("/seller/packs/{id}/toggle-active")
+    public ResponseEntity<ProductPack> toggleSellerPackActive(@PathVariable String id, Principal principal) {
+        return ResponseEntity.ok(productPackService.toggleActiveForSeller(id, principal.getName(), false));
     }
 }

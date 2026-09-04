@@ -93,6 +93,25 @@ public class ShopSeeder implements CommandLineRunner {
         String sellerId = adminOpt.map(User::getId).orElse("official-seller");
         String sellerName = adminOpt.map(u -> (u.getFirstName() + " " + u.getLastName()).trim()).orElse("Iskander Brahim");
         String storeName = adminOpt.map(User::getStoreName).orElse("GymPilot Official Store");
+        String storeLogo = adminOpt.map(User::getStoreLogo).filter(s -> s != null && !s.isBlank())
+                .or(() -> adminOpt.map(User::getAvatar).filter(s -> s != null && !s.isBlank()))
+                .orElse("https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=200&auto=format&fit=crop&q=80");
+
+        if (adminOpt.isPresent()) {
+            User admin = adminOpt.get();
+            boolean updated = false;
+            if (admin.getStoreLogo() == null || admin.getStoreLogo().isBlank()) {
+                admin.setStoreLogo(storeLogo);
+                updated = true;
+            }
+            if (admin.getStoreName() == null || admin.getStoreName().isBlank()) {
+                admin.setStoreName(storeName);
+                updated = true;
+            }
+            if (updated) {
+                userRepository.save(admin);
+            }
+        }
 
         Category catCreatine = ensureCategory("Creatine", "creatine", "Micronized & pure creatine monohydrate to boost explosive strength and power", "creatine", 2);
         Category catWhey = ensureCategory("Whey Protein", "whey-protein", "Premium isolate, hydrolysate & concentrate protein powders for muscle recovery", "protein", 1);
@@ -111,7 +130,7 @@ public class ShopSeeder implements CommandLineRunner {
                 35,
                 List.of("https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?w=600&auto=format&fit=crop&q=80"),
                 Map.of("Brand", "Quamtrax Nutrition", "Weight", "300g", "Form", "Micronized Powder", "Servings", "100 (3g per serving)", "Origin", "Spain"),
-                sellerId, sellerName, storeName
+                sellerId, sellerName, storeName, storeLogo
         );
 
         // 2. Kevin Levrone Signature Series Gold Creatine
@@ -126,7 +145,7 @@ public class ShopSeeder implements CommandLineRunner {
                 30,
                 List.of("https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=600&auto=format&fit=crop&q=80"),
                 Map.of("Brand", "Kevin Levrone Signature Series", "Weight", "300g", "Active Ingredient", "Creatine Monohydrate + Vit B6", "Servings", "60 (5g per serving)"),
-                sellerId, sellerName, storeName
+                sellerId, sellerName, storeName, storeLogo
         );
 
         // 3. 100% Pure Whey Protein Isolate & Concentrate
@@ -141,7 +160,7 @@ public class ShopSeeder implements CommandLineRunner {
                 25,
                 List.of("https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?w=600&auto=format&fit=crop&q=80"),
                 Map.of("Brand", "GymPilot Nutrition", "Weight", "2.0 kg", "Protein per Serving", "25g", "BCAAs", "5.5g", "Flavor", "Double Rich Chocolate"),
-                sellerId, sellerName, storeName
+                sellerId, sellerName, storeName, storeLogo
         );
 
         // 4. Zinc 30 Capsules - Price 30 TND
@@ -156,7 +175,7 @@ public class ShopSeeder implements CommandLineRunner {
                 50,
                 List.of("https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80"),
                 Map.of("Dosage", "25mg Zinc per capsule", "Count", "30 Capsules", "Form", "Vegetarian Capsules", "Key Benefit", "Immunity & Testosterone Support"),
-                sellerId, sellerName, storeName
+                sellerId, sellerName, storeName, storeLogo
         );
 
         // 5. Zinc 60 Capsules - Price 40 TND
@@ -171,7 +190,7 @@ public class ShopSeeder implements CommandLineRunner {
                 50,
                 List.of("https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80"),
                 Map.of("Dosage", "25mg Zinc per capsule", "Count", "60 Capsules", "Form", "Vegetarian Capsules", "Supply", "2 Months"),
-                sellerId, sellerName, storeName
+                sellerId, sellerName, storeName, storeLogo
         );
 
         // 6. Omega 3 60 Capsules - Price 80 TND
@@ -186,7 +205,7 @@ public class ShopSeeder implements CommandLineRunner {
                 40,
                 List.of("https://images.unsplash.com/photo-1550572017-edd951aa8f72?w=600&auto=format&fit=crop&q=80"),
                 Map.of("Count", "60 Softgels", "EPA", "360mg", "DHA", "240mg", "Type", "Molecularly Distilled", "Origin", "Norway"),
-                sellerId, sellerName, storeName
+                sellerId, sellerName, storeName, storeLogo
         );
 
         // 7. Mass Gainer
@@ -201,11 +220,19 @@ public class ShopSeeder implements CommandLineRunner {
                 25,
                 List.of("https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=600&auto=format&fit=crop&q=80"),
                 Map.of("Brand", "GymPilot Nutrition", "Weight", "3.0 kg", "Calories per Serving", "1150 kcal", "Protein", "50g", "Creatine Included", "3g"),
-                sellerId, sellerName, storeName
+                sellerId, sellerName, storeName, storeLogo
         );
     }
 
     private void seedProductPacks() {
+        Optional<User> adminOpt = userRepository.findByEmail("iskanderbrahim2024@gmail.com");
+        String sellerId = adminOpt.map(User::getId).orElse("official-seller");
+        String sellerName = adminOpt.map(u -> (u.getFirstName() + " " + u.getLastName()).trim()).orElse("Iskander Brahim");
+        String storeName = adminOpt.map(User::getStoreName).orElse("GymPilot Official Store");
+        String storeLogo = adminOpt.map(User::getStoreLogo).filter(s -> s != null && !s.isBlank())
+                .or(() -> adminOpt.map(User::getAvatar).filter(s -> s != null && !s.isBlank()))
+                .orElse("https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=200&auto=format&fit=crop&q=80");
+
         // 1. Ultimate Mass & Power Stack
         upsertPack(
                 "Pack Ultimate Mass & Power Stack",
@@ -223,7 +250,8 @@ public class ShopSeeder implements CommandLineRunner {
                 ),
                 true,
                 true,
-                30
+                30,
+                sellerId, sellerName, storeName, storeLogo
         );
 
         // 2. Lean Muscle & Maximum Recovery Pack
@@ -242,7 +270,8 @@ public class ShopSeeder implements CommandLineRunner {
                 ),
                 true,
                 true,
-                25
+                25,
+                sellerId, sellerName, storeName, storeLogo
         );
 
         // 3. Immunity, Vitality & Testosterone Duo
@@ -261,13 +290,15 @@ public class ShopSeeder implements CommandLineRunner {
                 ),
                 true,
                 true,
-                40
+                40,
+                sellerId, sellerName, storeName, storeLogo
         );
     }
 
     private void upsertPack(String name, String slug, String tagline, String badge, String description,
                             double originalPrice, double price, List<String> images,
-                            List<com.gymtrack.model.ProductPack.PackItem> items, boolean active, boolean featured, int stock) {
+                            List<com.gymtrack.model.ProductPack.PackItem> items, boolean active, boolean featured, int stock,
+                            String sellerId, String sellerName, String sellerStoreName, String sellerStoreLogo) {
         Optional<com.gymtrack.model.ProductPack> existing = productPackRepository.findBySlug(slug);
         if (existing.isPresent()) {
             com.gymtrack.model.ProductPack p = existing.get();
@@ -282,12 +313,20 @@ public class ShopSeeder implements CommandLineRunner {
             p.setActive(active);
             p.setFeatured(featured);
             p.setStockQuantity(stock);
+            p.setSellerId(sellerId);
+            p.setSellerName(sellerName);
+            p.setSellerStoreName(sellerStoreName);
+            p.setSellerStoreLogo(sellerStoreLogo);
             productPackRepository.save(p);
             log.info("Updated seeded product pack: {} (Price: {} TND)", name, price);
         } else {
             com.gymtrack.model.ProductPack p = new com.gymtrack.model.ProductPack(
                     name, slug, tagline, badge, description, originalPrice, price, images, items, active, featured, stock
             );
+            p.setSellerId(sellerId);
+            p.setSellerName(sellerName);
+            p.setSellerStoreName(sellerStoreName);
+            p.setSellerStoreLogo(sellerStoreLogo);
             productPackRepository.save(p);
             log.info("Seeded new special offer product pack: {} (Price: {} TND)", name, price);
         }
@@ -296,7 +335,7 @@ public class ShopSeeder implements CommandLineRunner {
     private void upsertProduct(String name, String slug, String description, String categoryId,
                                String categoryName, double price, Double originalPrice, int stock,
                                List<String> images, Map<String, String> specs,
-                               String sellerId, String sellerName, String sellerStoreName) {
+                               String sellerId, String sellerName, String sellerStoreName, String sellerStoreLogo) {
         Optional<Product> existing = productRepository.findBySlug(slug);
         if (existing.isPresent()) {
             Product p = existing.get();
@@ -312,12 +351,15 @@ public class ShopSeeder implements CommandLineRunner {
             p.setSellerId(sellerId);
             p.setSellerName(sellerName);
             p.setSellerStoreName(sellerStoreName);
+            if (sellerStoreLogo != null && !sellerStoreLogo.isBlank()) {
+                p.setSellerStoreLogo(sellerStoreLogo);
+            }
             p.setActive(true);
             productRepository.save(p);
             log.info("Updated seeded shop product: {} (Price: {} TND)", name, price);
         } else {
             Product p = new Product(name, slug, description, categoryId, categoryName, price, originalPrice,
-                    stock, images, specs, sellerId, sellerName, sellerStoreName);
+                    stock, images, specs, sellerId, sellerName, sellerStoreName, sellerStoreLogo);
             p.setActive(true);
             p.setRating(5.0);
             p.setReviewCount(4);

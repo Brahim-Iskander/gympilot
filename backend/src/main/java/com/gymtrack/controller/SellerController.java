@@ -32,37 +32,43 @@ public class SellerController {
     private final ProductService productService;
     private final OrderService orderService;
     private final UserRepository userRepository;
+    private final com.gymtrack.repository.ProductRepository productRepository;
+    private final com.gymtrack.repository.ProductPackRepository productPackRepository;
 
     public SellerController(ProductService productService,
                             OrderService orderService,
-                            UserRepository userRepository) {
+                            UserRepository userRepository,
+                            com.gymtrack.repository.ProductRepository productRepository,
+                            com.gymtrack.repository.ProductPackRepository productPackRepository) {
         this.productService = productService;
         this.orderService = orderService;
         this.userRepository = userRepository;
+        this.productRepository = productRepository;
+        this.productPackRepository = productPackRepository;
     }
 
     /** GET /api/seller/stats - Overview metrics for Seller Dashboard */
     @GetMapping("/stats")
-    public SellerDashboardStatsResponse getSellerStats(Principal principal) {
+    public SellerDashboardStatsResponse getStats(Principal principal) {
         return orderService.getSellerStats(principal.getName());
     }
 
-    /** GET /api/seller/products - My products */
-    @GetMapping("/products")
-    public PagedResponse<ProductResponse> getSellerProducts(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            Principal principal) {
-        return productService.getSellerProducts(principal.getName(), page, size);
-    }
-
-    /** GET /api/seller/orders - Incoming customer orders for seller's products */
+    /** GET /api/seller/orders - List orders containing this seller's products */
     @GetMapping("/orders")
     public PagedResponse<OrderResponse> getSellerOrders(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             Principal principal) {
         return orderService.getSellerOrders(principal.getName(), page, size);
+    }
+
+    /** GET /api/seller/products - List products listed by this seller */
+    @GetMapping("/products")
+    public PagedResponse<ProductResponse> getSellerProducts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            Principal principal) {
+        return productService.getSellerProducts(principal.getName(), page, size);
     }
 
     /** PATCH /api/seller/orders/{id}/status - Update fulfillment status */
@@ -86,11 +92,42 @@ public class SellerController {
             throw new IllegalArgumentException("User does not hold the Seller capability.");
         }
 
-        if (request.storeName() != null) user.setStoreName(request.storeName());
-        if (request.storeBio() != null) user.setStoreBio(request.storeBio());
-        if (request.storeLogo() != null) user.setStoreLogo(request.storeLogo());
+        if (request.storeName() != null && !request.storeName().isBlank()) {
+            user.setStoreName(request.storeName().trim());
+        }
+        if (request.storeBio() != null) {
+            user.setStoreBio(request.storeBio().trim());
+        }
+        if (request.storeLogo() != null) {
+            user.setStoreLogo(request.storeLogo().trim());
+        }
 
         User saved = userRepository.save(user);
+
+        // Synchronize store branding across all products owned by this seller
+        java.util.List<com.gymtrack.model.Product> sellerProducts = productRepository.findBySellerId(saved.getId());
+        if (!sellerProducts.isEmpty()) {
+            for (com.gymtrack.model.Product p : sellerProducts) {
+                if (saved.getStoreName() != null && !saved.getStoreName().isBlank()) {
+                    p.setSellerStoreName(saved.getStoreName());
+                }
+                p.setSellerStoreLogo(saved.getStoreLogo());
+            }
+            productRepository.saveAll(sellerProducts);
+        }
+
+        // Synchronize store branding across all product packs owned by this seller
+        java.util.List<com.gymtrack.model.ProductPack> sellerPacks = productPackRepository.findBySellerIdOrderByCreatedAtDesc(saved.getId());
+        if (!sellerPacks.isEmpty()) {
+            for (com.gymtrack.model.ProductPack pack : sellerPacks) {
+                if (saved.getStoreName() != null && !saved.getStoreName().isBlank()) {
+                    pack.setSellerStoreName(saved.getStoreName());
+                }
+                pack.setSellerStoreLogo(saved.getStoreLogo());
+            }
+            productPackRepository.saveAll(sellerPacks);
+        }
+
         return UserResponse.from(saved);
     }
 }

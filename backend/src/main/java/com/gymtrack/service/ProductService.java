@@ -66,7 +66,7 @@ public class ProductService {
         }
 
         List<ProductResponse> content = productPage.getContent().stream()
-                .map(ProductResponse::from)
+                .map(this::mapToProductResponse)
                 .collect(Collectors.toList());
 
         return new PagedResponse<>(
@@ -86,18 +86,18 @@ public class ProductService {
         product.setViews(product.getViews() + 1);
         productRepository.save(product);
 
-        return ProductResponse.from(product);
+        return mapToProductResponse(product);
     }
 
     public List<ProductResponse> getFeaturedProducts() {
         return productRepository.findTop6ByActiveTrueAndFeaturedTrueOrderByCreatedAtDesc().stream()
-                .map(ProductResponse::from)
+                .map(this::mapToProductResponse)
                 .collect(Collectors.toList());
     }
 
     public List<ProductResponse> getBestSellers() {
         return productRepository.findTop6ByActiveTrueOrderByUnitsSoldDesc().stream()
-                .map(ProductResponse::from)
+                .map(this::mapToProductResponse)
                 .collect(Collectors.toList());
     }
 
@@ -108,27 +108,33 @@ public class ProductService {
         }
         PageRequest pr = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "unitsSold"));
         return productRepository.findByCategoryIdAndActiveTrueAndIdNot(current.getCategoryId(), productId, pr).stream()
-                .map(ProductResponse::from)
+                .map(this::mapToProductResponse)
                 .collect(Collectors.toList());
     }
 
-    public ProductResponse createProduct(CreateProductRequest request, String sellerEmail) {
-        User seller = userRepository.findByEmail(sellerEmail)
-                .orElseThrow(() -> new InvalidCredentialsException("User not found"));
-
-        if (!seller.isSeller() && !seller.isAdmin()) {
-            throw new IllegalArgumentException("You must be an authorized Seller or Admin to create products.");
-        }
+    public ProductResponse createProduct(CreateProductRequest request, String userEmail) {
+        User seller = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new InvalidCredentialsException("Seller not found: " + userEmail));
 
         Category category = categoryRepository.findById(request.categoryId())
                 .orElseThrow(() -> new InvalidCredentialsException("Category not found: " + request.categoryId()));
 
         String slug = generateSlug(request.name());
 
-        String sellerDisplayName = (seller.getFirstName() + " " + (seller.getLastName() != null ? seller.getLastName() : "")).trim();
-        String sellerStore = seller.getStoreName() != null && !seller.getStoreName().isBlank()
+        String sellerDisplayName = (seller.getFirstName() != null ? seller.getFirstName() : "") +
+                (seller.getLastName() != null ? " " + seller.getLastName() : "");
+        sellerDisplayName = sellerDisplayName.trim();
+        if (sellerDisplayName.isEmpty()) {
+            sellerDisplayName = seller.getEmail();
+        }
+
+        String sellerStore = (seller.getStoreName() != null && !seller.getStoreName().isBlank())
                 ? seller.getStoreName()
                 : sellerDisplayName + " Store";
+
+        String sellerLogo = seller.getStoreLogo() != null && !seller.getStoreLogo().isBlank()
+                ? seller.getStoreLogo()
+                : seller.getAvatar();
 
         Product product = new Product(
                 request.name(),
@@ -143,7 +149,8 @@ public class ProductService {
                 request.specs(),
                 seller.getId(),
                 sellerDisplayName,
-                sellerStore
+                sellerStore,
+                sellerLogo
         );
 
         if (request.active() != null) {
@@ -154,7 +161,7 @@ public class ProductService {
         }
 
         Product saved = productRepository.save(product);
-        return ProductResponse.from(saved);
+        return mapToProductResponse(saved);
     }
 
     public ProductResponse updateProduct(String productId, UpdateProductRequest request, String userEmail, boolean isAdmin) {
@@ -247,7 +254,7 @@ public class ProductService {
         Page<Product> productPage = productRepository.findBySellerId(seller.getId(), pageRequest);
 
         List<ProductResponse> content = productPage.getContent().stream()
-                .map(ProductResponse::from)
+                .map(this::mapToProductResponse)
                 .collect(Collectors.toList());
 
         return new PagedResponse<>(
@@ -257,6 +264,18 @@ public class ProductService {
                 productPage.getTotalElements(),
                 productPage.getTotalPages()
         );
+    }
+
+    private ProductResponse mapToProductResponse(Product p) {
+        if ((p.getSellerStoreLogo() == null || p.getSellerStoreLogo().isBlank()) && p.getSellerId() != null) {
+            userRepository.findById(p.getSellerId()).ifPresent(u -> {
+                String logo = u.getStoreLogo() != null && !u.getStoreLogo().isBlank() ? u.getStoreLogo() : u.getAvatar();
+                if (logo != null && !logo.isBlank()) {
+                    p.setSellerStoreLogo(logo);
+                }
+            });
+        }
+        return ProductResponse.from(p);
     }
 
     private String generateSlug(String name) {

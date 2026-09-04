@@ -72,6 +72,7 @@ export const cartService = {
         sellerId: product.sellerId,
         sellerName: product.sellerName,
         sellerStoreName: product.sellerStoreName,
+        sellerStoreLogo: product.sellerStoreLogo,
         stockQuantity: product.stockQuantity || 10,
         quantity: Math.max(1, Math.min(quantity, product.stockQuantity || 10)),
       });

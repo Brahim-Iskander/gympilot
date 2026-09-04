@@ -136,9 +136,17 @@ export default function Cart() {
                             >
                               {item.name}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                              {Number(item.price).toFixed(2)} TND each · {item.sellerStoreName || 'GymPilot Store'}
-                            </Typography>
+                            <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mt: 0.25 }}>
+                              {item.sellerStoreLogo && (
+                                <Avatar
+                                  src={item.sellerStoreLogo}
+                                  sx={{ width: 15, height: 15, borderRadius: '50%', border: '1px solid rgba(138,124,255,0.3)' }}
+                                />
+                              )}
+                              <Typography variant="caption" color="text.secondary">
+                                {Number(item.price).toFixed(2)} TND each · {item.sellerStoreName || 'GymPilot Store'}
+                              </Typography>
+                            </Stack>
                           </Box>
                         </Stack>
                       </TableCell>

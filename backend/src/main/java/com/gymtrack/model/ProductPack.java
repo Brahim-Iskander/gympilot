@@ -52,6 +52,11 @@ public class ProductPack {
 
     private Instant validUntil;
 
+    private String sellerId;
+    private String sellerName;
+    private String sellerStoreName;
+    private String sellerStoreLogo;
+
     @CreatedDate
     private Instant createdAt = Instant.now();
 
@@ -278,5 +283,37 @@ public class ProductPack {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getSellerId() {
+        return sellerId;
+    }
+
+    public void setSellerId(String sellerId) {
+        this.sellerId = sellerId;
+    }
+
+    public String getSellerName() {
+        return sellerName;
+    }
+
+    public void setSellerName(String sellerName) {
+        this.sellerName = sellerName;
+    }
+
+    public String getSellerStoreName() {
+        return sellerStoreName;
+    }
+
+    public void setSellerStoreName(String sellerStoreName) {
+        this.sellerStoreName = sellerStoreName;
+    }
+
+    public String getSellerStoreLogo() {
+        return sellerStoreLogo;
+    }
+
+    public void setSellerStoreLogo(String sellerStoreLogo) {
+        this.sellerStoreLogo = sellerStoreLogo;
     }
 }

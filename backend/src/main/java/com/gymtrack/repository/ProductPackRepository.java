@@ -17,5 +17,9 @@ public interface ProductPackRepository extends MongoRepository<ProductPack, Stri
 
     List<ProductPack> findAllByOrderByCreatedAtDesc();
 
+    List<ProductPack> findBySellerIdOrderByCreatedAtDesc(String sellerId);
+
+    List<ProductPack> findBySellerIdAndActiveTrueOrderByCreatedAtDesc(String sellerId);
+
     boolean existsBySlug(String slug);
 }

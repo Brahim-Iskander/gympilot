@@ -46,4 +46,29 @@ export const productPackService = {
     const res = await api.patch(`/api/admin/packs/${id}/toggle-featured`);
     return res.data;
   },
+
+  // Seller Methods
+  getSellerPacks: async () => {
+    const res = await api.get('/api/seller/packs');
+    return res.data;
+  },
+
+  createSellerPack: async (payload) => {
+    const res = await api.post('/api/seller/packs', payload);
+    return res.data;
+  },
+
+  updateSellerPack: async (id, payload) => {
+    const res = await api.put(`/api/seller/packs/${id}`, payload);
+    return res.data;
+  },
+
+  deleteSellerPack: async (id) => {
+    await api.delete(`/api/seller/packs/${id}`);
+  },
+
+  toggleSellerPackActive: async (id) => {
+    const res = await api.patch(`/api/seller/packs/${id}/toggle-active`);
+    return res.data;
+  },
 };

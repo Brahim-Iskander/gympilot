@@ -51,6 +51,7 @@ public class Product {
     private String sellerId;
     private String sellerName;
     private String sellerStoreName;
+    private String sellerStoreLogo;
 
     private boolean active = true;
 
@@ -73,6 +74,12 @@ public class Product {
     public Product(String name, String slug, String description, String categoryId, String categoryName,
                    double price, Double originalPrice, int stockQuantity, List<String> images,
                    Map<String, String> specs, String sellerId, String sellerName, String sellerStoreName) {
+        this(name, slug, description, categoryId, categoryName, price, originalPrice, stockQuantity, images, specs, sellerId, sellerName, sellerStoreName, null);
+    }
+
+    public Product(String name, String slug, String description, String categoryId, String categoryName,
+                   double price, Double originalPrice, int stockQuantity, List<String> images,
+                   Map<String, String> specs, String sellerId, String sellerName, String sellerStoreName, String sellerStoreLogo) {
         this.name = name;
         this.slug = slug;
         this.description = description;
@@ -86,6 +93,7 @@ public class Product {
         this.sellerId = sellerId;
         this.sellerName = sellerName;
         this.sellerStoreName = sellerStoreName;
+        this.sellerStoreLogo = sellerStoreLogo;
         this.active = true;
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
@@ -201,6 +209,14 @@ public class Product {
 
     public void setSellerStoreName(String sellerStoreName) {
         this.sellerStoreName = sellerStoreName;
+    }
+
+    public String getSellerStoreLogo() {
+        return sellerStoreLogo;
+    }
+
+    public void setSellerStoreLogo(String sellerStoreLogo) {
+        this.sellerStoreLogo = sellerStoreLogo;
     }
 
     public boolean isActive() {

@@ -4,6 +4,7 @@ import DashboardRoundedIcon from '@mui/icons-material/DashboardRounded';
 import Inventory2RoundedIcon from '@mui/icons-material/Inventory2Rounded';
 import ShoppingCartRoundedIcon from '@mui/icons-material/ShoppingCartRounded';
 import StorefrontRoundedIcon from '@mui/icons-material/StorefrontRounded';
+import LocalOfferRoundedIcon from '@mui/icons-material/LocalOfferRounded';
 
 export default function SellerNavTabs() {
   const location = useLocation();
@@ -14,6 +15,7 @@ export default function SellerNavTabs() {
   const tabs = [
     { label: 'Overview', path: '/seller', icon: <DashboardRoundedIcon fontSize="small" /> },
     { label: 'Products & Inventory', path: '/seller/products', icon: <Inventory2RoundedIcon fontSize="small" /> },
+    { label: 'Special Offer Packs', path: '/seller/packs', icon: <LocalOfferRoundedIcon fontSize="small" /> },
     { label: 'Customer Orders', path: '/seller/orders', icon: <ShoppingCartRoundedIcon fontSize="small" /> },
     { label: 'Store Settings', path: '/seller/settings', icon: <StorefrontRoundedIcon fontSize="small" /> },
   ];

@@ -30,6 +30,7 @@ import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import AccessTimeRoundedIcon from '@mui/icons-material/AccessTimeRounded';
 import LocalShippingRoundedIcon from '@mui/icons-material/LocalShippingRounded';
 import EmojiEventsRoundedIcon from '@mui/icons-material/EmojiEventsRounded';
+import LocalOfferRoundedIcon from '@mui/icons-material/LocalOfferRounded';
 
 import SEO from '../../components/SEO';
 import SellerNavTabs from './components/SellerNavTabs';
@@ -123,15 +124,26 @@ export default function SellerDashboard() {
               Here is an overview of your marketplace sales, inventory, and recent orders.
             </Typography>
           </Box>
-          <Button
-            component={RouterLink}
-            to="/seller/products?action=new"
-            variant="contained"
-            startIcon={<AddRoundedIcon />}
-            sx={{ fontWeight: 800, bgcolor: 'primary.main', color: '#0A0C0F', borderRadius: 2 }}
-          >
-            Add New Product
-          </Button>
+          <Stack direction="row" spacing={1.5}>
+            <Button
+              component={RouterLink}
+              to="/seller/packs"
+              variant="outlined"
+              startIcon={<LocalOfferRoundedIcon />}
+              sx={{ fontWeight: 800, borderRadius: 2 }}
+            >
+              Special Offer Packs
+            </Button>
+            <Button
+              component={RouterLink}
+              to="/seller/products?action=new"
+              variant="contained"
+              startIcon={<AddRoundedIcon />}
+              sx={{ fontWeight: 800, bgcolor: 'primary.main', color: '#0A0C0F', borderRadius: 2 }}
+            >
+              Add New Product
+            </Button>
+          </Stack>
         </Stack>
 
         {/* 4 Stat Cards */}

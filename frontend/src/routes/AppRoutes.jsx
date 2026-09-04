@@ -46,6 +46,7 @@ import OrderHistory from '../pages/Shop/OrderHistory';
 import SellerDashboard from '../pages/Seller/SellerDashboard';
 import SellerOrders from '../pages/Seller/SellerOrders';
 import SellerProducts from '../pages/Seller/SellerProducts';
+import SellerPacks from '../pages/Seller/SellerPacks';
 import SellerSettings from '../pages/Seller/SellerSettings';
 
 export default function AppRoutes() {
@@ -242,6 +243,14 @@ export default function AppRoutes() {
           element={
             <SellerRoute>
               <SellerProducts />
+            </SellerRoute>
+          }
+        />
+        <Route
+          path="/seller/packs"
+          element={
+            <SellerRoute>
+              <SellerPacks />
             </SellerRoute>
           }
         />
