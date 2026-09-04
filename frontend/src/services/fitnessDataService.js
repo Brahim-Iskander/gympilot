@@ -12,6 +12,7 @@
 import { TOKEN_STORAGE_KEY } from '../constants';
 
 const BASE_NUTRITION_KEY = 'gymtrack_daily_nutrition';
+const BASE_NUTRITION_TARGETS_KEY = 'gymtrack_custom_nutrition_targets';
 const BASE_WORKOUTS_KEY = 'gymtrack_workout_history';
 const BASE_GOALS_KEY = 'gymtrack_user_goals';
 const BASE_PR_KEY = 'gymtrack_strength_prs';
@@ -81,6 +82,47 @@ class FitnessDataService {
 
   clearUserCache() {
     this.notify();
+  }
+
+  // --- NUTRITION TARGETS (User Customizable) ---
+  getCustomNutritionTargets(aiPlan) {
+    try {
+      const key = getScopedKey(BASE_NUTRITION_TARGETS_KEY);
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error('Failed reading custom nutrition targets:', e);
+    }
+    return {
+      calories: aiPlan?.nutritionPlan?.dailyCalories || 2200,
+      protein: aiPlan?.nutritionPlan?.protein || 150,
+      carbs: aiPlan?.nutritionPlan?.carbs || 230,
+      fat: aiPlan?.nutritionPlan?.fat || 70,
+      waterTargetLiters: 3.0,
+      isCustom: false,
+    };
+  }
+
+  setCustomNutritionTargets(targets) {
+    try {
+      const key = getScopedKey(BASE_NUTRITION_TARGETS_KEY);
+      const updated = {
+        calories: Number(targets.calories) || 2200,
+        protein: Number(targets.protein) || 150,
+        carbs: Number(targets.carbs) || 230,
+        fat: Number(targets.fat) || 70,
+        waterTargetLiters: Number(targets.waterTargetLiters) || 3.0,
+        isCustom: true,
+        updatedAt: new Date().toISOString(),
+      };
+      localStorage.setItem(key, JSON.stringify(updated));
+      this.notify();
+      return updated;
+    } catch (e) {
+      console.error('Failed saving custom nutrition targets:', e);
+    }
   }
 
   // --- NUTRITION ---
@@ -338,6 +380,19 @@ class FitnessDataService {
 
   generateInitialGoals(aiPlan, latestWeight) {
     if (!aiPlan) return [];
+    if (Array.isArray(aiPlan?.suggestedGoals) && aiPlan.suggestedGoals.length > 0) {
+      return aiPlan.suggestedGoals.map((g, idx) => ({
+        id: g.id || idx + 1,
+        title: g.title,
+        type: g.type || 'custom',
+        target: Number(g.target) || 1,
+        current: Number(g.current) || 0,
+        unit: g.unit || '',
+        deadline: g.deadline || new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        status: g.status || 'active',
+        isAi: true,
+      }));
+    }
     const curWeight = latestWeight || aiPlan?.weightKg;
     const goalStr = (aiPlan?.goal || 'general fitness').toLowerCase();
     const isGain = goalStr.includes('gain') || goalStr.includes('muscle') || goalStr.includes('bulk');

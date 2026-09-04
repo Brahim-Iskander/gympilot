@@ -23,7 +23,17 @@ const tabs = [
 export default function Nutrition() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
-  const { aiPlan, aiPlanLoading, dailyNutrition, nutritionTotals, logMeal, deleteMeal, updateWater } = useFitnessData();
+  const {
+    aiPlan,
+    aiPlanLoading,
+    dailyNutrition,
+    nutritionTotals,
+    customTargets,
+    updateNutritionTargets,
+    logMeal,
+    deleteMeal,
+    updateWater,
+  } = useFitnessData();
 
   return (
     <Box>
@@ -83,6 +93,8 @@ export default function Nutrition() {
           loading={aiPlanLoading}
           dailyNutrition={dailyNutrition}
           nutritionTotals={nutritionTotals}
+          customTargets={customTargets}
+          updateNutritionTargets={updateNutritionTargets}
           updateWater={updateWater}
         />
       )}
@@ -92,6 +104,8 @@ export default function Nutrition() {
           loading={aiPlanLoading}
           dailyNutrition={dailyNutrition}
           nutritionTotals={nutritionTotals}
+          customTargets={customTargets}
+          updateNutritionTargets={updateNutritionTargets}
           logMeal={logMeal}
           deleteMeal={deleteMeal}
         />
@@ -102,6 +116,8 @@ export default function Nutrition() {
           loading={aiPlanLoading}
           dailyNutrition={dailyNutrition}
           nutritionTotals={nutritionTotals}
+          customTargets={customTargets}
+          updateNutritionTargets={updateNutritionTargets}
         />
       )}
     </Box>

@@ -36,6 +36,7 @@ import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
 import PrintRoundedIcon from '@mui/icons-material/PrintRounded';
 
 import SEO from '../../components/SEO';
+import SellerNavTabs from './components/SellerNavTabs';
 import { sellerService } from '../../services/sellerService';
 
 export default function SellerOrders() {
@@ -361,6 +362,8 @@ export default function SellerOrders() {
       <SEO title="Orders Received — Seller Portal" description="Manage customer orders and shipments." path="/seller/orders" noIndex />
 
       <Container maxWidth="xl" disableGutters>
+        <SellerNavTabs />
+
         <Box sx={{ mb: 4 }}>
           <Typography variant="h4" sx={{ fontFamily: "'Sora', sans-serif", fontWeight: 800 }}>
             Customer Orders Received

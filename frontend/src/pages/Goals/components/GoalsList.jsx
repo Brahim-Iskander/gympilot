@@ -43,6 +43,20 @@ const GOAL_TYPES = [
 ];
 
 function generateAiGoals(aiPlan) {
+  if (Array.isArray(aiPlan?.suggestedGoals) && aiPlan.suggestedGoals.length > 0) {
+    return aiPlan.suggestedGoals.map((g, idx) => ({
+      id: g.id || idx + 1,
+      title: g.title,
+      type: g.type || 'custom',
+      target: Number(g.target) || 1,
+      current: Number(g.current) || 0,
+      unit: g.unit || '',
+      deadline: g.deadline || '2026-12-31',
+      status: g.status || 'active',
+      isAi: true,
+    }));
+  }
+
   const currentWeight = aiPlan?.weightKg || 75;
   const goalStr = (aiPlan?.goal || 'general fitness').toLowerCase();
   const isGain = goalStr.includes('gain') || goalStr.includes('muscle') || goalStr.includes('bulk');

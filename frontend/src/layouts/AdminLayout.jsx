@@ -79,6 +79,12 @@ const ADMIN_NAV = [
     path: '/admin/partners',
   },
   {
+    id: 'admin-packs',
+    label: 'Offers & Product Packs',
+    icon: <LocalOfferRounded sx={{ color: '#C6FF3E' }} />,
+    path: '/admin/packs',
+  },
+  {
     id: 'admin-vouchers',
     label: 'Store Vouchers',
     icon: <LocalOfferRounded />,

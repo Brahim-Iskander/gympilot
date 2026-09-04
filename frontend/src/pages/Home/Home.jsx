@@ -3,6 +3,7 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import HeroSection from './components/HeroSection';
 import WelcomeOfferBanner from './components/WelcomeOfferBanner';
+import SpecialOffersSection from './components/SpecialOffersSection';
 import FeaturesSection from './components/FeaturesSection';
 import StatsPreviewSection from './components/StatsPreviewSection';
 import MediaShowcaseSlider from './components/MediaShowcaseSlider';
@@ -32,6 +33,7 @@ export default function Home() {
       >
         <HeroSection />
         <WelcomeOfferBanner />
+        <SpecialOffersSection />
         <FeaturesSection />
         <StatsPreviewSection />
         <MediaShowcaseSlider />

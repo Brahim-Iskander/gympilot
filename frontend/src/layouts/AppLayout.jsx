@@ -150,12 +150,20 @@ export default function AppLayout() {
       icon: <ReceiptLongRounded />,
       path: '/shop/orders',
     },
-    ...(isSeller ? [{
-      id: 'seller-portal',
-      label: 'Seller Dashboard',
-      icon: <StorefrontRounded sx={{ color: '#8A7CFF' }} />,
-      path: '/seller',
-    }] : []),
+    ...(isSeller ? [
+      {
+        id: 'seller-portal',
+        label: 'Seller Dashboard',
+        icon: <StorefrontRounded sx={{ color: '#8A7CFF' }} />,
+        path: '/seller',
+      },
+      {
+        id: 'seller-settings',
+        label: 'Store Settings',
+        icon: <StorefrontRounded sx={{ color: '#C6FF3E' }} />,
+        path: '/seller/settings',
+      },
+    ] : []),
     {
       id: 'membership',
       label: t('nav.membership', 'Membership'),

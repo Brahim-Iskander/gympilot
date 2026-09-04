@@ -38,6 +38,30 @@ const StyledCard = styled(Card)(() => ({
 
 const mealCategories = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
 
+function getSuggestedMeals(aiPlan) {
+  if (Array.isArray(aiPlan?.nutritionPlan?.suggestedMeals) && aiPlan.nutritionPlan.suggestedMeals.length > 0) {
+    return aiPlan.nutritionPlan.suggestedMeals;
+  }
+  if (Array.isArray(aiPlan?.nutritionPlan?.mealSuggestions) && aiPlan.nutritionPlan.mealSuggestions.length > 0) {
+    return aiPlan.nutritionPlan.mealSuggestions.map((m) => {
+      const parts = m.split(':');
+      const type = parts.length > 1 ? parts[0].trim() : 'Meal';
+      const items = parts.length > 1 ? parts.slice(1).join(':').trim() : m;
+      return {
+        name: `${type} Power Meal`,
+        type: type,
+        calories: 520,
+        protein: 36,
+        carbs: 58,
+        fat: 14,
+        ingredients: items,
+        budgetSwaps: 'Swap chicken/meat with eggs, canned tuna, or lentils; swap oats with whole grain bread.',
+      };
+    });
+  }
+  return [];
+}
+
 function MealCardItem({ meal, onEdit, onDelete }) {
   const [anchorEl, setAnchorEl] = useState(null);
 
@@ -190,26 +214,169 @@ export default function Meals({ aiPlan, loading, dailyNutrition, nutritionTotals
     setOpenAddModal(false);
   };
 
+  const suggestedMeals = getSuggestedMeals(aiPlan);
+  const [showSuggested, setShowSuggested] = useState(true);
+
+  const handleApplySuggestedMeal = (suggested) => {
+    logMeal({
+      title: suggested.name,
+      type: suggested.type || 'Lunch',
+      calories: Number(suggested.calories) || 500,
+      protein: Number(suggested.protein) || 30,
+      carbs: Number(suggested.carbs) || 50,
+      fat: Number(suggested.fat) || 15,
+      items: suggested.ingredients,
+      aiScanned: true,
+    });
+  };
+
+  const handleCustomizeSuggestedMeal = (suggested) => {
+    setEditingMeal(null);
+    setForm({
+      title: suggested.name,
+      type: suggested.type || 'Lunch',
+      calories: suggested.calories || '',
+      protein: suggested.protein || '',
+      carbs: suggested.carbs || '',
+      fat: suggested.fat || '',
+      items: suggested.ingredients || '',
+    });
+    setOpenAddModal(true);
+  };
+
   return (
     <Box>
+      {/* AI Proposed Nutrition & Flexible Swaps Showcase */}
+      {suggestedMeals.length > 0 && (
+        <Card
+          sx={{
+            p: { xs: 2.5, md: 3 },
+            mb: 4,
+            borderRadius: 3.5,
+            background: (theme) =>
+              theme.palette.mode === 'dark'
+                ? 'linear-gradient(135deg, rgba(198,255,62,0.06) 0%, rgba(138,124,255,0.04) 100%)'
+                : 'linear-gradient(135deg, rgba(198,255,62,0.04) 0%, rgba(15,23,42,0.02) 100%)',
+            border: '1px solid',
+            borderColor: 'rgba(198,255,62,0.25)',
+          }}
+        >
+          <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={1} sx={{ mb: 2.5 }}>
+            <Box>
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
+                <Chip
+                  icon={<AutoAwesomeRoundedIcon sx={{ fontSize: '0.9rem !important', color: '#0A0C0F' }} />}
+                  label="AI PROPOSED MEALS"
+                  size="small"
+                  sx={{ fontWeight: 900, bgcolor: 'primary.main', color: '#0A0C0F', height: 22, fontSize: '0.7rem' }}
+                />
+                <Chip
+                  label="Budget & Flexible Swaps Included"
+                  size="small"
+                  sx={{ bgcolor: 'rgba(255,255,255,0.06)', color: 'text.secondary', fontWeight: 700, height: 22, fontSize: '0.7rem' }}
+                />
+              </Stack>
+              <Typography variant="h6" fontWeight={800} sx={{ fontFamily: "'Sora', sans-serif" }}>
+                Curated Meal Plan for Your Goal
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                You can easily customize or swap ingredients if you don't have the exact items at home.
+              </Typography>
+            </Box>
+            <Button
+              size="small"
+              variant="text"
+              onClick={() => setShowSuggested(!showSuggested)}
+              sx={{ fontWeight: 700, color: 'text.secondary' }}
+            >
+              {showSuggested ? 'Collapse Suggestions' : 'Show Suggestions'}
+            </Button>
+          </Stack>
+
+          {showSuggested && (
+            <Grid container spacing={2}>
+              {suggestedMeals.map((sMeal, idx) => (
+                <Grid item xs={12} md={6} key={idx}>
+                  <StyledCard sx={{ p: 2.5, height: '100%', display: 'flex', flexDirection: 'column', bgcolor: 'background.paper' }}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 1 }}>
+                      <Box>
+                        <Chip
+                          label={sMeal.type}
+                          size="small"
+                          sx={{ mb: 0.75, height: 20, fontSize: '0.68rem', fontWeight: 800, bgcolor: 'rgba(138,124,255,0.15)', color: '#8A7CFF' }}
+                        />
+                        <Typography variant="subtitle1" fontWeight={800} sx={{ lineHeight: 1.2 }}>
+                          {sMeal.name}
+                        </Typography>
+                      </Box>
+                      <Stack direction="row" spacing={1} sx={{ textAlign: 'right' }}>
+                        <Typography variant="body2" fontWeight={800} color="primary.main">
+                          {sMeal.calories} kcal
+                        </Typography>
+                      </Stack>
+                    </Stack>
+
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+                      <strong>Ingredients:</strong> {sMeal.ingredients}
+                    </Typography>
+
+                    {sMeal.budgetSwaps && (
+                      <Box
+                        sx={{
+                          p: 1.25,
+                          mb: 2,
+                          borderRadius: 2,
+                          bgcolor: 'rgba(255, 193, 7, 0.08)',
+                          border: '1px solid rgba(255, 193, 7, 0.25)',
+                        }}
+                      >
+                        <Typography variant="caption" sx={{ color: '#FFC107', fontWeight: 800, display: 'block', mb: 0.25 }}>
+                          💡 Budget / Flexible Swaps:
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: 'text.secondary', lineHeight: 1.3, display: 'block' }}>
+                          {sMeal.budgetSwaps}
+                        </Typography>
+                      </Box>
+                    )}
+
+                    <Stack direction="row" spacing={1} sx={{ mt: 'auto', pt: 1 }}>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        startIcon={<AddRoundedIcon />}
+                        onClick={() => handleApplySuggestedMeal(sMeal)}
+                        sx={{ fontWeight: 800, borderRadius: 2, fontSize: '0.75rem', flex: 1 }}
+                      >
+                        Log to Today
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<EditRoundedIcon />}
+                        onClick={() => handleCustomizeSuggestedMeal(sMeal)}
+                        sx={{ fontWeight: 700, borderRadius: 2, fontSize: '0.75rem' }}
+                      >
+                        Customize &amp; Log
+                      </Button>
+                    </Stack>
+                  </StyledCard>
+                </Grid>
+              ))}
+            </Grid>
+          )}
+        </Card>
+      )}
+
+      {/* Today's Logged Meals */}
       <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} gap={2} sx={{ mb: 3 }}>
-        <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-          {['All', ...mealCategories].map((cat) => (
-            <Chip
-              key={cat}
-              label={cat}
-              onClick={() => setFilterType(cat)}
-              variant={filterType === cat ? 'filled' : 'outlined'}
-              sx={{
-                fontWeight: 700,
-                bgcolor: filterType === cat ? 'primary.main' : 'transparent',
-                color: filterType === cat ? 'primary.contrastText' : 'text.secondary',
-                borderColor: filterType === cat ? 'primary.main' : 'divider',
-                cursor: 'pointer',
-              }}
-            />
-          ))}
-        </Stack>
+        <Box>
+          <Typography variant="h6" fontWeight={800}>
+            Today's Logged Meals ({meals.length})
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Total Intake: {nutritionTotals?.calories || 0} kcal · {nutritionTotals?.protein || 0}g Protein
+          </Typography>
+        </Box>
 
         <Stack direction="row" spacing={1.5}>
           <Button
@@ -232,13 +399,31 @@ export default function Meals({ aiPlan, loading, dailyNutrition, nutritionTotals
         </Stack>
       </Stack>
 
+      <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mb: 3 }}>
+        {['All', ...mealCategories].map((cat) => (
+          <Chip
+            key={cat}
+            label={cat}
+            onClick={() => setFilterType(cat)}
+            variant={filterType === cat ? 'filled' : 'outlined'}
+            sx={{
+              fontWeight: 700,
+              bgcolor: filterType === cat ? 'primary.main' : 'transparent',
+              color: filterType === cat ? 'primary.contrastText' : 'text.secondary',
+              borderColor: filterType === cat ? 'primary.main' : 'divider',
+              cursor: 'pointer',
+            }}
+          />
+        ))}
+      </Stack>
+
       {filteredMeals.length === 0 ? (
         <StyledCard sx={{ p: 6, textAlign: 'center' }}>
           <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
-            No meals found in this category
+            No meals logged in this category yet
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Use our AI Calorie Calculator or add a manual meal to start tracking your macros today.
+            Log an AI suggested meal above, scan a photo of your food, or add a custom recipe.
           </Typography>
           <Button variant="contained" color="primary" onClick={handleOpenAdd} sx={{ borderRadius: 2 }}>
             Add Meal Now

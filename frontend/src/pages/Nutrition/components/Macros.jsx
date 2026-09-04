@@ -93,7 +93,7 @@ function MacroBar({ macro }) {
   );
 }
 
-export default function Macros({ aiPlan, loading, dailyNutrition, nutritionTotals }) {
+export default function Macros({ aiPlan, loading, dailyNutrition, nutritionTotals, customTargets }) {
   if (loading) {
     return (
       <Box sx={{ py: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
@@ -103,10 +103,10 @@ export default function Macros({ aiPlan, loading, dailyNutrition, nutritionTotal
     );
   }
 
-  const targetCalories = aiPlan?.nutritionPlan?.dailyCalories || 2200;
-  const targetProtein = aiPlan?.nutritionPlan?.protein || 160;
-  const targetCarbs = aiPlan?.nutritionPlan?.carbs || 230;
-  const targetFat = aiPlan?.nutritionPlan?.fat || 70;
+  const targetCalories = customTargets?.calories || aiPlan?.nutritionPlan?.dailyCalories || 2200;
+  const targetProtein = customTargets?.protein || aiPlan?.nutritionPlan?.protein || 160;
+  const targetCarbs = customTargets?.carbs || aiPlan?.nutritionPlan?.carbs || 230;
+  const targetFat = customTargets?.fat || aiPlan?.nutritionPlan?.fat || 70;
 
   const currentCalories = nutritionTotals?.calories || 0;
   const currentProtein = nutritionTotals?.protein || 0;

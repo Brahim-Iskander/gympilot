@@ -37,6 +37,7 @@ import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
 import RemoveCircleOutlineRoundedIcon from '@mui/icons-material/RemoveCircleOutlineRounded';
 
 import SEO from '../../components/SEO';
+import SellerNavTabs from './components/SellerNavTabs';
 import { productService } from '../../services/productService';
 import { categoryService } from '../../services/categoryService';
 import { sellerService } from '../../services/sellerService';
@@ -258,6 +259,8 @@ export default function SellerProducts() {
       <SEO title="My Products — Seller Portal" description="Manage supplement and gear products." path="/seller/products" noIndex />
 
       <Container maxWidth="xl" disableGutters>
+        <SellerNavTabs />
+
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 4 }} flexWrap="wrap" gap={2}>
           <Box>
             <Typography variant="h4" sx={{ fontFamily: "'Sora', sans-serif", fontWeight: 800 }}>

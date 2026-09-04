@@ -31,21 +31,25 @@ public class ShopSeeder implements CommandLineRunner {
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final VoucherRepository voucherRepository;
+    private final com.gymtrack.repository.ProductPackRepository productPackRepository;
 
     public ShopSeeder(CategoryRepository categoryRepository,
                       ProductRepository productRepository,
                       UserRepository userRepository,
-                      VoucherRepository voucherRepository) {
+                      VoucherRepository voucherRepository,
+                      com.gymtrack.repository.ProductPackRepository productPackRepository) {
         this.categoryRepository = categoryRepository;
         this.productRepository = productRepository;
         this.userRepository = userRepository;
         this.voucherRepository = voucherRepository;
+        this.productPackRepository = productPackRepository;
     }
 
     @Override
     public void run(String... args) {
         seedCategories();
         seedProducts();
+        seedProductPacks();
         seedVouchers();
     }
 
@@ -199,6 +203,94 @@ public class ShopSeeder implements CommandLineRunner {
                 Map.of("Brand", "GymPilot Nutrition", "Weight", "3.0 kg", "Calories per Serving", "1150 kcal", "Protein", "50g", "Creatine Included", "3g"),
                 sellerId, sellerName, storeName
         );
+    }
+
+    private void seedProductPacks() {
+        // 1. Ultimate Mass & Power Stack
+        upsertPack(
+                "Pack Ultimate Mass & Power Stack",
+                "pack-ultimate-mass-power-stack",
+                "Hyper Mass Gainer 3kg + Quamtrax Pure Creatine 300g + Free Shaker Pro",
+                "-25% OFF",
+                "The complete mass bulking formula designed for rapid muscular size, calorie surplus mastery, and explosive ATP strength gains. Includes free GymPilot 700ml Pro Shaker.",
+                239.0,
+                179.0,
+                List.of("https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=600&auto=format&fit=crop&q=80"),
+                List.of(
+                        new com.gymtrack.model.ProductPack.PackItem("Hyper Mass Gainer Advanced Calorie Formula", 1, "3.0 kg / 1150 kcal per serving", "2 scoops daily"),
+                        new com.gymtrack.model.ProductPack.PackItem("Quamtrax Pure Micronized Creatine", 1, "300g (100 servings)", "3g - 5g daily"),
+                        new com.gymtrack.model.ProductPack.PackItem("GymPilot Pro Shaker Cup 700ml", 1, "BPA-Free Leakproof Shaker", "FREE Gift Included")
+                ),
+                true,
+                true,
+                30
+        );
+
+        // 2. Lean Muscle & Maximum Recovery Pack
+        upsertPack(
+                "Pack Lean Muscle & Pure Recovery",
+                "pack-lean-muscle-pure-recovery",
+                "100% Pure Whey Isolate & Concentrate 2kg + Ultra Pure Omega-3 (60 Caps)",
+                "SAVE 46 TND",
+                "High-BV pure whey protein isolate paired with ultra-concentrated EPA/DHA Omega-3 softgels to maximize muscle protein synthesis, accelerate joint recovery, and promote lean definition.",
+                275.0,
+                229.0,
+                List.of("https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?w=600&auto=format&fit=crop&q=80"),
+                List.of(
+                        new com.gymtrack.model.ProductPack.PackItem("100% Pure Whey Protein Isolate & Concentrate", 1, "2.0 kg (66 servings / 25g protein)", "1 scoop post-workout"),
+                        new com.gymtrack.model.ProductPack.PackItem("Ultra Pure Omega-3 Fish Oil", 1, "60 Softgels (360mg EPA / 240mg DHA)", "2 softgels daily with meal")
+                ),
+                true,
+                true,
+                25
+        );
+
+        // 3. Immunity, Vitality & Testosterone Duo
+        upsertPack(
+                "Duo Immunity, Vitality & Testosterone",
+                "duo-immunity-vitality-testosterone",
+                "High-Absorption Zinc Picolinate 60 Caps + Ultra Pure Omega-3 60 Softgels",
+                "BEST VALUE",
+                "Essential daily micronutrient and lipid synergy. Enhances natural hormone production, immune resistance, skin health, and cardiovascular wellness.",
+                120.0,
+                95.0,
+                List.of("https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80"),
+                List.of(
+                        new com.gymtrack.model.ProductPack.PackItem("Zinc Picolinate 25mg", 1, "60 Vegetarian Capsules", "1 capsule daily with meal"),
+                        new com.gymtrack.model.ProductPack.PackItem("Ultra Pure Omega-3 Fish Oil", 1, "60 Softgels (EPA + DHA)", "2 softgels daily")
+                ),
+                true,
+                true,
+                40
+        );
+    }
+
+    private void upsertPack(String name, String slug, String tagline, String badge, String description,
+                            double originalPrice, double price, List<String> images,
+                            List<com.gymtrack.model.ProductPack.PackItem> items, boolean active, boolean featured, int stock) {
+        Optional<com.gymtrack.model.ProductPack> existing = productPackRepository.findBySlug(slug);
+        if (existing.isPresent()) {
+            com.gymtrack.model.ProductPack p = existing.get();
+            p.setName(name);
+            p.setTagline(tagline);
+            p.setBadge(badge);
+            p.setDescription(description);
+            p.setOriginalPrice(originalPrice);
+            p.setPrice(price);
+            p.setImages(images);
+            p.setItems(items);
+            p.setActive(active);
+            p.setFeatured(featured);
+            p.setStockQuantity(stock);
+            productPackRepository.save(p);
+            log.info("Updated seeded product pack: {} (Price: {} TND)", name, price);
+        } else {
+            com.gymtrack.model.ProductPack p = new com.gymtrack.model.ProductPack(
+                    name, slug, tagline, badge, description, originalPrice, price, images, items, active, featured, stock
+            );
+            productPackRepository.save(p);
+            log.info("Seeded new special offer product pack: {} (Price: {} TND)", name, price);
+        }
     }
 
     private void upsertProduct(String name, String slug, String description, String categoryId,

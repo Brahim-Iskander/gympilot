@@ -12,6 +12,7 @@ export function useFitnessData() {
   const [thisWeekWorkouts, setThisWeekWorkouts] = useState(() => fitnessDataService.getThisWeekWorkoutsCount());
   const [prs, setPRs] = useState(() => fitnessDataService.getPRs());
   const [goals, setGoals] = useState(() => fitnessDataService.getGoals(aiPlan));
+  const [customTargets, setCustomTargets] = useState(() => fitnessDataService.getCustomNutritionTargets(aiPlan));
 
   const refresh = useCallback(() => {
     setDailyNutrition(fitnessDataService.getDailyNutrition());
@@ -21,6 +22,7 @@ export function useFitnessData() {
     setThisWeekWorkouts(fitnessDataService.getThisWeekWorkoutsCount());
     setPRs(fitnessDataService.getPRs());
     setGoals(fitnessDataService.getGoals(aiPlan));
+    setCustomTargets(fitnessDataService.getCustomNutritionTargets(aiPlan));
   }, [aiPlan]);
 
   useEffect(() => {
@@ -50,6 +52,8 @@ export function useFitnessData() {
     thisWeekWorkouts,
     prs,
     goals,
+    customTargets,
+    updateNutritionTargets: (targets) => fitnessDataService.setCustomNutritionTargets(targets),
     logMeal: (meal) => fitnessDataService.logMeal(meal),
     deleteMeal: (id) => fitnessDataService.deleteMeal(id),
     updateWater: (liters) => fitnessDataService.updateWater(liters),

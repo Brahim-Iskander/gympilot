@@ -32,6 +32,7 @@ import LocalShippingRoundedIcon from '@mui/icons-material/LocalShippingRounded';
 import EmojiEventsRoundedIcon from '@mui/icons-material/EmojiEventsRounded';
 
 import SEO from '../../components/SEO';
+import SellerNavTabs from './components/SellerNavTabs';
 import { sellerService } from '../../services/sellerService';
 import { useAuth } from '../../context/AuthContext';
 
@@ -110,6 +111,8 @@ export default function SellerDashboard() {
       <SEO title="Seller Portal Dashboard — GymPilot Marketplace" description="Manage your store catalog, orders, and sales performance." path="/seller" noIndex />
 
       <Container maxWidth="xl" disableGutters>
+        <SellerNavTabs />
+
         {/* Header */}
         <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} gap={2} sx={{ mb: 4 }}>
           <Box>

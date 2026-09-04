@@ -16,6 +16,7 @@ import StorefrontRoundedIcon from '@mui/icons-material/StorefrontRounded';
 import SaveRoundedIcon from '@mui/icons-material/SaveRounded';
 
 import SEO from '../../components/SEO';
+import SellerNavTabs from './components/SellerNavTabs';
 import { sellerService } from '../../services/sellerService';
 import { useAuth } from '../../context/AuthContext';
 
@@ -56,6 +57,8 @@ export default function SellerSettings() {
       <SEO title="Store Profile — Seller Portal" description="Customize your store branding on GymPilot." path="/seller/settings" noIndex />
 
       <Container maxWidth="md" disableGutters>
+        <SellerNavTabs />
+
         <Box sx={{ mb: 4 }}>
           <Typography variant="h4" sx={{ fontFamily: "'Sora', sans-serif", fontWeight: 800 }}>
             Store Profile & Branding

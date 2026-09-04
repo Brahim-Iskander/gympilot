@@ -117,8 +117,25 @@ public class AiService {
                 "    \"protein\": 150," +
                 "    \"carbs\": 250," +
                 "    \"fat\": 80," +
-                "    \"mealSuggestions\": [\"Breakfast: Oatmeal\", \"Lunch: Chicken Salad\"]" +
+                "    \"mealSuggestions\": [\"Breakfast: Oatmeal + Eggs\", \"Lunch: Chicken/Tuna Rice Bowl\"]," +
+                "    \"suggestedMeals\": [" +
+                "      {" +
+                "        \"name\": \"High Protein Power Breakfast\"," +
+                "        \"type\": \"Breakfast\"," +
+                "        \"calories\": 550," +
+                "        \"protein\": 35," +
+                "        \"carbs\": 65," +
+                "        \"fat\": 15," +
+                "        \"ingredients\": \"Oatmeal (80g), 3 Whole Eggs, 1 Banana, 1 tbsp Peanut Butter\"," +
+                "        \"budgetSwaps\": \"Swap peanut butter with milk, or use whole wheat bread with boiled eggs\"" +
+                "      }" +
+                "    ]" +
                 "  }," +
+                "  \"suggestedGoals\": [" +
+                "    { \"title\": \"Target Body Weight Progression\", \"type\": \"weight\", \"target\": 74, \"current\": 70, \"unit\": \"kg\", \"deadline\": \"2026-12-31\", \"status\": \"active\", \"isAi\": true }," +
+                "    { \"title\": \"Consistent Workout Frequency\", \"type\": \"frequency\", \"target\": %d, \"current\": %d, \"unit\": \"days/week\", \"deadline\": \"2026-10-31\", \"status\": \"active\", \"isAi\": true }," +
+                "    { \"title\": \"Daily Protein Target (150g)\", \"type\": \"nutrition\", \"target\": 150, \"current\": 120, \"unit\": \"g\", \"deadline\": \"2026-10-31\", \"status\": \"active\", \"isAi\": true }" +
+                "  ]," +
                 "  \"supplementPlan\": [" +
                 "    {" +
                 "      \"name\": \"Creatine Monohydrate\"," +
@@ -143,7 +160,9 @@ public class AiService {
                 (o.getInjuries() != null && !o.getInjuries().isEmpty() ? o.getInjuries() : "None"),
                 o.getDaysPerWeek() != null ? o.getDaysPerWeek() : 3,
                 o.getGoal() != null ? o.getGoal() : "General Fitness",
-                o.getGoal() != null ? o.getGoal() : "General Fitness"
+                o.getGoal() != null ? o.getGoal() : "General Fitness",
+                o.getDaysPerWeek() != null ? o.getDaysPerWeek() : 3,
+                o.getDaysPerWeek() != null ? o.getDaysPerWeek() : 3
         );
     }
 
@@ -462,15 +481,180 @@ public class AiService {
             }
         }
 
-        // --- MEAL SUGGESTIONS based on goal ---
+        // --- MEAL SUGGESTIONS & STRUCTURED MEALS with BUDGET SWAPS based on goal ---
         String meals;
+        String structuredMealsJson;
         if (goal.contains("gain") || goal.contains("muscle") || goal.contains("bulk")) {
             meals = "\"Breakfast: 4 eggs + oatmeal with banana and peanut butter\", \"Snack: Greek yogurt with granola and honey\", \"Lunch: 200g chicken breast + rice + vegetables\", \"Post-Workout: Whey protein shake with milk and oats\", \"Dinner: Salmon fillet + sweet potato + broccoli\"";
+            structuredMealsJson = 
+                "      {\n" +
+                "        \"name\": \"Mass Builder Power Oatmeal & Eggs\",\n" +
+                "        \"type\": \"Breakfast\",\n" +
+                "        \"calories\": 620,\n" +
+                "        \"protein\": 38,\n" +
+                "        \"carbs\": 75,\n" +
+                "        \"fat\": 18,\n" +
+                "        \"ingredients\": \"80g rolled oats, 3 whole eggs, 1 banana, 1 tbsp peanut butter\",\n" +
+                "        \"budgetSwaps\": \"Swap peanut butter with full-fat milk, or use 3 boiled eggs with toasted whole grain bread\"\n" +
+                "      },\n" +
+                "      {\n" +
+                "        \"name\": \"High-Protein Chicken Rice Bowl\",\n" +
+                "        \"type\": \"Lunch\",\n" +
+                "        \"calories\": 700,\n" +
+                "        \"protein\": 48,\n" +
+                "        \"carbs\": 85,\n" +
+                "        \"fat\": 16,\n" +
+                "        \"ingredients\": \"200g chicken breast, 1.5 cup cooked white/brown rice, olive oil, mixed veggies\",\n" +
+                "        \"budgetSwaps\": \"Swap chicken breast with canned tuna in water, scrambled eggs, or red lentils with rice\"\n" +
+                "      },\n" +
+                "      {\n" +
+                "        \"name\": \"Anabolic Recovery Greek Yogurt\",\n" +
+                "        \"type\": \"Snack\",\n" +
+                "        \"calories\": 340,\n" +
+                "        \"protein\": 24,\n" +
+                "        \"carbs\": 42,\n" +
+                "        \"fat\": 8,\n" +
+                "        \"ingredients\": \"200g Greek yogurt or cottage cheese, handful of granola/oats, 1 tsp honey\",\n" +
+                "        \"budgetSwaps\": \"Swap Greek yogurt with 300ml whole milk and a banana or 2 hard-boiled eggs\"\n" +
+                "      },\n" +
+                "      {\n" +
+                "        \"name\": \"Hearty Protein Potato & Beef Dinner\",\n" +
+                "        \"type\": \"Dinner\",\n" +
+                "        \"calories\": 650,\n" +
+                "        \"protein\": 44,\n" +
+                "        \"carbs\": 68,\n" +
+                "        \"fat\": 20,\n" +
+                "        \"ingredients\": \"180g lean minced beef or fish, 300g baked potatoes, large green salad with olive oil\",\n" +
+                "        \"budgetSwaps\": \"Swap beef/fish with a 4-egg vegetable omelette cooked with olive oil and baked potatoes\"\n" +
+                "      }";
         } else if (goal.contains("loss") || goal.contains("fat") || goal.contains("cut") || goal.contains("lean")) {
             meals = "\"Breakfast: Egg white omelette with spinach and tomato\", \"Snack: Apple with almond butter\", \"Lunch: Grilled chicken salad with olive oil dressing\", \"Post-Workout: Whey protein shake with water\", \"Dinner: Grilled fish + steamed vegetables\"";
+            structuredMealsJson = 
+                "      {\n" +
+                "        \"name\": \"Lean Protein Veggie Omelette\",\n" +
+                "        \"type\": \"Breakfast\",\n" +
+                "        \"calories\": 380,\n" +
+                "        \"protein\": 32,\n" +
+                "        \"carbs\": 25,\n" +
+                "        \"fat\": 14,\n" +
+                "        \"ingredients\": \"3 whole eggs + 1 white, fresh spinach, diced tomatoes, 1 slice whole grain toast\",\n" +
+                "        \"budgetSwaps\": \"Use regular standard eggs and local seasonal greens with whole wheat bread\"\n" +
+                "      },\n" +
+                "      {\n" +
+                "        \"name\": \"Grilled Chicken & Quinoa/Rice Salad\",\n" +
+                "        \"type\": \"Lunch\",\n" +
+                "        \"calories\": 520,\n" +
+                "        \"protein\": 45,\n" +
+                "        \"carbs\": 48,\n" +
+                "        \"fat\": 12,\n" +
+                "        \"ingredients\": \"180g chicken breast, 1 cup cooked rice or quinoa, cucumber, lemon olive oil dressing\",\n" +
+                "        \"budgetSwaps\": \"Swap chicken with canned drained tuna or boiled egg salad with lemon and olive oil\"\n" +
+                "      },\n" +
+                "      {\n" +
+                "        \"name\": \"Crisp Apple & Protein Fuel\",\n" +
+                "        \"type\": \"Snack\",\n" +
+                "        \"calories\": 220,\n" +
+                "        \"protein\": 15,\n" +
+                "        \"carbs\": 28,\n" +
+                "        \"fat\": 5,\n" +
+                "        \"ingredients\": \"1 medium apple or orange, 150g low-fat yogurt or 1 scoop whey with water\",\n" +
+                "        \"budgetSwaps\": \"Swap with 2 boiled eggs and fresh seasonal fruit\"\n" +
+                "      },\n" +
+                "      {\n" +
+                "        \"name\": \"Light Steamed Fish & Roasted Greens\",\n" +
+                "        \"type\": \"Dinner\",\n" +
+                "        \"calories\": 460,\n" +
+                "        \"protein\": 40,\n" +
+                "        \"carbs\": 35,\n" +
+                "        \"fat\": 14,\n" +
+                "        \"ingredients\": \"200g white fish fillet or chicken, steamed broccoli, carrots, small baked sweet potato\",\n" +
+                "        \"budgetSwaps\": \"Swap fish with canned sardines or 3-egg frittata with zucchini and onions\"\n" +
+                "      }";
         } else {
             meals = "\"Breakfast: Scrambled eggs with whole grain toast\", \"Snack: Mixed nuts and fruit\", \"Lunch: Chicken breast with quinoa and roasted vegetables\", \"Post-Workout: Protein shake with banana\", \"Dinner: Lean beef stir-fry with brown rice\"";
+            structuredMealsJson = 
+                "      {\n" +
+                "        \"name\": \"Balanced Energy Scramble & Toast\",\n" +
+                "        \"type\": \"Breakfast\",\n" +
+                "        \"calories\": 480,\n" +
+                "        \"protein\": 30,\n" +
+                "        \"carbs\": 50,\n" +
+                "        \"fat\": 16,\n" +
+                "        \"ingredients\": \"3 whole eggs scrambled with olive oil, 2 slices whole grain toast, 1 orange or apple\",\n" +
+                "        \"budgetSwaps\": \"Use standard eggs with local bakery whole wheat bread and fresh seasonal fruit\"\n" +
+                "      },\n" +
+                "      {\n" +
+                "        \"name\": \"Mediterranean Chicken Rice Plate\",\n" +
+                "        \"type\": \"Lunch\",\n" +
+                "        \"calories\": 600,\n" +
+                "        \"protein\": 42,\n" +
+                "        \"carbs\": 65,\n" +
+                "        \"fat\": 16,\n" +
+                "        \"ingredients\": \"180g chicken breast, 1.25 cup steamed rice, roasted tomatoes, zucchini, olive oil\",\n" +
+                "        \"budgetSwaps\": \"Swap chicken with canned tuna or chickpea & egg salad with olive oil\"\n" +
+                "      },\n" +
+                "      {\n" +
+                "        \"name\": \"Nuts & Fresh Fruit Energy Boost\",\n" +
+                "        \"type\": \"Snack\",\n" +
+                "        \"calories\": 260,\n" +
+                "        \"protein\": 10,\n" +
+                "        \"carbs\": 32,\n" +
+                "        \"fat\": 11,\n" +
+                "        \"ingredients\": \"Handful of peanuts or almonds, 1 banana or apple\",\n" +
+                "        \"budgetSwaps\": \"Roasted peanuts or sunflower seeds with a glass of milk\"\n" +
+                "      },\n" +
+                "      {\n" +
+                "        \"name\": \"Balanced Stir-Fry Beef & Rice\",\n" +
+                "        \"type\": \"Dinner\",\n" +
+                "        \"calories\": 580,\n" +
+                "        \"protein\": 40,\n" +
+                "        \"carbs\": 60,\n" +
+                "        \"fat\": 18,\n" +
+                "        \"ingredients\": \"160g lean beef or turkey strips, bell peppers, onions, 1 cup cooked rice, olive oil\",\n" +
+                "        \"budgetSwaps\": \"Swap beef with 3 scrambled eggs with onions, peppers, and warm pita/rice\"\n" +
+                "      }";
         }
+
+        // --- REALISTIC & ACHIEVABLE GOALS ("capable de le faire") based on user profile ---
+        int targetWeightGoal = (int) Math.round(
+            (goal.contains("gain") || goal.contains("muscle") || goal.contains("bulk")) ? weight + 3.5 :
+            (goal.contains("loss") || goal.contains("fat") || goal.contains("cut")) ? Math.max(weight - 4.5, 45.0) :
+            weight
+        );
+
+        String goalsJson = 
+            "  \"suggestedGoals\": [\n" +
+            "    {\n" +
+            "      \"title\": \"" + ((goal.contains("loss") || goal.contains("fat")) ? "Reach Target Weight (" + targetWeightGoal + " kg)" : "Target Weight Milestone (" + targetWeightGoal + " kg)") + "\",\n" +
+            "      \"type\": \"weight\",\n" +
+            "      \"target\": " + targetWeightGoal + ",\n" +
+            "      \"current\": " + (int) Math.round(weight) + ",\n" +
+            "      \"unit\": \"kg\",\n" +
+            "      \"deadline\": \"2026-12-31\",\n" +
+            "      \"status\": \"active\",\n" +
+            "      \"isAi\": true\n" +
+            "    },\n" +
+            "    {\n" +
+            "      \"title\": \"Complete " + daysPerWeek + " Workouts Every Week\",\n" +
+            "      \"type\": \"frequency\",\n" +
+            "      \"target\": " + daysPerWeek + ",\n" +
+            "      \"current\": " + daysPerWeek + ",\n" +
+            "      \"unit\": \"days/week\",\n" +
+            "      \"deadline\": \"2026-10-31\",\n" +
+            "      \"status\": \"active\",\n" +
+            "      \"isAi\": true\n" +
+            "    },\n" +
+            "    {\n" +
+            "      \"title\": \"Hit Daily Protein Target (" + protein + "g)\",\n" +
+            "      \"type\": \"nutrition\",\n" +
+            "      \"target\": " + protein + ",\n" +
+            "      \"current\": " + (int) Math.round(protein * 0.8) + ",\n" +
+            "      \"unit\": \"g\",\n" +
+            "      \"deadline\": \"2026-10-31\",\n" +
+            "      \"status\": \"active\",\n" +
+            "      \"isAi\": true\n" +
+            "    }\n" +
+            "  ],\n";
 
         return "{\n" +
                "  \"workoutPlan\": [\n" +
@@ -481,8 +665,12 @@ public class AiService {
                "    \"protein\": " + protein + ",\n" +
                "    \"carbs\": " + carbs + ",\n" +
                "    \"fat\": " + fat + ",\n" +
-               "    \"mealSuggestions\": [" + meals + "]\n" +
+               "    \"mealSuggestions\": [" + meals + "],\n" +
+               "    \"suggestedMeals\": [\n" +
+               structuredMealsJson + "\n" +
+               "    ]\n" +
                "  },\n" +
+               goalsJson +
                "  \"supplementPlan\": [\n" +
                buildFallbackSupplements(goal, weight) + "\n" +
                "  ]\n" +

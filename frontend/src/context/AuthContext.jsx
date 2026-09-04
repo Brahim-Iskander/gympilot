@@ -155,7 +155,7 @@ export function AuthProvider({ children }) {
 
     const isAdmin = Boolean(user?.isAdmin || user?.role === 'ADMIN' || upperRoles.includes('ADMIN'));
     const isCoach = Boolean(user?.isCoach || user?.role === 'COACH' || upperRoles.includes('COACH'));
-    const isSeller = Boolean(user?.isSeller || user?.role === 'SELLER' || upperRoles.includes('SELLER'));
+    const isSeller = Boolean(user?.isSeller || user?.role === 'SELLER' || upperRoles.includes('SELLER') || isAdmin);
     const isStaff = isAdmin || isCoach || isSeller;
     const isVerified = Boolean(user?.isVerified);
 

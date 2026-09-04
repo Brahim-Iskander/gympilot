@@ -1,4 +1,23 @@
-import { Box, Button, Card, Chip, Grid, Stack, Typography, styled, CircularProgress, Paper, IconButton } from '@mui/material';
+import {
+  Box,
+  Button,
+  Card,
+  Chip,
+  Grid,
+  Stack,
+  Typography,
+  styled,
+  CircularProgress,
+  Paper,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  InputAdornment,
+} from '@mui/material';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LocalFireDepartmentRoundedIcon from '@mui/icons-material/LocalFireDepartmentRounded';
 import FitnessCenterRoundedIcon from '@mui/icons-material/FitnessCenterRounded';
@@ -8,6 +27,8 @@ import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import RemoveRoundedIcon from '@mui/icons-material/RemoveRounded';
 import WaterDropRoundedIcon from '@mui/icons-material/WaterDropRounded';
+import EditRoundedIcon from '@mui/icons-material/EditRounded';
+import TuneRoundedIcon from '@mui/icons-material/TuneRounded';
 import ProgressBar from '../../../components/ui/ProgressBar';
 import RecommendedSupplements from '../../../components/RecommendedSupplements';
 
@@ -67,8 +88,68 @@ function MacroCard({ macro }) {
   );
 }
 
-export default function NutritionDashboard({ aiPlan, loading, dailyNutrition, nutritionTotals, updateWater }) {
+export default function NutritionDashboard({
+  aiPlan,
+  loading,
+  dailyNutrition,
+  nutritionTotals,
+  customTargets,
+  updateNutritionTargets,
+  updateWater,
+}) {
   const navigate = useNavigate();
+  const [openTargetsModal, setOpenTargetsModal] = useState(false);
+
+  const targetCalories = customTargets?.calories || aiPlan?.nutritionPlan?.dailyCalories || 2200;
+  const targetProtein = customTargets?.protein || aiPlan?.nutritionPlan?.protein || 160;
+  const targetCarbs = customTargets?.carbs || aiPlan?.nutritionPlan?.carbs || 230;
+  const targetFat = customTargets?.fat || aiPlan?.nutritionPlan?.fat || 70;
+  const targetWater = customTargets?.waterTargetLiters || dailyNutrition?.waterTargetLiters || 3.0;
+
+  const [targetsForm, setTargetsForm] = useState({
+    calories: targetCalories,
+    protein: targetProtein,
+    carbs: targetCarbs,
+    fat: targetFat,
+    waterTargetLiters: targetWater,
+  });
+
+  const handleOpenTargetsModal = () => {
+    setTargetsForm({
+      calories: targetCalories,
+      protein: targetProtein,
+      carbs: targetCarbs,
+      fat: targetFat,
+      waterTargetLiters: targetWater,
+    });
+    setOpenTargetsModal(true);
+  };
+
+  const handleSaveTargets = () => {
+    if (updateNutritionTargets) {
+      updateNutritionTargets(targetsForm);
+    }
+    setOpenTargetsModal(false);
+  };
+
+  const handleResetToAi = () => {
+    const aiCal = aiPlan?.nutritionPlan?.dailyCalories || 2200;
+    const aiProt = aiPlan?.nutritionPlan?.protein || 160;
+    const aiCarb = aiPlan?.nutritionPlan?.carbs || 230;
+    const aiFat = aiPlan?.nutritionPlan?.fat || 70;
+    const reset = {
+      calories: aiCal,
+      protein: aiProt,
+      carbs: aiCarb,
+      fat: aiFat,
+      waterTargetLiters: 3.0,
+      isCustom: false,
+    };
+    if (updateNutritionTargets) {
+      updateNutritionTargets(reset);
+    }
+    setOpenTargetsModal(false);
+  };
 
   if (loading) {
     return (
@@ -78,11 +159,6 @@ export default function NutritionDashboard({ aiPlan, loading, dailyNutrition, nu
       </Box>
     );
   }
-
-  const targetCalories = aiPlan?.nutritionPlan?.dailyCalories || 2200;
-  const targetProtein = aiPlan?.nutritionPlan?.protein || 160;
-  const targetCarbs = aiPlan?.nutritionPlan?.carbs || 230;
-  const targetFat = aiPlan?.nutritionPlan?.fat || 70;
 
   const currentCalories = nutritionTotals?.calories || 0;
   const currentProtein = nutritionTotals?.protein || 0;
@@ -97,11 +173,32 @@ export default function NutritionDashboard({ aiPlan, loading, dailyNutrition, nu
   ];
 
   const loggedMeals = dailyNutrition?.meals || [];
-  const waterLiters = dailyNutrition?.waterLiters || 2.0;
-  const waterTarget = dailyNutrition?.waterTargetLiters || 3.5;
+  const waterLiters = dailyNutrition?.waterLiters || 0.0;
+  const waterTarget = targetWater;
 
   return (
     <Box>
+      {/* Header with Edit Targets button */}
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2.5 }}>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Typography variant="h6" fontWeight={800} sx={{ fontFamily: "'Sora', sans-serif" }}>
+            Daily Macronutrient Breakdown
+          </Typography>
+          {customTargets?.isCustom && (
+            <Chip label="Custom Targets Active" size="small" sx={{ bgcolor: 'rgba(198,255,62,0.12)', color: 'primary.main', fontWeight: 700, height: 22 }} />
+          )}
+        </Stack>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<TuneRoundedIcon fontSize="small" />}
+          onClick={handleOpenTargetsModal}
+          sx={{ borderRadius: 2, fontWeight: 700, fontSize: '0.8rem' }}
+        >
+          Customize Daily Targets
+        </Button>
+      </Stack>
+
       {/* 4 Macro Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {displayMacros.map((macro) => (
@@ -110,6 +207,79 @@ export default function NutritionDashboard({ aiPlan, loading, dailyNutrition, nu
           </Grid>
         ))}
       </Grid>
+
+      {/* Customize Targets Dialog */}
+      <Dialog
+        open={openTargetsModal}
+        onClose={() => setOpenTargetsModal(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
+      >
+        <DialogTitle sx={{ fontWeight: 800, fontFamily: "'Sora', sans-serif" }}>
+          Customize Daily Nutrition Targets
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Adjust your calorie and macronutrient goals according to your personal budget, diet preferences, or schedule.
+          </Typography>
+          <Stack spacing={2.5}>
+            <TextField
+              label="Daily Calories Goal"
+              type="number"
+              value={targetsForm.calories}
+              onChange={(e) => setTargetsForm({ ...targetsForm, calories: e.target.value })}
+              InputProps={{ endAdornment: <InputAdornment position="end">kcal</InputAdornment> }}
+              fullWidth
+            />
+            <TextField
+              label="Daily Protein Goal"
+              type="number"
+              value={targetsForm.protein}
+              onChange={(e) => setTargetsForm({ ...targetsForm, protein: e.target.value })}
+              InputProps={{ endAdornment: <InputAdornment position="end">g</InputAdornment> }}
+              fullWidth
+            />
+            <TextField
+              label="Daily Carbs Goal"
+              type="number"
+              value={targetsForm.carbs}
+              onChange={(e) => setTargetsForm({ ...targetsForm, carbs: e.target.value })}
+              InputProps={{ endAdornment: <InputAdornment position="end">g</InputAdornment> }}
+              fullWidth
+            />
+            <TextField
+              label="Daily Fat Goal"
+              type="number"
+              value={targetsForm.fat}
+              onChange={(e) => setTargetsForm({ ...targetsForm, fat: e.target.value })}
+              InputProps={{ endAdornment: <InputAdornment position="end">g</InputAdornment> }}
+              fullWidth
+            />
+            <TextField
+              label="Hydration Goal"
+              type="number"
+              value={targetsForm.waterTargetLiters}
+              onChange={(e) => setTargetsForm({ ...targetsForm, waterTargetLiters: e.target.value })}
+              InputProps={{ endAdornment: <InputAdornment position="end">Liters</InputAdornment> }}
+              fullWidth
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, justifyContent: 'space-between' }}>
+          <Button onClick={handleResetToAi} color="inherit" sx={{ fontWeight: 600, fontSize: '0.8rem' }}>
+            Reset to AI Defaults
+          </Button>
+          <Stack direction="row" spacing={1}>
+            <Button onClick={() => setOpenTargetsModal(false)} color="inherit">
+              Cancel
+            </Button>
+            <Button onClick={handleSaveTargets} variant="contained" color="primary" sx={{ fontWeight: 800 }}>
+              Save Targets
+            </Button>
+          </Stack>
+        </DialogActions>
+      </Dialog>
 
       {/* Water & Quick Scanner Row */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
