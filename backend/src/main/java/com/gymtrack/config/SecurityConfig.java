@@ -72,6 +72,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/products").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/vouchers/validate").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/analyze").permitAll()
                         .requestMatchers("/api/health", "/health").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/admin/coach-chat/**").hasAnyRole("ADMIN", "COACH")

@@ -63,13 +63,14 @@ export default function Navbar() {
 
   const navLinks = [
     { label: t('nav.features'), onClick: goFeatures },
-    { label: 'Shop', to: '/shop', onClick: closeDrawer },
+    { label: t('nav.shop'), to: '/shop', onClick: closeDrawer },
+    { label: t('nav.aiAnalyzer'), to: '/analyze', onClick: closeDrawer },
   ];
 
   const authNavLinks = isAuthenticated
     ? [
       { label: t('nav.dashboard'), to: '/dashboard', onClick: closeDrawer },
-      ...(isSeller ? [{ label: 'Seller Dashboard', to: '/seller', onClick: closeDrawer }] : []),
+      ...(isSeller ? [{ label: t('nav.sellerDashboard'), to: '/seller', onClick: closeDrawer }] : []),
     ]
     : [];
 
@@ -192,9 +193,22 @@ export default function Navbar() {
       >
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
           <Logo />
-          <IconButton onClick={closeDrawer} aria-label="Close menu">
-            <CloseRoundedIcon />
-          </IconButton>
+          <Stack direction="row" spacing={0.5} alignItems="center">
+            {/* Theme toggle in mobile drawer - icon only without border */}
+            <Tooltip title={mode === 'dark' ? t('nav.lightMode') : t('nav.darkMode')}>
+              <IconButton
+                onClick={toggleTheme}
+                size="small"
+                sx={{ color: 'text.primary' }}
+                aria-label={mode === 'dark' ? t('nav.lightMode') : t('nav.darkMode')}
+              >
+                {mode === 'dark' ? <LightModeRoundedIcon fontSize="small" /> : <DarkModeRoundedIcon fontSize="small" />}
+              </IconButton>
+            </Tooltip>
+            <IconButton onClick={closeDrawer} aria-label="Close menu" sx={{ color: 'text.primary' }}>
+              <CloseRoundedIcon />
+            </IconButton>
+          </Stack>
         </Stack>
 
         <List disablePadding>
@@ -215,25 +229,11 @@ export default function Navbar() {
         <Divider sx={{ my: 2.5 }} />
 
         {/* Language selector in drawer */}
-        <Box sx={{ px: 1, mb: 1.5 }}>
+        <Box sx={{ px: 1, mb: 2 }}>
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1, fontWeight: 700 }}>
             {t('nav.language')}
           </Typography>
           <LanguageSelector variant="chips" />
-        </Box>
-
-        {/* Theme toggle in drawer */}
-        <Box sx={{ px: 1, mb: 1 }}>
-          <Tooltip title={mode === 'dark' ? t('nav.lightMode') : t('nav.darkMode')}>
-            <IconButton onClick={toggleTheme} size="small" sx={{ border: '1px solid', borderColor: 'divider', width: '100%', justifyContent: 'center', color: 'text.primary' }} aria-label={mode === 'dark' ? t('nav.lightMode') : t('nav.darkMode')}>
-              <Stack direction="row" spacing={1} alignItems="center">
-                {mode === 'dark' ? <LightModeRoundedIcon fontSize="small" /> : <DarkModeRoundedIcon fontSize="small" />}
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  {mode === 'dark' ? t('nav.lightMode') : t('nav.darkMode')}
-                </Typography>
-              </Stack>
-            </IconButton>
-          </Tooltip>
         </Box>
 
         <Divider sx={{ my: 1 }} />

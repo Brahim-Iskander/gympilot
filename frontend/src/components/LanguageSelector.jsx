@@ -37,7 +37,7 @@ export default function LanguageSelector({ variant = 'icon', size = 'small' }) {
 
   if (variant === 'chips') {
     return (
-      <Stack direction="row" spacing={1}>
+      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
         {LANGUAGES.map((lang) => {
           const active = language === lang.code;
           return (

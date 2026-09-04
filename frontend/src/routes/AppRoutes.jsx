@@ -32,6 +32,7 @@ import MembershipPage from '../pages/Membership/Membership';
 import ForgotPasswordPage from '../pages/ForgotPassword/ForgotPassword';
 import ResetPasswordPage from '../pages/ResetPassword/ResetPassword';
 import VerifyEmailPage from '../pages/Auth/VerifyEmail';
+import AiAnalyzer from '../pages/AiAnalyzer/AiAnalyzer';
 
 // Shop Pages
 import Shop from '../pages/Shop/Shop';
@@ -85,6 +86,7 @@ export default function AppRoutes() {
       />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
       <Route path="/onboarding" element={<OnboardingPage />} />
+      <Route path="/analyze" element={<AiAnalyzer />} />
 
       {/* ===================== SHOP ROUTES ===================== */}
       {/* Shop listing & product detail are public (no auth needed) */}
