@@ -28,6 +28,7 @@ import AdminCoachChat from '../pages/Admin/AdminCoachChat';
 import AdminTickets from '../pages/Admin/AdminTickets';
 import AdminVouchers from '../pages/Admin/AdminVouchers';
 import AdminPacks from '../pages/Admin/AdminPacks';
+import AdminSellerEarnings from '../pages/Admin/AdminSellerEarnings';
 import SupportTickets from '../pages/Support/SupportTickets';
 import MembershipPage from '../pages/Membership/Membership';
 import ForgotPasswordPage from '../pages/ForgotPassword/ForgotPassword';
@@ -277,6 +278,7 @@ export default function AppRoutes() {
         <Route path="/admin/coach-chat" element={<AdminCoachChat />} />
         <Route path="/admin/users" element={<AdminUsers />} />
         <Route path="/admin/partners" element={<AdminPartners />} />
+        <Route path="/admin/seller-earnings" element={<AdminSellerEarnings />} />
         <Route path="/admin/packs" element={<AdminPacks />} />
         <Route path="/admin/vouchers" element={<AdminVouchers />} />
       </Route>

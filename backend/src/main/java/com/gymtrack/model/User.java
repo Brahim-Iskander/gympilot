@@ -41,6 +41,8 @@ public class User {
     private String storeName;
     private String storeBio;
     private String storeLogo;
+    private String phone;
+    private Double commissionRate = 10.0;
 
     /** Whether this account has been banned by an admin. */
     private boolean banned = false;
@@ -224,6 +226,22 @@ public class User {
 
     public void setStoreLogo(String storeLogo) {
         this.storeLogo = storeLogo;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public Double getCommissionRate() {
+        return commissionRate != null ? commissionRate : 10.0;
+    }
+
+    public void setCommissionRate(Double commissionRate) {
+        this.commissionRate = commissionRate != null ? commissionRate : 10.0;
     }
 
     public boolean isBanned() {

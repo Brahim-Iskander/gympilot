@@ -32,6 +32,7 @@ import {
   SupportAgentRounded,
   ConfirmationNumberRounded,
   LocalOfferRounded,
+  PaidRounded,
 } from '@mui/icons-material';
 
 import Logo from '../components/Logo';
@@ -77,6 +78,12 @@ const ADMIN_NAV = [
     label: 'Partner Management',
     icon: <HandshakeRounded />,
     path: '/admin/partners',
+  },
+  {
+    id: 'admin-seller-earnings',
+    label: 'Seller Earnings',
+    icon: <PaidRounded sx={{ color: '#00E5FF' }} />,
+    path: '/admin/seller-earnings',
   },
   {
     id: 'admin-packs',
