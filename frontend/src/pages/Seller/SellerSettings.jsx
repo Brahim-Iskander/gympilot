@@ -20,6 +20,7 @@ import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import SEO from '../../components/SEO';
 import SellerNavTabs from './components/SellerNavTabs';
 import { sellerService } from '../../services/sellerService';
+import { uploadImage } from '../../services/uploadService';
 import { useAuth } from '../../context/AuthContext';
 
 export default function SellerSettings() {
@@ -82,7 +83,18 @@ export default function SellerSettings() {
 
       // Only include storeLogo if it was actually changed
       if (logoFile !== undefined) {
-        payload.storeLogo = logoFile; // base64 string or '' to remove
+        if (logoFile && logoFile.startsWith('data:image/')) {
+          try {
+            // Upload to Cloudinary folder gympilot/stores to save space in MongoDB
+            const cloudinaryUrl = await uploadImage(logoFile, 'gympilot/stores');
+            payload.storeLogo = cloudinaryUrl;
+          } catch (uploadErr) {
+            console.warn('Cloudinary upload failed or not configured, falling back to base64:', uploadErr);
+            payload.storeLogo = logoFile;
+          }
+        } else {
+          payload.storeLogo = logoFile; // empty string to remove or existing URL
+        }
       }
 
       const updatedUser = await sellerService.updateStoreProfile(payload);

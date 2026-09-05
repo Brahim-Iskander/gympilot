@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Box,
@@ -41,6 +41,9 @@ import SellerNavTabs from './components/SellerNavTabs';
 import { productService } from '../../services/productService';
 import { categoryService } from '../../services/categoryService';
 import { sellerService } from '../../services/sellerService';
+import { uploadImage } from '../../services/uploadService';
+import CloudUploadRoundedIcon from '@mui/icons-material/CloudUploadRounded';
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 
 export default function SellerProducts() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -146,16 +149,88 @@ export default function SellerProducts() {
     setDialogOpen(true);
   };
 
-  const handleAddImageRow = () => {
-    setFormData((prev) => ({ ...prev, images: [...prev.images, ''] }));
+  const imageInputRef = useRef(null);
+  const [uploading, setUploading] = useState(false);
+
+  // Compress image client-side before uploading
+  const compressImageFile = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const maxDim = 1200;
+          let { width, height } = img;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.85));
+        };
+        img.onerror = () => reject(new Error('Failed to load image.'));
+        img.src = event.target.result;
+      };
+      reader.onerror = () => reject(new Error('Failed to read file.'));
+      reader.readAsDataURL(file);
+    });
   };
 
-  const handleImageChange = (index, value) => {
-    setFormData((prev) => {
-      const next = [...prev.images];
-      next[index] = value;
-      return { ...prev, images: next };
-    });
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const maxImages = 5;
+    const slotsLeft = maxImages - formData.images.filter((img) => img && img.trim()).length;
+    if (slotsLeft <= 0) {
+      setFormError('Maximum 5 product images allowed.');
+      return;
+    }
+
+    const filesToUpload = files.slice(0, slotsLeft);
+
+    try {
+      setUploading(true);
+      setFormError('');
+
+      for (const file of filesToUpload) {
+        if (!file.type.startsWith('image/')) continue;
+        if (file.size > 10 * 1024 * 1024) {
+          setFormError('Image too large (max 10MB). Skipping.');
+          continue;
+        }
+
+        const base64 = await compressImageFile(file);
+        const cloudinaryUrl = await uploadImage(base64, 'gympilot/products');
+
+        setFormData((prev) => {
+          // Replace the first empty slot, or append
+          const newImages = [...prev.images];
+          const emptyIdx = newImages.findIndex((img) => !img || !img.trim());
+          if (emptyIdx >= 0) {
+            newImages[emptyIdx] = cloudinaryUrl;
+          } else {
+            newImages.push(cloudinaryUrl);
+          }
+          return { ...prev, images: newImages };
+        });
+      }
+    } catch (err) {
+      console.error('Image upload failed:', err);
+      setFormError(err.response?.data?.message || 'Image upload failed. Check your Cloudinary config.');
+    } finally {
+      setUploading(false);
+      if (imageInputRef.current) imageInputRef.current.value = '';
+    }
   };
 
   const handleRemoveImageRow = (index) => {
@@ -488,32 +563,93 @@ export default function SellerProducts() {
                   />
                 </Grid>
 
-                {/* Multi Image URLs */}
+                {/* Product Images — Upload to Cloudinary */}
                 <Grid item xs={12}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1 }}>
-                    Product Images (URLs)
+                    Product Images {uploading && <CircularProgress size={14} sx={{ ml: 1 }} />}
                   </Typography>
-                  <Stack spacing={1.5}>
-                    {formData.images.map((img, idx) => (
-                      <Stack key={idx} direction="row" spacing={1} alignItems="center">
-                        <TextField
-                          placeholder="https://images.unsplash.com/..."
-                          size="small"
-                          fullWidth
-                          value={img}
-                          onChange={(e) => handleImageChange(idx, e.target.value)}
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+                    Upload up to 5 product photos. Images are hosted on Cloudinary for fast delivery.
+                  </Typography>
+
+                  {/* Hidden file input */}
+                  <input
+                    type="file"
+                    ref={imageInputRef}
+                    accept="image/jpeg,image/png,image/webp"
+                    multiple
+                    style={{ display: 'none' }}
+                    onChange={handleImageUpload}
+                  />
+
+                  {/* Image Thumbnails Grid */}
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 1.5 }}>
+                    {formData.images.filter((img) => img && img.trim()).map((img, idx) => (
+                      <Box
+                        key={idx}
+                        sx={{
+                          position: 'relative',
+                          width: 90,
+                          height: 90,
+                          borderRadius: 2,
+                          overflow: 'hidden',
+                          border: '2px solid',
+                          borderColor: idx === 0 ? 'primary.main' : 'divider',
+                          bgcolor: '#111',
+                        }}
+                      >
+                        <Box
+                          component="img"
+                          src={img}
+                          alt={`Product ${idx + 1}`}
+                          sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
-                        {formData.images.length > 1 && (
-                          <IconButton size="small" color="error" onClick={() => handleRemoveImageRow(idx)}>
-                            <RemoveCircleOutlineRoundedIcon />
-                          </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleRemoveImageRow(idx)}
+                          sx={{
+                            position: 'absolute',
+                            top: 2,
+                            right: 2,
+                            width: 22,
+                            height: 22,
+                            bgcolor: 'rgba(0,0,0,0.7)',
+                            color: '#fff',
+                            '&:hover': { bgcolor: 'error.main' },
+                          }}
+                        >
+                          <CloseRoundedIcon sx={{ fontSize: 14 }} />
+                        </IconButton>
+                        {idx === 0 && (
+                          <Chip
+                            label="Main"
+                            size="small"
+                            sx={{
+                              position: 'absolute',
+                              bottom: 2,
+                              left: 2,
+                              height: 18,
+                              fontSize: '0.6rem',
+                              fontWeight: 800,
+                              bgcolor: 'primary.main',
+                              color: '#000',
+                            }}
+                          />
                         )}
-                      </Stack>
+                      </Box>
                     ))}
-                    <Button size="small" startIcon={<AddRoundedIcon />} onClick={handleAddImageRow} sx={{ alignSelf: 'flex-start' }}>
-                      Add Another Image
-                    </Button>
-                  </Stack>
+                  </Box>
+
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    disabled={uploading || formData.images.filter((img) => img && img.trim()).length >= 5}
+                    startIcon={uploading ? <CircularProgress size={16} /> : <CloudUploadRoundedIcon />}
+                    onClick={() => imageInputRef.current?.click()}
+                    sx={{ borderRadius: 2, fontWeight: 700 }}
+                  >
+                    {uploading ? 'Uploading...' : 'Upload Product Images'}
+                  </Button>
                 </Grid>
 
                 {/* Dynamic Nutrition Facts / Specifications Builder */}

@@ -10,13 +10,15 @@ import jakarta.validation.constraints.Size;
 public class PhotoAnalysisDtos {
 
     public record PhotoAnalysisRequest(
-            @NotBlank(message = "Image is required for analysis")
             String imageBase64,
+
+            List<String> imagesBase64,
 
             @NotBlank(message = "Please describe your goal")
             @Size(max = 200, message = "Goal description must be at most 200 characters")
             String goal
     ) {}
+
 
     public record RecommendedProductDto(
             String id,

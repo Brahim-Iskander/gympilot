@@ -66,8 +66,22 @@ public class GoalPhotoAnalysisService {
         if (request == null || request.goal() == null || request.goal().isBlank()) {
             throw new IllegalArgumentException("Goal description is required.");
         }
-        if (request.imageBase64() == null || request.imageBase64().isBlank()) {
-            throw new IllegalArgumentException("Image data is required.");
+
+        // Build consolidated image list from both legacy single field and new multi field
+        List<String> allImages = new ArrayList<>();
+        if (request.imagesBase64() != null && !request.imagesBase64().isEmpty()) {
+            allImages.addAll(request.imagesBase64());
+        } else if (request.imageBase64() != null && !request.imageBase64().isBlank()) {
+            allImages.add(request.imageBase64());
+        }
+
+        if (allImages.isEmpty()) {
+            throw new IllegalArgumentException("At least one image is required for analysis.");
+        }
+
+        // Cap at 5 images max
+        if (allImages.size() > 5) {
+            allImages = allImages.subList(0, 5);
         }
 
         String goal = request.goal().trim();
@@ -75,14 +89,15 @@ public class GoalPhotoAnalysisService {
             goal = goal.substring(0, 200);
         }
 
-        String imageBase64 = request.imageBase64().trim();
-        // Basic size guardrail: max 12 MB base64 characters
-        if (imageBase64.length() > 12 * 1024 * 1024) {
-            throw new IllegalArgumentException("Image size exceeds the maximum limit (approx 8MB). Please upload a smaller image.");
+        // Validate each image size
+        for (String img : allImages) {
+            if (img != null && img.trim().length() > 12 * 1024 * 1024) {
+                throw new IllegalArgumentException("One of the images exceeds the maximum limit (approx 8MB). Please upload smaller images.");
+            }
         }
 
         // Extract structured insight from vision AI or fallback
-        VisionAnalysisResult visionResult = performVisionAnalysis(imageBase64, goal);
+        VisionAnalysisResult visionResult = performVisionAnalysis(allImages, goal);
 
         // Fetch matching in-stock products from real store catalog
         List<RecommendedProductDto> matchedProducts = fetchStoreRecommendations(visionResult.recommendedCategories(), goal);
@@ -96,26 +111,38 @@ public class GoalPhotoAnalysisService {
         );
     }
 
-    private VisionAnalysisResult performVisionAnalysis(String imageBase64, String goal) {
+
+    private VisionAnalysisResult performVisionAnalysis(List<String> images, String goal) {
         if (apiKey == null || apiKey.isBlank() || apiKey.contains("placeholder")) {
             log.info("AI API key not set; using smart domain fallback for goal '{}'", goal);
             return generateFallbackAnalysis(goal);
         }
 
         try {
-            String imageUrl = imageBase64;
-            if (!imageUrl.startsWith("data:") && !imageUrl.startsWith("http://") && !imageUrl.startsWith("https://")) {
-                imageUrl = "data:image/jpeg;base64," + imageBase64;
+            // Build content parts: text + all images
+            List<Map<String, Object>> contentParts = new ArrayList<>();
+            contentParts.add(Map.of("type", "text", "text",
+                    "User's goal: " + goal + "\nPlease analyze " +
+                    (images.size() > 1 ? "these " + images.size() + " photos" : "this photo") +
+                    " according to the guidelines."));
+
+            for (String imageBase64 : images) {
+                String imageUrl = imageBase64.trim();
+                if (!imageUrl.startsWith("data:") && !imageUrl.startsWith("http://") && !imageUrl.startsWith("https://")) {
+                    imageUrl = "data:image/jpeg;base64," + imageUrl;
+                }
+                contentParts.add(Map.of("type", "image_url", "image_url", Map.of("url", imageUrl)));
             }
 
             String systemPrompt =
                     "You are a supportive, certified fitness, physique, and wellness coach. " +
-                    "Analyze the user's uploaded photo in the context of their stated goal.\n\n" +
+                    "Analyze the user's uploaded photo(s) in the context of their stated goal.\n\n" +
                     "CRITICAL SAFETY & COMPLIANCE RULES:\n" +
                     "1. Strictly NO medical diagnosis, disease names, or clinical terms.\n" +
                     "2. Do NOT claim any supplement cures, treats, or guarantees results. Use phrases like 'may support', 'can assist with', 'helps maintain'.\n" +
                     "3. If the image is not a human photo (e.g. an object, landscape, or inappropriate content), politely note that in the summary and still provide positive goal guidance.\n" +
-                    "4. For recommended_categories: Return generic supplement category keywords ONLY (e.g. 'whey protein', 'creatine', 'omega-3', 'multivitamin', 'collagen', 'pre-workout', 'bcaa'). Do NOT invent brand names or prices.\n\n" +
+                    "4. For recommended_categories: Return generic supplement category keywords ONLY (e.g. 'whey protein', 'creatine', 'omega-3', 'multivitamin', 'collagen', 'pre-workout', 'bcaa'). Do NOT invent brand names or prices.\n" +
+                    "5. If multiple photos are provided, analyze all of them together for a comprehensive holistic assessment.\n\n" +
                     "Return ONLY valid JSON matching this exact schema:\n" +
                     "{\n" +
                     "  \"summary\": \"Encouraging 2-3 sentence assessment tying photo cues to their goal\",\n" +
@@ -130,10 +157,7 @@ public class GoalPhotoAnalysisService {
                     "max_tokens", 800,
                     "messages", List.of(
                             Map.of("role", "system", "content", systemPrompt),
-                            Map.of("role", "user", "content", List.of(
-                                    Map.of("type", "text", "text", "User's goal: " + goal + "\nPlease analyze this photo according to the guidelines."),
-                                    Map.of("type", "image_url", "image_url", Map.of("url", imageUrl))
-                            ))
+                            Map.of("role", "user", "content", contentParts)
                     )
             );
 
@@ -183,6 +207,7 @@ public class GoalPhotoAnalysisService {
             return generateFallbackAnalysis(goal);
         }
     }
+
 
     private VisionAnalysisResult generateFallbackAnalysis(String goal) {
         String lower = goal.toLowerCase();

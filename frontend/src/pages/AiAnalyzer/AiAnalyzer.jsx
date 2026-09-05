@@ -52,9 +52,8 @@ export default function AiAnalyzer() {
   const { addItem, openCartDrawer } = useCart();
   const fileInputRef = useRef(null);
 
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
-  const [imageBase64, setImageBase64] = useState(null);
+  const MAX_PHOTOS = 5;
+  const [images, setImages] = useState([]); // [{file, preview, base64}]
   const [goal, setGoal] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -98,38 +97,53 @@ export default function AiAnalyzer() {
     });
   };
 
-  const handleFileSelect = async (file) => {
-    if (!file) return;
+  const handleFileSelect = async (files) => {
+    if (!files || files.length === 0) return;
+    const fileArray = Array.from(files);
 
-    // Validate type
-    if (!file.type.startsWith('image/')) {
-      setError('Please upload a valid image file (JPG, PNG, WEBP).');
+    // Check how many more we can add
+    const slotsLeft = MAX_PHOTOS - images.length;
+    if (slotsLeft <= 0) {
+      setError(`You can upload a maximum of ${MAX_PHOTOS} photos.`);
       return;
     }
 
-    // Validate size (< 15MB)
-    if (file.size > 15 * 1024 * 1024) {
-      setError('File size is too large (max 15MB).');
-      return;
+    const filesToProcess = fileArray.slice(0, slotsLeft);
+    const newImages = [];
+
+    for (const file of filesToProcess) {
+      if (!file.type.startsWith('image/')) {
+        setError('Please upload valid image files (JPG, PNG, WEBP).');
+        continue;
+      }
+      if (file.size > 15 * 1024 * 1024) {
+        setError('One or more files are too large (max 15MB each).');
+        continue;
+      }
+
+      try {
+        setError('');
+        const compressedBase64 = await compressImage(file);
+        newImages.push({ file, preview: compressedBase64, base64: compressedBase64 });
+      } catch (err) {
+        console.error('Image processing error:', err);
+        setError('Failed to process one of the images. Please try another photo.');
+      }
     }
 
-    try {
-      setError('');
-      setImageFile(file);
-      const compressedBase64 = await compressImage(file);
-      setImagePreview(compressedBase64);
-      setImageBase64(compressedBase64);
-    } catch (err) {
-      console.error('Image processing error:', err);
-      setError('Failed to process image. Please try another photo.');
+    if (newImages.length > 0) {
+      setImages((prev) => [...prev, ...newImages]);
     }
+
+    // Reset file input so the same file can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileSelect(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFileSelect(e.dataTransfer.files);
     }
   };
 
@@ -138,19 +152,19 @@ export default function AiAnalyzer() {
     e.stopPropagation();
   };
 
-  const handleRemovePhoto = () => {
-    setImageFile(null);
-    setImagePreview(null);
-    setImageBase64(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+  const handleRemovePhoto = (index) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleRemoveAllPhotos = () => {
+    setImages([]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleAnalyze = async (e) => {
     e.preventDefault();
-    if (!imageBase64) {
-      setError('Please upload or take a photo to analyze.');
+    if (images.length === 0) {
+      setError('Please upload at least one photo to analyze.');
       return;
     }
     if (!goal.trim()) {
@@ -162,7 +176,7 @@ export default function AiAnalyzer() {
       setLoading(true);
       setError('');
       const data = await aiPhotoAnalysisService.analyzeGoalPhoto({
-        imageBase64,
+        imagesBase64: images.map((img) => img.base64),
         goal: goal.trim(),
       });
       setResult(data);
@@ -171,7 +185,7 @@ export default function AiAnalyzer() {
       setError(
         err.response?.data?.message ||
         err.message ||
-        'Analysis failed. Please try again with a clearer photo or shorter goal.'
+        'Analysis failed. Please try again with clearer photos or a shorter goal.'
       );
     } finally {
       setLoading(false);
@@ -180,7 +194,7 @@ export default function AiAnalyzer() {
 
   const handleResetAll = () => {
     setResult(null);
-    handleRemovePhoto();
+    handleRemoveAllPhotos();
     setGoal('');
     setError('');
   };
@@ -314,21 +328,26 @@ export default function AiAnalyzer() {
                 }}
               >
                 <Stack direction={{ xs: 'column', md: 'row' }} spacing={3.5} alignItems={{ md: 'center' }}>
-                  {imagePreview && (
-                    <Box
-                      component="img"
-                      src={imagePreview}
-                      alt="Analyzed target"
-                      sx={{
-                        width: { xs: '100%', md: 160 },
-                        height: { xs: 200, md: 160 },
-                        objectFit: 'cover',
-                        borderRadius: 3,
-                        border: '2px solid',
-                        borderColor: 'divider',
-                        flexShrink: 0,
-                      }}
-                    />
+                  {images.length > 0 && (
+                    <Stack direction="row" spacing={1.5} sx={{ flexShrink: 0, overflowX: 'auto', pb: 1 }}>
+                      {images.map((img, idx) => (
+                        <Box
+                          key={idx}
+                          component="img"
+                          src={img.preview}
+                          alt={`Analyzed photo ${idx + 1}`}
+                          sx={{
+                            width: { xs: 100, md: 120 },
+                            height: { xs: 100, md: 120 },
+                            objectFit: 'cover',
+                            borderRadius: 2.5,
+                            border: '2px solid',
+                            borderColor: 'divider',
+                            flexShrink: 0,
+                          }}
+                        />
+                      ))}
+                    </Stack>
                   )}
                   <Box sx={{ flex: 1 }}>
                     <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
@@ -608,78 +627,134 @@ export default function AiAnalyzer() {
                   {/* Left: Photo Upload */}
                   <Grid item xs={12} md={6}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 1, fontFamily: "'Sora', sans-serif" }}>
-                      1. Upload Photo
+                      1. Upload Photos <Chip label={`${images.length}/${MAX_PHOTOS}`} size="small" sx={{ ml: 1, fontWeight: 800, fontSize: '0.72rem', bgcolor: images.length > 0 ? 'rgba(198,255,62,0.15)' : 'rgba(255,255,255,0.04)', color: images.length > 0 ? 'primary.main' : 'text.secondary' }} />
                     </Typography>
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-                      Upload a physique or portrait photo. Camera snapshots are fully supported.
+                      Upload up to {MAX_PHOTOS} physique or portrait photos for a more comprehensive analysis.
                     </Typography>
 
                     <input
                       type="file"
                       ref={fileInputRef}
                       accept="image/*"
+                      multiple
                       style={{ display: 'none' }}
                       onChange={(e) => {
-                        if (e.target.files?.[0]) {
-                          handleFileSelect(e.target.files[0]);
+                        if (e.target.files && e.target.files.length > 0) {
+                          handleFileSelect(e.target.files);
                         }
                       }}
                     />
 
-                    {imagePreview ? (
-                      <Box
-                        sx={{
-                          position: 'relative',
-                          borderRadius: 3,
-                          overflow: 'hidden',
-                          border: '2px solid',
-                          borderColor: 'primary.main',
-                          height: 320,
-                          bgcolor: '#000',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
+                    {images.length > 0 ? (
+                      <Stack spacing={2}>
+                        {/* Photo Grid */}
                         <Box
-                          component="img"
-                          src={imagePreview}
-                          alt="Preview"
                           sx={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'contain',
-                          }}
-                        />
-                        <IconButton
-                          onClick={handleRemovePhoto}
-                          size="small"
-                          sx={{
-                            position: 'absolute',
-                            top: 10,
-                            right: 10,
-                            bgcolor: 'rgba(0,0,0,0.7)',
-                            color: '#fff',
-                            '&:hover': { bgcolor: 'error.main' },
+                            display: 'grid',
+                            gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)' },
+                            gap: 1.5,
                           }}
                         >
-                          <CloseRounded fontSize="small" />
-                        </IconButton>
+                          {images.map((img, idx) => (
+                            <Box
+                              key={idx}
+                              sx={{
+                                position: 'relative',
+                                borderRadius: 2.5,
+                                overflow: 'hidden',
+                                border: '2px solid',
+                                borderColor: 'primary.main',
+                                aspectRatio: '1',
+                                bgcolor: '#000',
+                              }}
+                            >
+                              <Box
+                                component="img"
+                                src={img.preview}
+                                alt={`Photo ${idx + 1}`}
+                                sx={{
+                                  width: '100%',
+                                  height: '100%',
+                                  objectFit: 'cover',
+                                }}
+                              />
+                              <IconButton
+                                onClick={() => handleRemovePhoto(idx)}
+                                size="small"
+                                sx={{
+                                  position: 'absolute',
+                                  top: 6,
+                                  right: 6,
+                                  bgcolor: 'rgba(0,0,0,0.7)',
+                                  color: '#fff',
+                                  width: 26,
+                                  height: 26,
+                                  '&:hover': { bgcolor: 'error.main' },
+                                }}
+                              >
+                                <CloseRounded sx={{ fontSize: 16 }} />
+                              </IconButton>
+                              <Chip
+                                label={idx + 1}
+                                size="small"
+                                sx={{
+                                  position: 'absolute',
+                                  bottom: 6,
+                                  left: 6,
+                                  minWidth: 24,
+                                  height: 22,
+                                  bgcolor: 'rgba(0,0,0,0.7)',
+                                  color: 'primary.main',
+                                  fontWeight: 900,
+                                  fontSize: '0.7rem',
+                                }}
+                              />
+                            </Box>
+                          ))}
+
+                          {/* Add More Card */}
+                          {images.length < MAX_PHOTOS && (
+                            <Box
+                              onClick={() => fileInputRef.current?.click()}
+                              sx={{
+                                borderRadius: 2.5,
+                                border: '2px dashed',
+                                borderColor: 'divider',
+                                aspectRatio: '1',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                bgcolor: 'rgba(255,255,255,0.02)',
+                                '&:hover': {
+                                  borderColor: 'primary.main',
+                                  bgcolor: 'rgba(198, 255, 62, 0.04)',
+                                },
+                              }}
+                            >
+                              <CloudUploadRounded sx={{ color: 'text.secondary', fontSize: 28, mb: 0.5 }} />
+                              <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                                Add More
+                              </Typography>
+                            </Box>
+                          )}
+                        </Box>
+
+                        {/* Clear All Button */}
                         <Button
-                          variant="contained"
+                          variant="outlined"
+                          color="error"
                           size="small"
-                          onClick={() => fileInputRef.current?.click()}
-                          sx={{
-                            position: 'absolute',
-                            bottom: 12,
-                            fontWeight: 700,
-                            borderRadius: 2,
-                            fontSize: '0.75rem',
-                          }}
+                          startIcon={<CloseRounded />}
+                          onClick={handleRemoveAllPhotos}
+                          sx={{ borderRadius: 2, fontWeight: 700, alignSelf: 'flex-start' }}
                         >
-                          Change Photo
+                          Remove All Photos
                         </Button>
-                      </Box>
+                      </Stack>
                     ) : (
                       <Box
                         onDrop={handleDrop}
@@ -721,10 +796,10 @@ export default function AiAnalyzer() {
                           <CloudUploadRounded sx={{ fontSize: 32 }} />
                         </Box>
                         <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
-                          Click or drag photo here
+                          Click or drag photos here
                         </Typography>
                         <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
-                          Supports JPG, PNG, WEBP (Max 15MB)
+                          Supports JPG, PNG, WEBP (Max 15MB each · Up to {MAX_PHOTOS} photos)
                         </Typography>
                         <Button
                           variant="outlined"
@@ -795,7 +870,7 @@ export default function AiAnalyzer() {
                       variant="contained"
                       fullWidth
                       size="large"
-                      disabled={loading || !imageBase64 || !goal.trim()}
+                      disabled={loading || images.length === 0 || !goal.trim()}
                       startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <AutoAwesomeRounded />}
                       sx={{
                         py: 1.5,
@@ -805,7 +880,7 @@ export default function AiAnalyzer() {
                         boxShadow: '0 4px 20px rgba(198, 255, 62, 0.25)',
                       }}
                     >
-                      {loading ? 'Analyzing Photo & Tailoring Guidance...' : 'Analyze Photo & Get Recommendations'}
+                      {loading ? 'Analyzing Photos & Tailoring Guidance...' : 'Analyze Photos & Get Recommendations'}
                     </Button>
 
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center', mt: 2 }}>
