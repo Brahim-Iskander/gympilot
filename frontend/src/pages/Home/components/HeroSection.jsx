@@ -224,7 +224,7 @@ export default function HeroSection() {
   const { t } = useLanguage();
 
   return (
-    <Box sx={{ position: 'relative', overflow: 'hidden', pt: { xs: 6, md: 9 }, pb: { xs: 8, md: 12 } }}>
+    <Box sx={{ position: 'relative', overflow: 'hidden', pt: { xs: 10, md: 9 }, pb: { xs: 8, md: 12 } }}>
       {/* Ambient background glows */}
       <Box
         aria-hidden
