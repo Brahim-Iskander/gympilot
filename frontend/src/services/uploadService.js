@@ -7,7 +7,7 @@ import { api } from './api';
  * @returns {Promise<string>} The Cloudinary secure URL
  */
 export const uploadImage = async (imageBase64, folder = 'gympilot/products') => {
-  const response = await api.post('/api/upload/image', { imageBase64, folder });
+  const response = await api.post('/upload/image', { imageBase64, folder });
   return response.data.url;
 };
 
@@ -18,6 +18,6 @@ export const uploadImage = async (imageBase64, folder = 'gympilot/products') => 
  * @returns {Promise<string[]>} Array of Cloudinary secure URLs
  */
 export const uploadImages = async (images, folder = 'gympilot/products') => {
-  const response = await api.post('/api/upload/images', { images, folder });
+  const response = await api.post('/upload/images', { images, folder });
   return response.data.urls;
 };

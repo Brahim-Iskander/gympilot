@@ -9,8 +9,11 @@ export const api = axios.create({
   timeout: 15000,
 });
 
-// Attach the JWT to every request when a session exists.
+// Attach the JWT to every request when a session exists and normalize URL
 api.interceptors.request.use((config) => {
+  if (config.url && config.url.startsWith('/api/') && baseURL.endsWith('/api')) {
+    config.url = config.url.substring(4);
+  }
   const token = localStorage.getItem(TOKEN_STORAGE_KEY);
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
