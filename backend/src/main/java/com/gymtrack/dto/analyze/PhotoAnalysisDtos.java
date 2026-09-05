@@ -17,7 +17,11 @@ public class PhotoAnalysisDtos {
             @NotBlank(message = "Please describe your goal")
             @Size(max = 200, message = "Goal description must be at most 200 characters")
             String goal
-    ) {}
+    ) {
+        public PhotoAnalysisRequest(String imageBase64, String goal) {
+            this(imageBase64, null, goal);
+        }
+    }
 
 
     public record RecommendedProductDto(
