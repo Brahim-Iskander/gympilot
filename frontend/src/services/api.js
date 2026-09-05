@@ -6,7 +6,7 @@ const baseURL = import.meta.env.VITE_API_URL ?? 'https://gympilot-iejq.onrender.
 
 export const api = axios.create({
   baseURL,
-  timeout: 15000,
+  timeout: 60000,
 });
 
 // Attach the JWT to every request when a session exists and normalize URL
