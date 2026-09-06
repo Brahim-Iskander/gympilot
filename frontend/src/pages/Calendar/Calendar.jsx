@@ -269,22 +269,49 @@ export default function Calendar() {
                   >
                     {day}
                   </Typography>
-                  <Stack spacing={0.3}>
+                  <Stack spacing={0.5} sx={{ width: '100%', minWidth: 0 }}>
                     {events.slice(0, 2).map((ev, i) => (
                       <Box
                         key={i}
                         sx={{
                           bgcolor: eventTypes[ev.type]?.bg || 'rgba(255,255,255,0.06)',
-                          borderRadius: 0.5,
-                          px: 0.5,
-                          py: 0.15,
+                          borderRadius: 1,
+                          px: 0.6,
+                          py: 0.3,
                           display: 'flex',
-                          alignItems: 'center',
-                          gap: 0.3,
+                          alignItems: 'flex-start',
+                          gap: 0.5,
+                          overflow: 'hidden',
+                          minWidth: 0,
+                          width: '100%',
                         }}
                       >
-                        <Box sx={{ width: 5, height: 5, borderRadius: '50%', bgcolor: eventTypes[ev.type]?.color || '#fff', flexShrink: 0 }} />
-                        <Typography variant="caption" sx={{ fontSize: '0.65rem', lineHeight: 1.2, color: 'text.primary', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <Box
+                          sx={{
+                            width: 5,
+                            height: 5,
+                            borderRadius: '50%',
+                            bgcolor: eventTypes[ev.type]?.color || '#fff',
+                            flexShrink: 0,
+                            mt: '4px',
+                          }}
+                        />
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            fontSize: '0.65rem',
+                            lineHeight: 1.25,
+                            color: 'text.primary',
+                            wordBreak: 'break-word',
+                            overflowWrap: 'break-word',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                            minWidth: 0,
+                            flex: 1,
+                          }}
+                        >
                           {ev.title}
                         </Typography>
                       </Box>

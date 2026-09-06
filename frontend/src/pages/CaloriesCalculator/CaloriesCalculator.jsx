@@ -633,12 +633,12 @@ export default function CaloriesCalculator() {
                     {result.ingredients.map((ing, i) => (
                       <Grid item xs={12} sm={6} key={i}>
                         <Paper sx={{ p: 1.5, borderRadius: 2.5, bgcolor: 'rgba(255,255,255,0.02)', border: '1px solid', borderColor: 'divider' }}>
-                          <Stack direction="row" justifyContent="space-between" alignItems="center">
-                            <Box>
-                              <Typography variant="body2" fontWeight={700}>
+                          <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
+                            <Box sx={{ flex: 1, minWidth: 0, pr: 1 }}>
+                              <Typography variant="body2" fontWeight={700} sx={{ wordBreak: 'break-word' }}>
                                 {ing.name}
                               </Typography>
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', wordBreak: 'break-word' }}>
                                 {ing.amount}
                               </Typography>
                             </Box>
