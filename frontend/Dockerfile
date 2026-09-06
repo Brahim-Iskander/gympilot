@@ -16,6 +16,9 @@ COPY . .
 ARG VITE_API_URL=/api
 ENV VITE_API_URL=${VITE_API_URL}
 
+# Limit Node.js memory for low-RAM VPS builds
+ENV NODE_OPTIONS=--max-old-space-size=384
+
 # Build production bundle into /app/dist
 RUN npm run build
 
