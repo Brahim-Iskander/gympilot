@@ -174,7 +174,7 @@ export default function CaloriesCalculator() {
   };
 
   const handleAnalyze = async (queryText = promptText, imgData = imageBase64) => {
-    const textToSend = queryText || 'Fitness meal with balanced protein and carbs';
+    const textToSend = queryText.trim() || (imgData ? 'Identify and analyze the food items in this meal image' : 'Healthy balanced fitness meal');
     setAnalyzing(true);
     setError('');
     setResult(null);

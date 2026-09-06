@@ -1514,8 +1514,8 @@ public class AiService {
 
                 Map<String, Object> requestBody = new HashMap<>();
                 requestBody.put("model", selectedModel);
-                requestBody.put("temperature", 0.3);
-                requestBody.put("max_tokens", 1024);
+                requestBody.put("temperature", 0.2);
+                requestBody.put("max_tokens", 1500);
                 requestBody.put("messages", List.of(
                         Map.of("role", "system", "content", systemPrompt),
                         Map.of("role", "user", "content", userContent)
@@ -1538,8 +1538,9 @@ public class AiService {
                     JsonNode choice = response.get("choices").get(0);
                     if (choice.has("message") && choice.get("message").has("content")) {
                         String generatedText = choice.get("message").get("content").asText().trim();
-                        // Strip markdown code fences if present
-                        generatedText = generatedText.replaceAll("(?s)^```json\s*", "").replaceAll("(?s)^```\s*", "").replaceAll("(?s)```\s*$", "").trim();
+                        if (generatedText.contains("{") && generatedText.contains("}")) {
+                            generatedText = generatedText.substring(generatedText.indexOf("{"), generatedText.lastIndexOf("}") + 1);
+                        }
                         log.info("Food AI response received ({} chars)", generatedText.length());
                         return objectMapper.readValue(generatedText, Map.class);
                     }
@@ -1661,7 +1662,60 @@ public class AiService {
             );
         }
 
-        if (q.contains("shake") || q.contains("smoothie") || q.contains("whey") || q.contains("protein")) {
+        // Unhealthy Sweet Spread / Nutella
+        if (q.contains("nutella") || q.contains("chocolate") || q.contains("chocolat") || q.contains("spread") || q.contains("pâte à tartiner")) {
+            return Map.ofEntries(
+                    Map.entry("foodName", "Nutella Hazelnut Cocoa Spread"),
+                    Map.entry("servingSize", "2 Tablespoons (37g)"),
+                    Map.entry("calories", 200),
+                    Map.entry("protein", 2),
+                    Map.entry("carbs", 22),
+                    Map.entry("fat", 12),
+                    Map.entry("fiber", 1),
+                    Map.entry("healthScore", 32),
+                    Map.entry("category", "Sweets & High Sugar Spread"),
+                    Map.entry("coachTips", "High in refined sugar and palm oil. Provides fast-digesting simple carbs but minimal protein or micronutrients. Consume in strict moderation."),
+                    Map.entry("ingredients", List.of(
+                            Map.of("name", "Sugar", "amount", "21g", "calories", 84, "protein", 0, "carbs", 21, "fat", 0),
+                            Map.of("name", "Palm Oil", "amount", "7g", "calories", 62, "protein", 0, "carbs", 0, "fat", 7),
+                            Map.of("name", "Hazelnuts", "amount", "5g", "calories", 32, "protein", 1, "carbs", 1, "fat", 3),
+                            Map.of("name", "Cocoa & Skimmed Milk", "amount", "4g", "calories", 22, "protein", 1, "carbs", 1, "fat", 1)
+                    )),
+                    Map.entry("micronutrients", List.of(
+                            Map.of("name", "Calcium", "value", "40mg", "percentage", 4),
+                            Map.of("name", "Iron", "value", "1.0mg", "percentage", 6),
+                            Map.of("name", "Potassium", "value", "140mg", "percentage", 3)
+                    ))
+            );
+        }
+
+        // Pizza / Fast Food
+        if (q.contains("pizza") || q.contains("burger") || q.contains("fries") || q.contains("frites")) {
+            return Map.ofEntries(
+                    Map.entry("foodName", "Artisan Pepperoni & Cheese Pizza"),
+                    Map.entry("servingSize", "2 Slices (~260g)"),
+                    Map.entry("calories", 580),
+                    Map.entry("protein", 24),
+                    Map.entry("carbs", 62),
+                    Map.entry("fat", 26),
+                    Map.entry("fiber", 3),
+                    Map.entry("healthScore", 48),
+                    Map.entry("category", "Cheat Meal / High Calorie"),
+                    Map.entry("coachTips", "High sodium and saturated fat content. If fitting into your macros, balance the remainder of your daily meals with lean protein and fibrous vegetables."),
+                    Map.entry("ingredients", List.of(
+                            Map.of("name", "Pizza Crust & Tomato Sauce", "amount", "160g", "calories", 320, "protein", 8, "carbs", 58, "fat", 4),
+                            Map.of("name", "Mozzarella Cheese", "amount", "60g", "calories", 180, "protein", 12, "carbs", 2, "fat", 14),
+                            Map.of("name", "Pepperoni Slices", "amount", "40g", "calories", 80, "protein", 4, "carbs", 2, "fat", 8)
+                    )),
+                    Map.entry("micronutrients", List.of(
+                            Map.of("name", "Sodium", "value", "1120mg", "percentage", 49),
+                            Map.of("name", "Calcium", "value", "280mg", "percentage", 28),
+                            Map.of("name", "Saturated Fat", "value", "11g", "percentage", 55)
+                    ))
+            );
+        }
+
+        if (q.contains("shake") || q.contains("smoothie") || q.contains("whey isolate") || q.contains("protein shake")) {
             return Map.ofEntries(
                     Map.entry("foodName", "Anabolic Whey Protein Smoothie with Banana & Peanut Butter"),
                     Map.entry("servingSize", "1 Shake (~450ml)"),
