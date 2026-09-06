@@ -60,6 +60,7 @@ public class AiService {
         try {
             Map<String, Object> requestBody = Map.of(
                     "model", model,
+                    "max_tokens", 3500,
                     "messages", List.of(
                             Map.of("role", "system", "content", "You are an expert fitness coach and nutritionist. Return ONLY valid JSON matching the requested structure."),
                             Map.of("role", "user", "content", prompt)
@@ -79,8 +80,10 @@ public class AiService {
             if (response != null && response.has("choices") && response.get("choices").isArray() && response.get("choices").size() > 0) {
                 JsonNode choice = response.get("choices").get(0);
                 if (choice.has("message") && choice.get("message").has("content")) {
-                    String generatedText = choice.get("message").get("content").asText();
-                    generatedText = generatedText.replaceAll("^```json\\\\s*", "").replaceAll("^```\\\\s*", "").replaceAll("```$", "").trim();
+                    String generatedText = choice.get("message").get("content").asText().trim();
+                    if (generatedText.contains("{") && generatedText.contains("}")) {
+                        generatedText = generatedText.substring(generatedText.indexOf("{"), generatedText.lastIndexOf("}") + 1);
+                    }
                     return generatedText;
                 }
             }
@@ -1152,6 +1155,7 @@ public class AiService {
 
             Map<String, Object> requestBody = Map.of(
                     "model", model,
+                    "max_tokens", 2000,
                     "messages", List.of(
                             Map.of("role", "system", "content", systemPrompt),
                             Map.of("role", "user", "content", userPrompt)
@@ -1172,7 +1176,9 @@ public class AiService {
                 JsonNode choice = response.get("choices").get(0);
                 if (choice.has("message") && choice.get("message").has("content")) {
                     String text = choice.get("message").get("content").asText().trim();
-                    text = text.replaceAll("^```json\\s*", "").replaceAll("^```\\s*", "").replaceAll("```$", "").trim();
+                    if (text.contains("{") && text.contains("}")) {
+                        text = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
+                    }
 
                     try {
                         JsonNode parsed = objectMapper.readTree(text);

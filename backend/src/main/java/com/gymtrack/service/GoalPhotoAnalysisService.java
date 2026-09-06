@@ -41,10 +41,10 @@ public class GoalPhotoAnalysisService {
     private final WebClient.Builder webClientBuilder;
     private final ObjectMapper objectMapper;
 
-    @Value("${ai.base-url:https://api.groq.com/openai/v1}")
+    @Value("${ai.base-url:https://generativelanguage.googleapis.com/v1beta/openai}")
     private String baseUrl;
 
-    @Value("${ai.vision-model:llama-3.2-90b-vision-preview}")
+    @Value("${ai.vision-model:gemini-3.7-flash}")
     private String visionModel;
 
     @Value("${ai.api.key:}")
@@ -154,7 +154,7 @@ public class GoalPhotoAnalysisService {
             Map<String, Object> requestBody = Map.of(
                     "model", visionModel,
                     "temperature", 0.4,
-                    "max_tokens", 800,
+                    "max_tokens", 1500,
                     "messages", List.of(
                             Map.of("role", "system", "content", systemPrompt),
                             Map.of("role", "user", "content", contentParts)
@@ -178,7 +178,9 @@ public class GoalPhotoAnalysisService {
                 JsonNode choice = response.get("choices").get(0);
                 if (choice.has("message") && choice.get("message").has("content")) {
                     String content = choice.get("message").get("content").asText().trim();
-                    content = content.replaceAll("(?s)^```json\\s*", "").replaceAll("(?s)^```\\s*", "").replaceAll("(?s)```\\s*$", "").trim();
+                    if (content.contains("{") && content.contains("}")) {
+                        content = content.substring(content.indexOf("{"), content.lastIndexOf("}") + 1);
+                    }
                     JsonNode parsed = objectMapper.readTree(content);
 
                     String summary = parsed.path("summary").asText("Great baseline physique with huge potential to reach your target.");
