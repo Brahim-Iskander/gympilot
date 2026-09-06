@@ -31,6 +31,7 @@ import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import TuneRoundedIcon from '@mui/icons-material/TuneRounded';
 import ProgressBar from '../../../components/ui/ProgressBar';
 import RecommendedSupplements from '../../../components/RecommendedSupplements';
+import AiSuggestedMealsSection from './AiSuggestedMealsSection';
 
 const StyledCard = styled(Card)(() => ({
   borderRadius: 16,
@@ -96,6 +97,7 @@ export default function NutritionDashboard({
   customTargets,
   updateNutritionTargets,
   updateWater,
+  logMeal,
 }) {
   const navigate = useNavigate();
   const [openTargetsModal, setOpenTargetsModal] = useState(false);
@@ -207,6 +209,9 @@ export default function NutritionDashboard({
           </Grid>
         ))}
       </Grid>
+
+      {/* AI Suggested Daily Meals & Food Choices */}
+      <AiSuggestedMealsSection aiPlan={aiPlan} onLogMeal={logMeal} />
 
       {/* Customize Targets Dialog */}
       <Dialog

@@ -96,6 +96,7 @@ export default function Nutrition() {
           customTargets={customTargets}
           updateNutritionTargets={updateNutritionTargets}
           updateWater={updateWater}
+          logMeal={logMeal}
         />
       )}
       {activeTab === 'meals' && (

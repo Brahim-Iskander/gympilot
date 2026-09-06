@@ -110,6 +110,7 @@ public class AiService {
                 "- 6 days per week: 'Push / Pull / Legs (PPL)' split (Push A, Pull A, Legs A, Push B, Pull B, Legs B).\n" +
                 "- MANDATORY ARM TRAINING: Every push, upper, and full-body session MUST include dedicated TRICEPS exercises (e.g. Cable Rope Pushdowns, Skull Crushers, Overhead Tricep Extensions, or Dips) and BICEPS work. Do not omit triceps!\n" +
                 "- GOAL SPECIFIC ADAPTATION: Adapt rep ranges, volume, and exercise selection specifically for goal: %s (Hypertrophy: 8-12 reps with muscle pump focus; Strength: 4-6 reps with heavy tricep lockout; Fat Loss/Cut: 10-15 reps with metabolic density).\n" +
+                "- MANDATORY NUTRITION & FOOD CHOICES: You MUST provide at least 4 complete suggested meals (Breakfast, Lunch, Dinner, Snack) in the 'suggestedMeals' array. Each meal must specify real food ingredients with exact portions (e.g. '3 Whole Eggs, 80g Oats, 1 Banana', '180g Grilled Chicken, 150g Rice, Steamed Broccoli'), calories, protein, carbs, fat, and practical budgetSwaps.\n" +
                 "Return ONLY a valid JSON object (no markdown formatting, no comments) with this exact structure: " +
                 "{" +
                 "  \"workoutPlan\": [" +
@@ -120,7 +121,7 @@ public class AiService {
                 "    \"protein\": 150," +
                 "    \"carbs\": 250," +
                 "    \"fat\": 80," +
-                "    \"mealSuggestions\": [\"Breakfast: Oatmeal + Eggs\", \"Lunch: Chicken/Tuna Rice Bowl\"]," +
+                "    \"mealSuggestions\": [\"Breakfast: Oatmeal + 3 Eggs + Banana\", \"Lunch: Chicken Breast + Rice + Greens\", \"Snack: Greek Yogurt + Peanuts + Apple\", \"Dinner: Lean Beef / Fish + Sweet Potato\"]," +
                 "    \"suggestedMeals\": [" +
                 "      {" +
                 "        \"name\": \"High Protein Power Breakfast\"," +
@@ -131,6 +132,36 @@ public class AiService {
                 "        \"fat\": 15," +
                 "        \"ingredients\": \"Oatmeal (80g), 3 Whole Eggs, 1 Banana, 1 tbsp Peanut Butter\"," +
                 "        \"budgetSwaps\": \"Swap peanut butter with milk, or use whole wheat bread with boiled eggs\"" +
+                "      }," +
+                "      {" +
+                "        \"name\": \"Clean Fuel Chicken & Rice Bowl\"," +
+                "        \"type\": \"Lunch\"," +
+                "        \"calories\": 650," +
+                "        \"protein\": 48," +
+                "        \"carbs\": 75," +
+                "        \"fat\": 16," +
+                "        \"ingredients\": \"Grilled Chicken Breast (180g), Cooked Jasmine/Basmati Rice (200g), Steamed Broccoli & Zucchini (100g), Olive Oil (1 tbsp)\"," +
+                "        \"budgetSwaps\": \"Swap chicken breast with canned tuna or boiled lentils & eggs\"" +
+                "      }," +
+                "      {" +
+                "        \"name\": \"Pre/Post-Workout Power Snack\"," +
+                "        \"type\": \"Snack\"," +
+                "        \"calories\": 280," +
+                "        \"protein\": 18," +
+                "        \"carbs\": 35," +
+                "        \"fat\": 8," +
+                "        \"ingredients\": \"Greek Yogurt or Cottage Cheese (150g), Handful of Almonds or Peanuts (25g), 1 Apple\"," +
+                "        \"budgetSwaps\": \"2 Boiled eggs with a banana or roasted chickpeas\"" +
+                "      }," +
+                "      {" +
+                "        \"name\": \"Nutrient-Dense Recovery Dinner\"," +
+                "        \"type\": \"Dinner\"," +
+                "        \"calories\": 600," +
+                "        \"protein\": 42," +
+                "        \"carbs\": 60," +
+                "        \"fat\": 18," +
+                "        \"ingredients\": \"Lean Minced Beef or White Fish (160g), Baked Sweet Potato (200g), Mixed Salad Greens with Olive Oil\"," +
+                "        \"budgetSwaps\": \"Swap beef with 3-egg omelet with onions, tomatoes, and warm bread or rice\"" +
                 "      }" +
                 "    ]" +
                 "  }," +
