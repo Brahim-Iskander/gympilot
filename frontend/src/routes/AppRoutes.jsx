@@ -88,7 +88,14 @@ export default function AppRoutes() {
       />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
       <Route path="/onboarding" element={<OnboardingPage />} />
-      <Route path="/analyze" element={<AiAnalyzer />} />
+      <Route
+        path="/analyze"
+        element={
+          <ProtectedRoute>
+            <AiAnalyzer />
+          </ProtectedRoute>
+        }
+      />
 
       {/* ===================== SHOP ROUTES ===================== */}
       {/* Shop listing & product detail are public (no auth needed) */}
