@@ -3,16 +3,19 @@ import { Box, Typography, Stack } from '@mui/material';
 import RestaurantRoundedIcon from '@mui/icons-material/RestaurantRounded';
 import LocalDiningRoundedIcon from '@mui/icons-material/LocalDiningRounded';
 import PieChartRoundedIcon from '@mui/icons-material/PieChartRounded';
+import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded';
 
 import NutritionDashboard from './components/NutritionDashboard';
 import Meals from './components/Meals';
 import Macros from './components/Macros';
+import TunisianMealPlanner from './components/TunisianMealPlanner';
 import { TabNavigation } from '../../components/ui';
 import { useFitnessData } from '../../hooks/useFitnessData';
 import SEO from '../../components/SEO';
 
 const tabs = [
   { id: 'dashboard', label: 'Dashboard', icon: <RestaurantRoundedIcon /> },
+  { id: 'planner', label: 'Planificateur IA (TND)', icon: <AutoAwesomeRoundedIcon /> },
   { id: 'meals', label: 'Meals & Logs', icon: <LocalDiningRoundedIcon /> },
   { id: 'macros', label: 'Macros Breakdown', icon: <PieChartRoundedIcon /> },
 ];
@@ -78,6 +81,9 @@ export default function Nutrition() {
           logMeal={logMeal}
           onSwitchToMeals={() => setActiveTab('meals')}
         />
+      )}
+      {activeTab === 'planner' && (
+        <TunisianMealPlanner onLogMeal={logMeal} />
       )}
       {activeTab === 'meals' && (
         <Meals

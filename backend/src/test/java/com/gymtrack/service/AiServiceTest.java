@@ -1,6 +1,7 @@
 package com.gymtrack.service;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -138,5 +139,48 @@ class AiServiceTest {
         assertTrue(planB.contains("Tuesday"));
         assertTrue(planB.contains("Heavy") || planB.contains("Power"));
         assertTrue(planB.contains("Tricep") || planB.contains("Close-Grip") || planB.contains("Skull Crushers"));
+    }
+
+    @Test
+    void generateCustomMealPlan_producesAuthenticTunisianMealsAndBudget() {
+        UserOnboarding onboarding = new UserOnboarding("tunisian-lifter");
+        onboarding.setAge(23);
+        onboarding.setSex("male");
+        onboarding.setHeightCm(178.0);
+        onboarding.setWeightKg(74.0);
+        onboarding.setGoal("muscle_gain");
+        onboarding.setDaysPerWeek(4);
+
+        com.gymtrack.dto.nutrition.MealPlannerDtos.MealPlannerRequest request =
+                new com.gymtrack.dto.nutrition.MealPlannerDtos.MealPlannerRequest(
+                        18.0,
+                        "BALANCED",
+                        4,
+                        "escalope, thon, oeufs",
+                        "aucun"
+                );
+
+        com.gymtrack.dto.nutrition.MealPlannerDtos.MealPlannerResponse response =
+                aiService.generateCustomMealPlan(onboarding, request);
+
+        assertNotNull(response);
+        assertTrue(response.targetCalories() >= 2000);
+        assertTrue(response.targetProteinGrams() >= 130);
+        assertNotNull(response.meals());
+        assertTrue(response.meals().size() >= 4);
+
+        // Verify authentic Tunisian ingredients
+        boolean containsTunisianStaple = response.meals().stream()
+                .anyMatch(m -> m.ingredients().toLowerCase().contains("dinde") ||
+                               m.ingredients().toLowerCase().contains("thon") ||
+                               m.ingredients().toLowerCase().contains("dattes") ||
+                               m.ingredients().toLowerCase().contains("ricotta") ||
+                               m.ingredients().toLowerCase().contains("avoine"));
+        assertTrue(containsTunisianStaple, "Meals must contain authentic Tunisian market staples");
+
+        // Verify budget calculation in TND
+        assertTrue(response.totalDailyCostTnd() > 0 && response.totalDailyCostTnd() < 50);
+        assertNotNull(response.weeklyGroceryList());
+        assertFalse(response.weeklyGroceryList().isEmpty());
     }
 }

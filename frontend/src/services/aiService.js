@@ -40,5 +40,15 @@ export const aiService = {
       throw error;
     }
   },
+
+  async generateTunisianMealPlan(options = {}) {
+    try {
+      const response = await api.post('/ai/meal-planner/generate', options);
+      return response.data;
+    } catch (error) {
+      console.error('Error generating Tunisian meal plan:', error);
+      throw error;
+    }
+  },
 };
 

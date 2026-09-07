@@ -8,9 +8,12 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.gymtrack.dto.nutrition.MealPlannerDtos.MealPlannerRequest;
+import com.gymtrack.dto.nutrition.MealPlannerDtos.MealPlannerResponse;
 import com.gymtrack.dto.progress.ProgressAnalysisResponse;
 import com.gymtrack.model.ProgressEntry;
 import com.gymtrack.model.UserOnboarding;
+import com.gymtrack.nutrition.TunisianFoodCatalog;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -1802,5 +1805,20 @@ public class AiService {
                 ))
         );
     }
+
+    /**
+     * Generates a fully customized meal plan based on the user's onboarding profile
+     * (age, sex, height, weight, goal, training frequency) and their budget in TND (Tunisian Dinars),
+     * strictly using foods available in the Tunisian market.
+     */
+    public MealPlannerResponse generateCustomMealPlan(UserOnboarding onboarding, MealPlannerRequest request) {
+        Double budget = (request != null && request.customDailyBudgetTnd() != null) ? request.customDailyBudgetTnd() : null;
+        String tier = (request != null && request.budgetTier() != null) ? request.budgetTier() : "BALANCED";
+        Integer mealCount = (request != null && request.mealCount() != null) ? request.mealCount() : 4;
+
+        log.info("Generating customized Tunisian meal plan: budget={} TND, tier={}, mealCount={}", budget, tier, mealCount);
+        return TunisianFoodCatalog.generateTailoredPlan(onboarding, budget, tier, mealCount);
+    }
 }
+
 

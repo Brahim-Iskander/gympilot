@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.gymtrack.dto.AiAnalyticsResponse;
 import com.gymtrack.dto.ChatRequest;
 import com.gymtrack.dto.ChatResponse;
+import com.gymtrack.dto.nutrition.MealPlannerDtos.MealPlannerRequest;
+import com.gymtrack.dto.nutrition.MealPlannerDtos.MealPlannerResponse;
 import com.gymtrack.dto.onboarding.OnboardingResponse;
 import com.gymtrack.model.UserOnboarding;
 import com.gymtrack.repository.UserOnboardingRepository;
@@ -52,6 +54,21 @@ public class AiController {
         UserOnboarding onboarding = onboardingRepository.findByUserId(userId).orElse(null);
         AiAnalyticsResponse analytics = aiService.generateAnalytics(onboarding);
         return ResponseEntity.ok(analytics);
+    }
+
+    /** POST /api/ai/meal-planner/generate - Customized meal plan based on onboarding & budget in TND */
+    @PostMapping("/meal-planner/generate")
+    public ResponseEntity<MealPlannerResponse> generateMealPlan(
+            Authentication authentication,
+            @RequestBody(required = false) MealPlannerRequest request
+    ) {
+        String userId = (authentication != null) ? authentication.getName() : null;
+        UserOnboarding onboarding = (userId != null)
+                ? onboardingRepository.findByUserId(userId).orElse(null)
+                : null;
+
+        MealPlannerResponse response = aiService.generateCustomMealPlan(onboarding, request);
+        return ResponseEntity.ok(response);
     }
 }
 
