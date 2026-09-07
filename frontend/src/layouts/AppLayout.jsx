@@ -1241,6 +1241,9 @@ export default function AppLayout() {
           </Stack>
         </MenuItem>
       </Menu>
+
+      {/* GLOBAL CART DRAWER */}
+      <CartDrawer />
     </Box>
   );
 }

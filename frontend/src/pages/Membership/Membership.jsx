@@ -347,7 +347,7 @@ export default function MembershipPage() {
                     fontWeight={900}
                     sx={{ fontFamily: "'Sora', sans-serif", color: 'text.primary' }}
                   >
-                    $9.99
+                    49 TND
                   </Typography>
                   <Typography variant="subtitle1" color="text.secondary" fontWeight={600}>
                     / month
@@ -573,7 +573,7 @@ export default function MembershipPage() {
                     fontWeight={900}
                     sx={{ fontFamily: "'Sora', sans-serif", color: 'text.primary' }}
                   >
-                    $24.99
+                    99 TND
                   </Typography>
                   <Typography variant="subtitle1" color="text.secondary" fontWeight={600}>
                     / month
