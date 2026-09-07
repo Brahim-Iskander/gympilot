@@ -94,7 +94,7 @@ export default function ResetPassword() {
     setSubmitting(true);
     setSubmitError('');
     try {
-      await authService.resetPassword(token, newPassword);
+      await authService.resetPassword({ token, newPassword });
       setResetSuccess(true);
     } catch (err) {
       setSubmitError(getApiErrorMessage(err));

@@ -118,12 +118,6 @@ export default function AppLayout() {
       path: '/nutrition',
     },
     {
-      id: 'calories-calculator',
-      label: 'AI Food Vision',
-      icon: <AutoAwesomeRounded />,
-      path: '/calories-calculator',
-    },
-    {
       id: 'goals',
       label: t('nav.goals'),
       icon: <FlagRounded />,
@@ -199,11 +193,6 @@ export default function AppLayout() {
       label: `${t('nav.nutrition')}`,
       path: '/nutrition',
       icon: <RestaurantRounded />,
-    },
-    {
-      label: 'AI Calorie Calculator & Food Vision',
-      path: '/calories-calculator',
-      icon: <AutoAwesomeRounded />,
     },
     {
       label: `${t('nav.goals')}`,

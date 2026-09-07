@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, Navigate } from 'react-router-dom';
 
 import HomePage from '../pages/Home/Home';
 import LoginPage from '../pages/Login/Login';
@@ -10,7 +10,6 @@ import WorkoutsPage from '../pages/Workouts/Workouts';
 import ProgressPage from '../pages/Progress/Progress';
 import NutritionPage from '../pages/Nutrition/Nutrition';
 import GoalsPage from '../pages/Goals/Goals';
-import CaloriesCalculatorPage from '../pages/CaloriesCalculator/CaloriesCalculator';
 import CalendarPage from '../pages/Calendar/Calendar';
 import AnalyticsPage from '../pages/Analytics/Analytics';
 import SettingsPage from '../pages/Settings/Settings';
@@ -166,11 +165,7 @@ export default function AppRoutes() {
         />
         <Route
           path="/calories-calculator"
-          element={
-            <ProtectedRoute>
-              <CaloriesCalculatorPage />
-            </ProtectedRoute>
-          }
+          element={<Navigate to="/nutrition" replace />}
         />
         <Route
           path="/goals"

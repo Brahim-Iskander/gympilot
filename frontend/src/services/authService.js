@@ -35,8 +35,11 @@ export const authService = {
     return api.get('/auth/reset-password/validate', { params: { token } }).then((response) => response.data);
   },
 
-  resetPassword({ token, newPassword }) {
-    return api.post('/auth/reset-password', { token, newPassword }).then((response) => response.data);
+  resetPassword(tokenOrPayload, maybePassword) {
+    const payload = typeof tokenOrPayload === 'string'
+      ? { token: tokenOrPayload, newPassword: maybePassword }
+      : tokenOrPayload;
+    return api.post('/auth/reset-password', payload).then((response) => response.data);
   },
 
   verifyOtp({ code }) {

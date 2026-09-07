@@ -18,12 +18,10 @@ import {
   InputAdornment,
 } from '@mui/material';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import LocalFireDepartmentRoundedIcon from '@mui/icons-material/LocalFireDepartmentRounded';
 import FitnessCenterRoundedIcon from '@mui/icons-material/FitnessCenterRounded';
 import GrainRoundedIcon from '@mui/icons-material/GrainRounded';
 import FastfoodRoundedIcon from '@mui/icons-material/FastfoodRounded';
-import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import RemoveRoundedIcon from '@mui/icons-material/RemoveRounded';
 import WaterDropRoundedIcon from '@mui/icons-material/WaterDropRounded';
@@ -98,8 +96,8 @@ export default function NutritionDashboard({
   updateNutritionTargets,
   updateWater,
   logMeal,
+  onSwitchToMeals,
 }) {
-  const navigate = useNavigate();
   const [openTargetsModal, setOpenTargetsModal] = useState(false);
 
   const targetCalories = customTargets?.calories || aiPlan?.nutritionPlan?.dailyCalories || 2200;
@@ -286,18 +284,17 @@ export default function NutritionDashboard({
         </DialogActions>
       </Dialog>
 
-      {/* Water & Quick Scanner Row */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        {/* Hydration Widget */}
-        <Grid item xs={12} md={6}>
-          <StyledCard sx={{ p: 3, height: '100%' }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+      {/* Daily Hydration Tracking */}
+      <Box sx={{ mb: 4 }}>
+        <StyledCard sx={{ p: 3 }}>
+          <Grid container spacing={2} alignItems="center" justifyContent="space-between">
+            <Grid item xs={12} sm={6} md={5}>
               <Stack direction="row" spacing={1.5} alignItems="center">
                 <Box
                   sx={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 2,
+                    width: 44,
+                    height: 44,
+                    borderRadius: 2.5,
                     bgcolor: 'rgba(64,158,255,0.15)',
                     color: '#409EFF',
                     display: 'flex',
@@ -316,76 +313,43 @@ export default function NutritionDashboard({
                   </Typography>
                 </Box>
               </Stack>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={3} sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
               <Typography variant="h5" fontWeight={800} color="#409EFF">
                 {waterLiters} L
               </Typography>
-            </Stack>
+            </Grid>
 
-            <Box sx={{ mb: 2 }}>
-              <ProgressBar value={waterLiters} max={waterTarget} color="#409EFF" size="md" />
-            </Box>
-
-            <Stack direction="row" spacing={1} justifyContent="flex-end">
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<RemoveRoundedIcon />}
-                onClick={() => updateWater(Math.max(0, waterLiters - 0.25))}
-                sx={{ borderRadius: 2 }}
-              >
-                -250ml
-              </Button>
-              <Button
-                variant="contained"
-                size="small"
-                startIcon={<AddRoundedIcon />}
-                onClick={() => updateWater(waterLiters + 0.25)}
-                sx={{ borderRadius: 2, bgcolor: '#409EFF', '&:hover': { bgcolor: '#2b85e4' } }}
-              >
-                +250ml Glass
-              </Button>
-            </Stack>
-          </StyledCard>
-        </Grid>
-
-        {/* AI Food Scanner Promo */}
-        <Grid item xs={12} md={6}>
-          <Paper
-            sx={{
-              p: 3,
-              borderRadius: 4,
-              border: '1px solid',
-              borderColor: 'rgba(198,255,62,0.3)',
-              background: 'linear-gradient(135deg, rgba(198,255,62,0.08), rgba(255,255,255,0.02))',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              height: '100%',
-            }}
-          >
-            <Box sx={{ mb: 2 }}>
-              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-                <AutoAwesomeRoundedIcon sx={{ color: 'primary.main', fontSize: 20 }} />
-                <Typography variant="h6" fontWeight={800}>
-                  AI Calorie & Food Vision
-                </Typography>
+            <Grid item xs={12} md={4}>
+              <Stack direction="row" spacing={1} justifyContent={{ xs: 'flex-start', md: 'flex-end' }} alignItems="center">
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<RemoveRoundedIcon />}
+                  onClick={() => updateWater(Math.max(0, waterLiters - 0.25))}
+                  sx={{ borderRadius: 2 }}
+                >
+                  -250ml
+                </Button>
+                <Button
+                  variant="contained"
+                  size="small"
+                  startIcon={<AddRoundedIcon />}
+                  onClick={() => updateWater(waterLiters + 0.25)}
+                  sx={{ borderRadius: 2, bgcolor: '#409EFF', '&:hover': { bgcolor: '#2b85e4' } }}
+                >
+                  +250ml Glass
+                </Button>
               </Stack>
-              <Typography variant="body2" color="text.secondary">
-                Don't guess calories. Snap a photo of your plate and let AI calculate portion sizes, macros, and nutrients instantly.
-              </Typography>
-            </Box>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => navigate('/calories-calculator')}
-              startIcon={<AutoAwesomeRoundedIcon />}
-              sx={{ borderRadius: 2.5, fontWeight: 700, alignSelf: 'flex-start' }}
-            >
-              Scan Food Photo Now
-            </Button>
-          </Paper>
-        </Grid>
-      </Grid>
+            </Grid>
+
+            <Grid item xs={12} sx={{ mt: 1 }}>
+              <ProgressBar value={waterLiters} max={waterTarget} color="#409EFF" size="md" />
+            </Grid>
+          </Grid>
+        </StyledCard>
+      </Box>
 
       {/* Today's Logged Meals Summary */}
       <StyledCard sx={{ p: 3 }}>
@@ -398,21 +362,23 @@ export default function NutritionDashboard({
               Total Consumed: <strong>{currentCalories} kcal</strong> · {currentProtein}g Protein
             </Typography>
           </Box>
-          <Button
-            variant="outlined"
-            startIcon={<AddRoundedIcon />}
-            size="small"
-            onClick={() => navigate('/calories-calculator')}
-            sx={{ borderRadius: 2 }}
-          >
-            + AI Scan Meal
-          </Button>
+          {onSwitchToMeals && (
+            <Button
+              variant="outlined"
+              startIcon={<AddRoundedIcon />}
+              size="small"
+              onClick={onSwitchToMeals}
+              sx={{ borderRadius: 2 }}
+            >
+              + Add Meal
+            </Button>
+          )}
         </Stack>
 
         {loggedMeals.length === 0 ? (
           <Box sx={{ py: 4, textAlign: 'center' }}>
             <Typography variant="body2" color="text.secondary">
-              No meals logged today yet. Click "AI Food Scanner" to analyze and log your first meal!
+              No meals logged today yet. Log your meals to track calories and macros!
             </Typography>
           </Box>
         ) : (

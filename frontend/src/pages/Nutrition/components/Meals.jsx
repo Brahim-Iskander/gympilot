@@ -378,25 +378,15 @@ export default function Meals({ aiPlan, loading, dailyNutrition, nutritionTotals
           </Typography>
         </Box>
 
-        <Stack direction="row" spacing={1.5}>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<AutoAwesomeRoundedIcon />}
-            onClick={() => navigate('/calories-calculator')}
-            sx={{ borderRadius: 2.5, fontWeight: 700 }}
-          >
-            AI Photo Scan
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<AddRoundedIcon />}
-            onClick={handleOpenAdd}
-            sx={{ borderRadius: 2.5, fontWeight: 700 }}
-          >
-            + Custom Meal
-          </Button>
-        </Stack>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<AddRoundedIcon />}
+          onClick={handleOpenAdd}
+          sx={{ borderRadius: 2.5, fontWeight: 700 }}
+        >
+          + Add Meal
+        </Button>
       </Stack>
 
       <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mb: 3 }}>

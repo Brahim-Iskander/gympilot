@@ -1,11 +1,8 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Box, Button, Chip, Paper, Stack, Typography } from '@mui/material';
+import { Box, Typography, Stack } from '@mui/material';
 import RestaurantRoundedIcon from '@mui/icons-material/RestaurantRounded';
 import LocalDiningRoundedIcon from '@mui/icons-material/LocalDiningRounded';
 import PieChartRoundedIcon from '@mui/icons-material/PieChartRounded';
-import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded';
-import CameraAltRoundedIcon from '@mui/icons-material/CameraAltRounded';
 
 import NutritionDashboard from './components/NutritionDashboard';
 import Meals from './components/Meals';
@@ -21,7 +18,6 @@ const tabs = [
 ];
 
 export default function Nutrition() {
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
   const {
     aiPlan,
@@ -60,23 +56,6 @@ export default function Nutrition() {
             Real-time daily calorie and macro tracking synchronized with your fitness goals.
           </Typography>
         </Box>
-
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => navigate('/calories-calculator')}
-          startIcon={<AutoAwesomeRoundedIcon />}
-          sx={{
-            borderRadius: 3,
-            fontWeight: 800,
-            px: 2.5,
-            py: 1,
-            textTransform: 'none',
-            boxShadow: '0 4px 20px rgba(198,255,62,0.25)',
-          }}
-        >
-          AI Food Scanner
-        </Button>
       </Stack>
 
       <TabNavigation
@@ -97,6 +76,7 @@ export default function Nutrition() {
           updateNutritionTargets={updateNutritionTargets}
           updateWater={updateWater}
           logMeal={logMeal}
+          onSwitchToMeals={() => setActiveTab('meals')}
         />
       )}
       {activeTab === 'meals' && (
