@@ -124,6 +124,12 @@ export default function AppLayout() {
       path: '/goals',
     },
     {
+      id: 'analyze',
+      label: 'Body Scan IA',
+      icon: <AutoAwesomeRounded />,
+      path: '/analyze',
+    },
+    {
       id: 'calendar',
       label: t('nav.calendar'),
       icon: <CalendarMonthRounded />,
@@ -198,6 +204,11 @@ export default function AppLayout() {
       label: `${t('nav.goals')}`,
       path: '/goals',
       icon: <FlagRounded />,
+    },
+    {
+      label: 'Body Scan IA',
+      path: '/analyze',
+      icon: <AutoAwesomeRounded />,
     },
     {
       label: `${t('nav.calendar')}`,

@@ -35,8 +35,6 @@ import {
 } from '@mui/icons-material';
 
 import SEO from '../../components/SEO';
-import Navbar from '../../components/Navbar';
-import Footer from '../../components/Footer';
 import { aiPhotoAnalysisService } from '../../services/aiPhotoAnalysisService';
 import { useCart } from '../../context/CartContext';
 
@@ -216,20 +214,18 @@ export default function AiAnalyzer() {
   return (
     <>
       <SEO
-        title="Free AI Photo Goal Analysis & Recommendations — GymPilot"
-        description="Upload a photo and set your fitness goal. Our AI analyzes your physique, suggests targeted nutrition tips, actionable steps, and recommends in-stock supplements from our store catalog."
+        title="AI Body & Physique Scan — GymPilot"
+        description="Upload photos and set your fitness goal. Our Vision AI analyzes your physical composition, suggests targeted nutrition tips, actionable steps, and recommends supplements from our catalog."
         path="/analyze"
       />
 
-      <Navbar />
-
-      <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', pt: { xs: 12, md: 16 }, pb: 10 }}>
+      <Box sx={{ minHeight: '100%', py: { xs: 2, md: 4 } }}>
         <Container maxWidth="lg">
           {/* Header Banner */}
-          <Stack spacing={2} alignItems="center" textAlign="center" sx={{ mb: 6 }}>
+          <Stack spacing={2} alignItems="center" textAlign="center" sx={{ mb: 5 }}>
             <Chip
               icon={<AutoAwesomeRounded sx={{ fontSize: '1rem !important', color: 'primary.main' }} />}
-              label="100% Free · No Signup Required · Ephemeral Vision AI"
+              label="GymPilot Pro · Vision AI Body & Physique Scan"
               sx={{
                 fontWeight: 800,
                 fontSize: '0.8rem',
@@ -893,8 +889,6 @@ export default function AiAnalyzer() {
           )}
         </Container>
       </Box>
-
-      <Footer />
     </>
   );
 }

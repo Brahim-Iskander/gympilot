@@ -1,5 +1,6 @@
 package com.gymtrack.service;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -114,9 +115,11 @@ public class GoalPhotoAnalysisService {
 
     private VisionAnalysisResult performVisionAnalysis(List<String> images, String goal) {
         if (apiKey == null || apiKey.isBlank() || apiKey.contains("placeholder")) {
-            log.info("AI API key not set; using smart domain fallback for goal '{}'", goal);
+            log.info("AI API key not configured; using domain fallback for goal '{}'", goal);
             return generateFallbackAnalysis(goal);
         }
+
+        String effectiveKey = apiKey.trim();
 
         try {
             // Build content parts: text + all images
@@ -135,31 +138,40 @@ public class GoalPhotoAnalysisService {
             }
 
             String systemPrompt =
-                    "You are a supportive, certified fitness, physique, and wellness coach. " +
-                    "Analyze the user's uploaded photo(s) in the context of their stated goal.\n\n" +
-                    "CRITICAL SAFETY & COMPLIANCE RULES:\n" +
-                    "1. Strictly NO medical diagnosis, disease names, or clinical terms.\n" +
-                    "2. Do NOT claim any supplement cures, treats, or guarantees results. Use phrases like 'may support', 'can assist with', 'helps maintain'.\n" +
-                    "3. If the image is not a human photo (e.g. an object, landscape, or inappropriate content), politely note that in the summary and still provide positive goal guidance.\n" +
-                    "4. For recommended_categories: Return generic supplement category keywords ONLY (e.g. 'whey protein', 'creatine', 'omega-3', 'multivitamin', 'collagen', 'pre-workout', 'bcaa'). Do NOT invent brand names or prices.\n" +
-                    "5. If multiple photos are provided, analyze all of them together for a comprehensive holistic assessment.\n\n" +
+                    "You are a highly perceptive, professional sports science, physique assessment, and wellness vision AI. " +
+                    "Analyze the user's uploaded photo(s) in the context of their stated goal: \"" + goal + "\".\n\n" +
+                    "CRITICAL VISUAL REALISM & ACCURACY INSTRUCTIONS:\n" +
+                    "1. INSPECT THE ACTUAL VISUAL CONTENT FIRST:\n" +
+                    "   - Carefully examine what is physically present in the image(s).\n" +
+                    "   - If the photo is NOT a human body or physique (e.g. an object, food, room, animal, landscape, solid color, screenshot, cartoon, or meme):\n" +
+                    "     Explicitly state what you see in the photo in your summary (e.g., 'The uploaded image appears to show [describe object/scene], rather than a human physique.'). " +
+                    "     Then politely explain that for a personalized physical analysis, a clear physique or full-body photo is recommended, but provide actionable guidance tailored to their stated fitness goal.\n" +
+                    "   - If the photo IS a human physique:\n" +
+                    "     Provide genuine, realistic observations specific to THIS photo: visible posture, frame tendencies (ectomorph/mesomorph/endomorph cues), muscle definition or areas of opportunity, and alignment with their target goal. Avoid generic boilerplate praise. Be realistic, encouraging, and constructive.\n\n" +
+                    "2. CRITICAL SAFETY & REGULATORY COMPLIANCE:\n" +
+                    "   - Strictly NO medical diagnosis, disease names, or clinical pathology.\n" +
+                    "   - Do NOT claim any supplement cures, treats, or guarantees results. Use phrases like 'may support', 'can assist with', 'helps maintain'.\n" +
+                    "   - For recommended_categories: Return generic supplement category keywords ONLY (e.g. 'whey protein', 'creatine', 'omega-3', 'multivitamin', 'collagen', 'pre-workout', 'bcaa', 'protein bars'). Do NOT invent brand names or prices.\n" +
+                    "3. If multiple photos are provided, analyze all of them together for a comprehensive holistic assessment.\n\n" +
                     "Return ONLY valid JSON matching this exact schema:\n" +
                     "{\n" +
-                    "  \"summary\": \"Encouraging 2-3 sentence assessment tying photo cues to their goal\",\n" +
-                    "  \"nutrition_tips\": [\"Short actionable tip 1\", \"Short actionable tip 2\", \"Short actionable tip 3\"],\n" +
+                    "  \"summary\": \"Specific, realistic assessment tying actual photo observations to their goal\",\n" +
+                    "  \"nutrition_tips\": [\"Actionable tip 1 tailored to goal and visual profile\", \"Actionable tip 2\", \"Actionable tip 3\"],\n" +
                     "  \"advice_steps\": [\"Actionable step 1\", \"Actionable step 2\", \"Actionable step 3\"],\n" +
                     "  \"recommended_categories\": [\"category1\", \"category2\", \"category3\"]\n" +
                     "}";
 
             Map<String, Object> requestBody = Map.of(
                     "model", visionModel,
-                    "temperature", 0.4,
-                    "max_tokens", 1500,
+                    "temperature", 0.3,
+                    "max_tokens", 2000,
                     "messages", List.of(
                             Map.of("role", "system", "content", systemPrompt),
                             Map.of("role", "user", "content", contentParts)
                     )
             );
+
+            log.info("Dispatching vision analysis request for goal '{}' with {} photo(s) to model '{}'", goal, images.size(), visionModel);
 
             JsonNode response = createWebClient()
                     .mutate()
@@ -167,11 +179,12 @@ public class GoalPhotoAnalysisService {
                     .build()
                     .post()
                     .uri("/chat/completions")
-                    .header("Authorization", "Bearer " + apiKey)
+                    .header("Authorization", "Bearer " + effectiveKey)
                     .header("Content-Type", "application/json")
                     .bodyValue(requestBody)
                     .retrieve()
                     .bodyToMono(JsonNode.class)
+                    .timeout(Duration.ofSeconds(60))
                     .block();
 
             if (response != null && response.has("choices") && response.get("choices").isArray() && !response.get("choices").isEmpty()) {
@@ -183,7 +196,7 @@ public class GoalPhotoAnalysisService {
                     }
                     JsonNode parsed = objectMapper.readTree(content);
 
-                    String summary = parsed.path("summary").asText("Great baseline physique with huge potential to reach your target.");
+                    String summary = parsed.path("summary").asText("Great baseline physique with potential to reach your target.");
                     List<String> nutritionTips = new ArrayList<>();
                     if (parsed.has("nutrition_tips") && parsed.get("nutrition_tips").isArray()) {
                         parsed.get("nutrition_tips").forEach(tip -> nutritionTips.add(tip.asText()));
@@ -199,13 +212,15 @@ public class GoalPhotoAnalysisService {
                         parsed.get("recommended_categories").forEach(cat -> categories.add(cat.asText().toLowerCase()));
                     }
 
+                    log.info("Vision AI analysis successfully completed for goal '{}'", goal);
                     return new VisionAnalysisResult(summary, nutritionTips, adviceSteps, categories);
                 }
             }
 
+            log.warn("Vision AI response had no choices/content for goal '{}'. Falling back.", goal);
             return generateFallbackAnalysis(goal);
         } catch (Exception e) {
-            log.warn("Vision AI call failed or timed out: {}. Using fallback assessment.", e.getMessage());
+            log.warn("Vision AI call failed or timed out: {}. Using fallback assessment.", e.getMessage(), e);
             return generateFallbackAnalysis(goal);
         }
     }
