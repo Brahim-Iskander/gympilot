@@ -177,13 +177,13 @@ public class MailService {
 
         if (hasBrevoApi()) {
             boolean sent = sendViaBrevo(to, subject, htmlBody);
-            if (sent) return true;
+            if (sent) return;
             log.warn("Brevo API failed, checking next provider...");
         }
 
         if (hasResendApi()) {
             boolean sent = sendViaResend(to, subject, htmlBody);
-            if (sent) return true;
+            if (sent) return;
             log.warn("Resend API failed, falling back to SMTP...");
         }
 
@@ -198,11 +198,9 @@ public class MailService {
 
             mailSender.send(message);
             log.info("Password reset email sent successfully via SMTP to: {}", to);
-            return true;
         } catch (Exception ex) {
             log.error("Failed to send password reset email to: {}", to, ex);
             log.warn("=== [FALLBACK LOG] PASSWORD RESET LINK FOR [{}]: {} ===", to, resetLink);
-            return false;
         }
     }
 
