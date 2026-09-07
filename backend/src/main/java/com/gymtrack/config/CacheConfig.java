@@ -19,8 +19,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 @EnableCaching
 public class CacheConfig {
 
-    private static final Logger log = LoggerFactory.getLogger(CacheConfig.class);
-
     public static final String CACHE_USER_DETAILS = "userDetails";
     public static final String CACHE_CATEGORIES = "categories";
     public static final String CACHE_PARTNERS = "partners";
@@ -36,19 +34,5 @@ public class CacheConfig {
                 CACHE_ACTIVE_PACKS
         ));
         return cacheManager;
-    }
-
-    /**
-     * Periodically clear cached user details every 10 minutes to guarantee
-     * role changes or status updates are picked up promptly.
-     */
-    @Scheduled(fixedRate = 600000)
-    public void evictUserDetailsCache() {
-        CacheManager cm = cacheManager();
-        var cache = cm.getCache(CACHE_USER_DETAILS);
-        if (cache != null) {
-            cache.clear();
-            log.debug("Cleared userDetails cache.");
-        }
     }
 }
