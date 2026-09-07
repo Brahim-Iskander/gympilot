@@ -4,9 +4,12 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import com.gymtrack.config.CacheConfig;
 import com.gymtrack.dto.CreatePartnerRequest;
 import com.gymtrack.exception.InvalidCredentialsException;
 import com.gymtrack.model.Partner;
@@ -23,10 +26,12 @@ public class PartnerService {
         this.partnerRepository = partnerRepository;
     }
 
+    @Cacheable(value = CacheConfig.CACHE_PARTNERS)
     public List<Partner> getAllPartners() {
         return partnerRepository.findAllBy(Sort.by(Sort.Direction.DESC, "createdAt"));
     }
 
+    @CacheEvict(value = CacheConfig.CACHE_PARTNERS, allEntries = true)
     public Partner createPartner(CreatePartnerRequest request) {
         Partner partner = new Partner(
                 request.name().trim(),
@@ -39,6 +44,7 @@ public class PartnerService {
         return saved;
     }
 
+    @CacheEvict(value = CacheConfig.CACHE_PARTNERS, allEntries = true)
     public void deletePartner(String id) {
         if (!partnerRepository.existsById(id)) {
             throw new InvalidCredentialsException("Partner not found");

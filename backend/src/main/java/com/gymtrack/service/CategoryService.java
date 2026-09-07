@@ -2,8 +2,11 @@ package com.gymtrack.service;
 
 import java.util.List;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import com.gymtrack.config.CacheConfig;
 import com.gymtrack.exception.InvalidCredentialsException;
 import com.gymtrack.model.Category;
 import com.gymtrack.repository.CategoryRepository;
@@ -17,6 +20,7 @@ public class CategoryService {
         this.categoryRepository = categoryRepository;
     }
 
+    @Cacheable(value = CacheConfig.CACHE_CATEGORIES)
     public List<Category> getAllCategories() {
         return categoryRepository.findAllByOrderByDisplayOrderAsc();
     }
@@ -31,6 +35,7 @@ public class CategoryService {
                 .orElseThrow(() -> new InvalidCredentialsException("Category not found: " + id));
     }
 
+    @CacheEvict(value = CacheConfig.CACHE_CATEGORIES, allEntries = true)
     public Category createCategory(Category category) {
         if (category.getSlug() == null || category.getSlug().isBlank()) {
             category.setSlug(category.getName().toLowerCase().replaceAll("[^a-z0-9]+", "-"));

@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.gymtrack.model.SiteVisit;
-import com.gymtrack.repository.SiteVisitRepository;
+import com.gymtrack.service.SiteVisitAsyncService;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -25,10 +25,10 @@ import jakarta.servlet.http.HttpServletResponse;
 @Component
 public class VisitTrackingFilter extends OncePerRequestFilter {
 
-    private final SiteVisitRepository siteVisitRepository;
+    private final SiteVisitAsyncService siteVisitAsyncService;
 
-    public VisitTrackingFilter(SiteVisitRepository siteVisitRepository) {
-        this.siteVisitRepository = siteVisitRepository;
+    public VisitTrackingFilter(SiteVisitAsyncService siteVisitAsyncService) {
+        this.siteVisitAsyncService = siteVisitAsyncService;
     }
 
     @Override
@@ -36,7 +36,7 @@ public class VisitTrackingFilter extends OncePerRequestFilter {
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
 
-        // Continue the filter chain first, then log asynchronously
+        // Continue the filter chain first
         filterChain.doFilter(request, response);
 
         // Only track API calls, skip admin analytics and health checks to prevent unwanted log inflation
@@ -65,7 +65,8 @@ public class VisitTrackingFilter extends OncePerRequestFilter {
                     request.getHeader("User-Agent"),
                     Instant.now());
 
-            siteVisitRepository.save(visit);
+            // Non-blocking async persistence: does not delay HTTP response
+            siteVisitAsyncService.recordVisitAsync(visit);
         } catch (Exception ignored) {
             // Never let analytics tracking break the actual request
         }

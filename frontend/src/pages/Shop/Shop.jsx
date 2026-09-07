@@ -26,6 +26,7 @@ import {
   Pagination,
   Tooltip,
   Avatar,
+  Snackbar,
 } from '@mui/material';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import ShoppingBagRoundedIcon from '@mui/icons-material/ShoppingBagRounded';
@@ -43,6 +44,7 @@ import StarRoundedIcon from '@mui/icons-material/StarRounded';
 import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import CardGiftcardRoundedIcon from '@mui/icons-material/CardGiftcardRounded';
+import ContentCopyRoundedIcon from '@mui/icons-material/ContentCopyRounded';
 
 import SEO from '../../components/SEO';
 import Footer from '../../components/Footer';
@@ -85,6 +87,17 @@ export default function Shop() {
   const [loading, setLoading] = useState(true);
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [addedPackIds, setAddedPackIds] = useState(new Set());
+  const [copyNotification, setCopyNotification] = useState('');
+
+  const handleCopyProductUrl = (e, productId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const url = `${window.location.origin}/shop/${productId}`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url);
+      setCopyNotification('Direct product URL copied to clipboard!');
+    }
+  };
 
   // Load categories and packs
   useEffect(() => {
@@ -845,32 +858,54 @@ export default function Shop() {
 
                         {/* Actions */}
                         <CardActions sx={{ px: 2.5, pb: 2.5, pt: 0 }}>
-                          <Tooltip
-                            title={
-                              product.stockQuantity <= 0
-                                ? 'Currently out of stock — restocking soon'
-                                : `Add 1 unit to your basket (${Number(product.price).toFixed(2)} TND)`
-                            }
-                            arrow
-                            placement="top"
-                          >
-                            <span style={{ width: '100%' }}>
-                              <Button
-                                variant="contained"
-                                fullWidth
-                                startIcon={<AddShoppingCartRoundedIcon />}
-                                disabled={product.stockQuantity <= 0}
-                                onClick={() => addToCart(product, 1)}
+                          <Stack direction="row" spacing={1} sx={{ width: '100%' }}>
+                            <Tooltip
+                              title={
+                                product.stockQuantity <= 0
+                                  ? 'Currently out of stock — restocking soon'
+                                  : `Add 1 unit to your basket (${Number(product.price).toFixed(2)} TND)`
+                              }
+                              arrow
+                              placement="top"
+                            >
+                              <span style={{ flex: 1 }}>
+                                <Button
+                                  variant="contained"
+                                  fullWidth
+                                  startIcon={<AddShoppingCartRoundedIcon />}
+                                  disabled={product.stockQuantity <= 0}
+                                  onClick={() => addToCart(product, 1)}
+                                  sx={{
+                                    fontWeight: 700,
+                                    borderRadius: 2,
+                                    py: 1,
+                                  }}
+                                >
+                                  {product.stockQuantity > 0 ? 'Add to Cart' : 'Sold Out'}
+                                </Button>
+                              </span>
+                            </Tooltip>
+
+                            <Tooltip title="Copy direct link for this product" arrow placement="top">
+                              <IconButton
+                                onClick={(e) => handleCopyProductUrl(e, product.id)}
                                 sx={{
-                                  fontWeight: 700,
+                                  border: '1px solid',
+                                  borderColor: 'divider',
                                   borderRadius: 2,
-                                  py: 1,
+                                  color: 'text.secondary',
+                                  p: 1,
+                                  '&:hover': {
+                                    color: 'primary.main',
+                                    borderColor: 'primary.main',
+                                    bgcolor: 'rgba(198,255,62,0.08)',
+                                  },
                                 }}
                               >
-                                {product.stockQuantity > 0 ? 'Add to Cart' : 'Sold Out'}
-                              </Button>
-                            </span>
-                          </Tooltip>
+                                <ContentCopyRoundedIcon sx={{ fontSize: 18 }} />
+                              </IconButton>
+                            </Tooltip>
+                          </Stack>
                         </CardActions>
                       </Card>
                     </Grid>
@@ -912,6 +947,13 @@ export default function Shop() {
           </Badge>
         </Fab>
       </Container>
+      <Snackbar
+        open={Boolean(copyNotification)}
+        autoHideDuration={3000}
+        onClose={() => setCopyNotification('')}
+        message={copyNotification}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
       <Footer />
     </>
   );

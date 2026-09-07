@@ -31,8 +31,8 @@ public class SiteVisit {
     /** User-Agent header. */
     private String userAgent;
 
-    /** When the visit occurred - indexed for efficient date-range queries. */
-    @Indexed
+    /** When the visit occurred - indexed with 30-day auto-expiry TTL to keep MongoDB Atlas fast. */
+    @Indexed(expireAfter = "30d")
     private Instant visitedAt;
 
     public SiteVisit() {

@@ -26,6 +26,7 @@ import {
   Alert,
   Tooltip,
   Avatar,
+  Snackbar,
 } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import RemoveRoundedIcon from '@mui/icons-material/RemoveRounded';
@@ -36,6 +37,8 @@ import StorefrontRoundedIcon from '@mui/icons-material/StorefrontRounded';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import FlashOnRoundedIcon from '@mui/icons-material/FlashOnRounded';
+import ShareRoundedIcon from '@mui/icons-material/ShareRounded';
+import ContentCopyRoundedIcon from '@mui/icons-material/ContentCopyRounded';
 
 import SEO from '../../components/SEO';
 import Footer from '../../components/Footer';
@@ -54,6 +57,22 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyLink = () => {
+    const url = window.location.href;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url);
+      setCopied(true);
+    }
+  };
+
+  const handleWhatsAppShare = () => {
+    const url = window.location.href;
+    const text = `Check out ${product?.name} on GymPilot: ${url}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  };
+
 
   useEffect(() => {
     async function loadProduct() {
@@ -408,6 +427,59 @@ export default function ProductDetail() {
                     </span>
                   </Tooltip>
                 </Stack>
+
+                {/* Direct Product Link & Sharing */}
+                <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 2 }}>
+                  <Button
+                    variant="text"
+                    size="small"
+                    startIcon={<ContentCopyRoundedIcon />}
+                    onClick={handleCopyLink}
+                    sx={{
+                      color: 'text.secondary',
+                      fontWeight: 700,
+                      fontSize: '0.8rem',
+                      textTransform: 'none',
+                      bgcolor: 'rgba(255,255,255,0.03)',
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      borderRadius: 2,
+                      px: 2,
+                      py: 0.8,
+                      '&:hover': {
+                        bgcolor: 'rgba(198,255,62,0.08)',
+                        borderColor: 'primary.main',
+                        color: 'primary.main',
+                      },
+                    }}
+                  >
+                    Copy Direct Product Link
+                  </Button>
+
+                  <Button
+                    variant="text"
+                    size="small"
+                    startIcon={<ShareRoundedIcon />}
+                    onClick={handleWhatsAppShare}
+                    sx={{
+                      color: '#25D366',
+                      fontWeight: 700,
+                      fontSize: '0.8rem',
+                      textTransform: 'none',
+                      bgcolor: 'rgba(37,211,102,0.08)',
+                      border: '1px solid rgba(37,211,102,0.25)',
+                      borderRadius: 2,
+                      px: 2,
+                      py: 0.8,
+                      '&:hover': {
+                        bgcolor: 'rgba(37,211,102,0.15)',
+                        borderColor: '#25D366',
+                      },
+                    }}
+                  >
+                    Share on WhatsApp
+                  </Button>
+                </Stack>
               </Box>
 
               {/* Seller / Store Information Card */}
@@ -533,6 +605,13 @@ export default function ProductDetail() {
           </Box>
         )}
       </Container>
+      <Snackbar
+        open={copied}
+        autoHideDuration={3500}
+        onClose={() => setCopied(false)}
+        message="Direct product link copied! You can now send it to your customer or friend."
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
       <Footer />
     </>
   );

@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -164,14 +165,13 @@ public class MailService {
     }
 
     /**
-     * Sends a rich HTML password reset email to the given recipient.
-     * Catches and logs any delivery errors so email failures don't crash user requests.
+     * Sends a rich HTML password reset email asynchronously to the given recipient.
      *
      * @param to recipient email address
      * @param resetLink direct link with password reset token
-     * @return true if email sent successfully, false otherwise
      */
-    public boolean sendResetPasswordEmail(String to, String resetLink) {
+    @Async("taskExecutor")
+    public void sendResetPasswordEmail(String to, String resetLink) {
         String subject = "Reset Your GymPilot Password";
         String htmlBody = buildResetPasswordHtml(resetLink);
 
@@ -268,26 +268,26 @@ public class MailService {
     }
 
     /**
-     * Sends a 6-digit email verification OTP to the given recipient.
+     * Sends a 6-digit email verification OTP asynchronously to the given recipient.
      *
      * @param to recipient email address
      * @param firstName recipient's first name
      * @param otpCode 6-digit numeric verification code
-     * @return true if email sent successfully, false otherwise
      */
-    public boolean sendOtpVerificationEmail(String to, String firstName, String otpCode) {
+    @Async("taskExecutor")
+    public void sendOtpVerificationEmail(String to, String firstName, String otpCode) {
         String subject = otpCode + " is your GymPilot verification code";
         String htmlBody = buildOtpVerificationHtml(firstName, otpCode);
 
         if (hasBrevoApi()) {
             boolean sent = sendViaBrevo(to, subject, htmlBody);
-            if (sent) return true;
+            if (sent) return;
             log.warn("Brevo API failed, checking next provider...");
         }
 
         if (hasResendApi()) {
             boolean sent = sendViaResend(to, subject, htmlBody);
-            if (sent) return true;
+            if (sent) return;
             log.warn("Resend API failed, falling back to SMTP...");
         }
 
@@ -302,11 +302,9 @@ public class MailService {
 
             mailSender.send(message);
             log.info("OTP verification email sent successfully via SMTP to: {}", to);
-            return true;
         } catch (Exception ex) {
             log.error("Failed to send OTP verification email to: {}", to, ex);
             log.warn("=== [FALLBACK LOG] EMAIL OTP CODE FOR [{}]: {} ===", to, otpCode);
-            return false;
         }
     }
 
@@ -369,15 +367,15 @@ public class MailService {
     }
 
     /**
-     * Sends a rich HTML order confirmation email to the buyer after completing checkout.
+     * Sends a rich HTML order confirmation email asynchronously to the buyer after completing checkout.
      *
      * @param order the created Order object
-     * @return true if email sent successfully, false otherwise
      */
-    public boolean sendOrderConfirmationEmail(Order order) {
+    @Async("taskExecutor")
+    public void sendOrderConfirmationEmail(Order order) {
         if (order == null || order.getBuyerEmail() == null || order.getBuyerEmail().isBlank()) {
             log.warn("Cannot send order confirmation: missing buyer email or order");
-            return false;
+            return;
         }
 
         String to = order.getBuyerEmail().trim();
@@ -386,13 +384,13 @@ public class MailService {
 
         if (hasBrevoApi()) {
             boolean sent = sendViaBrevo(to, subject, htmlBody);
-            if (sent) return true;
+            if (sent) return;
             log.warn("Brevo API failed for order confirmation, trying next provider...");
         }
 
         if (hasResendApi()) {
             boolean sent = sendViaResend(to, subject, htmlBody);
-            if (sent) return true;
+            if (sent) return;
             log.warn("Resend API failed for order confirmation, falling back to SMTP...");
         }
 
@@ -407,12 +405,10 @@ public class MailService {
 
             mailSender.send(message);
             log.info("Order confirmation email sent successfully via SMTP to: {}", to);
-            return true;
         } catch (Exception ex) {
             log.error("Failed to send order confirmation email via SMTP to: {}", to, ex);
             log.warn("=== [FALLBACK LOG] ORDER CONFIRMATION FOR [{}]: Order #{} Total {} TND ===",
                     to, order.getOrderNumber(), order.getTotalAmount());
-            return false;
         }
     }
 

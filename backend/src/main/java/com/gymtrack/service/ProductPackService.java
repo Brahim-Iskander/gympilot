@@ -10,8 +10,11 @@ import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import com.gymtrack.config.CacheConfig;
 import com.gymtrack.dto.pack.ProductPackDtos.PackItemDto;
 import com.gymtrack.dto.pack.ProductPackDtos.PackRequestDto;
 import com.gymtrack.model.ProductPack;
@@ -42,6 +45,7 @@ public class ProductPackService {
         return productPackRepository.findAllByOrderByCreatedAtDesc();
     }
 
+    @Cacheable(value = CacheConfig.CACHE_ACTIVE_PACKS)
     public List<ProductPack> getActivePacks() {
         return getAllPacks(true);
     }
@@ -64,6 +68,7 @@ public class ProductPackService {
         return productPackRepository.findBySellerIdOrderByCreatedAtDesc(seller.getId());
     }
 
+    @CacheEvict(value = CacheConfig.CACHE_ACTIVE_PACKS, allEntries = true)
     public ProductPack createPackForSeller(PackRequestDto dto, String userEmail) {
         User seller = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new IllegalArgumentException("Seller not found: " + userEmail));
@@ -124,6 +129,7 @@ public class ProductPackService {
         return saved;
     }
 
+    @CacheEvict(value = CacheConfig.CACHE_ACTIVE_PACKS, allEntries = true)
     public ProductPack createPack(PackRequestDto dto) {
         String slug = generateSlug(dto.name());
         int counter = 1;
@@ -194,10 +200,12 @@ public class ProductPackService {
         return updated;
     }
 
+    @CacheEvict(value = CacheConfig.CACHE_ACTIVE_PACKS, allEntries = true)
     public void deletePack(String id) {
         deletePackForSeller(id, null, true);
     }
 
+    @CacheEvict(value = CacheConfig.CACHE_ACTIVE_PACKS, allEntries = true)
     public void deletePackForSeller(String id, String userEmail, boolean isAdmin) {
         ProductPack pack = productPackRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Product pack not found with ID: " + id));
@@ -214,10 +222,12 @@ public class ProductPackService {
         log.info("Deleted product pack with ID: {}", id);
     }
 
+    @CacheEvict(value = CacheConfig.CACHE_ACTIVE_PACKS, allEntries = true)
     public ProductPack toggleActive(String id) {
         return toggleActiveForSeller(id, null, true);
     }
 
+    @CacheEvict(value = CacheConfig.CACHE_ACTIVE_PACKS, allEntries = true)
     public ProductPack toggleActiveForSeller(String id, String userEmail, boolean isAdmin) {
         ProductPack pack = productPackRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Product pack not found with ID: " + id));
@@ -235,6 +245,7 @@ public class ProductPackService {
         return productPackRepository.save(pack);
     }
 
+    @CacheEvict(value = CacheConfig.CACHE_ACTIVE_PACKS, allEntries = true)
     public ProductPack toggleFeatured(String id) {
         ProductPack pack = productPackRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Product pack not found with ID: " + id));
