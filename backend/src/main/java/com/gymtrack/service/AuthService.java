@@ -41,7 +41,6 @@ public class AuthService {
     private final JwtService jwtService;
     private final MailService mailService;
     private final ReferralService referralService;
-    private final org.springframework.cache.CacheManager cacheManager;
 
     @org.springframework.beans.factory.annotation.Value("${app.frontend.url:http://localhost:5173}")
     private String frontendUrl;
@@ -58,19 +57,6 @@ public class AuthService {
                        JwtService jwtService,
                        MailService mailService,
                        ReferralService referralService) {
-        this(userRepository, passwordResetTokenRepository, emailOtpRepository, passwordEncoder,
-                authenticationManager, jwtService, mailService, referralService, null);
-    }
-
-    public AuthService(UserRepository userRepository,
-                       PasswordResetTokenRepository passwordResetTokenRepository,
-                       EmailOtpRepository emailOtpRepository,
-                       PasswordEncoder passwordEncoder,
-                       AuthenticationManager authenticationManager,
-                       JwtService jwtService,
-                       MailService mailService,
-                       ReferralService referralService,
-                       @org.springframework.beans.factory.annotation.Autowired(required = false) org.springframework.cache.CacheManager cacheManager) {
         this.userRepository = userRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.emailOtpRepository = emailOtpRepository;
@@ -79,16 +65,6 @@ public class AuthService {
         this.jwtService = jwtService;
         this.mailService = mailService;
         this.referralService = referralService;
-        this.cacheManager = cacheManager;
-    }
-
-    private void evictUserCache(String email) {
-        if (cacheManager != null && email != null) {
-            var cache = cacheManager.getCache(com.gymtrack.config.CacheConfig.CACHE_USER_DETAILS);
-            if (cache != null) {
-                cache.evict(email.trim().toLowerCase());
-            }
-        }
     }
 
     public java.util.Map<String, String> forgotPassword(com.gymtrack.dto.ForgotPasswordRequest request) {
@@ -167,7 +143,6 @@ public class AuthService {
 
         user.setPassword(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
-        evictUserCache(email);
 
         resetToken.setUsed(true);
         passwordResetTokenRepository.save(resetToken);
@@ -288,7 +263,6 @@ public class AuthService {
         }
         user.setPassword(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
-        evictUserCache(email);
         log.info("Password changed for user: {}", user.getEmail());
     }
 

@@ -19,7 +19,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 @EnableCaching
 public class CacheConfig {
 
-    public static final String CACHE_USER_DETAILS = "userDetails";
     public static final String CACHE_CATEGORIES = "categories";
     public static final String CACHE_PARTNERS = "partners";
     public static final String CACHE_ACTIVE_PACKS = "activePacks";
@@ -28,7 +27,6 @@ public class CacheConfig {
     public CacheManager cacheManager() {
         ConcurrentMapCacheManager cacheManager = new ConcurrentMapCacheManager();
         cacheManager.setCacheNames(List.of(
-                CACHE_USER_DETAILS,
                 CACHE_CATEGORIES,
                 CACHE_PARTNERS,
                 CACHE_ACTIVE_PACKS
