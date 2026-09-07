@@ -54,6 +54,7 @@ import FilterAltRoundedIcon from '@mui/icons-material/FilterAltRounded';
 import TrendingUpRoundedIcon from '@mui/icons-material/TrendingUpRounded';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import Inventory2RoundedIcon from '@mui/icons-material/Inventory2Rounded';
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 
 import SEO from '../../components/SEO';
 import Footer from '../../components/Footer';
@@ -150,6 +151,26 @@ export default function Shop() {
       navigator.clipboard.writeText(url);
       setCopyNotification('Direct product link copied to clipboard!');
     }
+  };
+
+  const handleCopyPackUrl = (e, pack) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const identifier = pack.slug || pack.id;
+    const url = `${window.location.origin}/shop/pack/${identifier}`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url);
+      setCopyNotification('Lien direct du pack copié dans le presse-papiers !');
+    }
+  };
+
+  const handleWhatsAppSharePack = (e, pack) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const identifier = pack.slug || pack.id;
+    const url = `${window.location.origin}/shop/pack/${identifier}`;
+    const text = `Découvre le ${pack.name} sur GymPilot : ${url}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
 
   // Load categories and packs
@@ -767,7 +788,11 @@ export default function Shop() {
                         }}
                       >
                         {/* Image & Badges */}
-                        <Box sx={{ position: 'relative', pt: '56%', bgcolor: '#0A0C0F', overflow: 'hidden' }}>
+                        <Box
+                          component={RouterLink}
+                          to={`/shop/pack/${pack.slug || pack.id}`}
+                          sx={{ position: 'relative', pt: '56%', bgcolor: '#0A0C0F', overflow: 'hidden', display: 'block' }}
+                        >
                           <Box
                             component="img"
                             className="pack-img"
@@ -816,7 +841,20 @@ export default function Shop() {
 
                         {/* Pack Content */}
                         <Box sx={{ p: 2.5, flex: 1, display: 'flex', flexDirection: 'column' }}>
-                          <Typography variant="h6" sx={{ fontWeight: 900, fontFamily: "'Sora', sans-serif", mb: 0.5 }}>
+                          <Typography
+                            component={RouterLink}
+                            to={`/shop/pack/${pack.slug || pack.id}`}
+                            variant="h6"
+                            sx={{
+                              fontWeight: 900,
+                              fontFamily: "'Sora', sans-serif",
+                              mb: 0.5,
+                              textDecoration: 'none',
+                              color: 'text.primary',
+                              transition: 'color 0.2s ease',
+                              '&:hover': { color: 'primary.main' },
+                            }}
+                          >
                             {pack.name}
                           </Typography>
 
@@ -868,25 +906,68 @@ export default function Shop() {
                               )}
                             </Stack>
 
-                            <Button
-                              fullWidth
-                              variant="contained"
-                              startIcon={isAdded ? <CheckRoundedIcon /> : <AddShoppingCartRoundedIcon />}
-                              onClick={() => handleAddPackToCart(pack)}
-                              sx={{
-                                fontWeight: 800,
-                                py: 1.1,
-                                borderRadius: 2.5,
-                                fontSize: '0.85rem',
-                                bgcolor: isAdded ? '#00E676' : 'primary.main',
-                                color: '#0A0C0F',
-                                '&:hover': {
-                                  bgcolor: isAdded ? '#00C853' : 'primary.dark',
-                                },
-                              }}
-                            >
-                              {isAdded ? 'Ajouté au panier ✓' : 'Ajouter le Pack au Panier'}
-                            </Button>
+                            <Stack direction="row" spacing={1} alignItems="center">
+                              <Button
+                                fullWidth
+                                variant="contained"
+                                startIcon={isAdded ? <CheckRoundedIcon /> : <AddShoppingCartRoundedIcon />}
+                                onClick={() => handleAddPackToCart(pack)}
+                                sx={{
+                                  fontWeight: 800,
+                                  py: 1.1,
+                                  borderRadius: 2.5,
+                                  fontSize: '0.85rem',
+                                  bgcolor: isAdded ? '#00E676' : 'primary.main',
+                                  color: '#0A0C0F',
+                                  '&:hover': {
+                                    bgcolor: isAdded ? '#00C853' : 'primary.dark',
+                                  },
+                                }}
+                              >
+                                {isAdded ? 'Ajouté ✓' : 'Ajouter le Pack'}
+                              </Button>
+
+                              <Tooltip title="Copier le lien direct du pack" arrow placement="top">
+                                <IconButton
+                                  onClick={(e) => handleCopyPackUrl(e, pack)}
+                                  sx={{
+                                    border: '1px solid',
+                                    borderColor: 'divider',
+                                    borderRadius: 2.5,
+                                    color: 'text.secondary',
+                                    p: 1.1,
+                                    transition: 'all .2s ease',
+                                    '&:hover': {
+                                      color: 'primary.main',
+                                      borderColor: 'primary.main',
+                                      bgcolor: 'rgba(198,255,62,0.1)',
+                                    },
+                                  }}
+                                >
+                                  <ContentCopyRoundedIcon sx={{ fontSize: 18 }} />
+                                </IconButton>
+                              </Tooltip>
+
+                              <Tooltip title="Partager sur WhatsApp" arrow placement="top">
+                                <IconButton
+                                  onClick={(e) => handleWhatsAppSharePack(e, pack)}
+                                  sx={{
+                                    border: '1px solid',
+                                    borderColor: 'rgba(37, 211, 102, 0.3)',
+                                    borderRadius: 2.5,
+                                    color: '#25D366',
+                                    p: 1.1,
+                                    transition: 'all .2s ease',
+                                    '&:hover': {
+                                      borderColor: '#25D366',
+                                      bgcolor: 'rgba(37, 211, 102, 0.1)',
+                                    },
+                                  }}
+                                >
+                                  <WhatsAppIcon sx={{ fontSize: 18 }} />
+                                </IconButton>
+                              </Tooltip>
+                            </Stack>
                           </Box>
                         </Box>
                       </Card>

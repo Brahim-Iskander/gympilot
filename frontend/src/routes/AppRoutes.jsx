@@ -38,6 +38,7 @@ import AiAnalyzer from '../pages/AiAnalyzer/AiAnalyzer';
 // Shop Pages
 import Shop from '../pages/Shop/Shop';
 import ProductDetail from '../pages/Shop/ProductDetail';
+import PackDetail from '../pages/Shop/PackDetail';
 import Cart from '../pages/Shop/Cart';
 import Checkout from '../pages/Shop/Checkout';
 import OrderHistory from '../pages/Shop/OrderHistory';
@@ -90,8 +91,10 @@ export default function AppRoutes() {
       <Route path="/onboarding" element={<OnboardingPage />} />
 
       {/* ===================== SHOP ROUTES ===================== */}
-      {/* Shop listing & product detail are public (no auth needed) */}
+      {/* Shop listing, pack detail & product detail are public (no auth needed) */}
       <Route path="/shop" element={<Shop />} />
+      <Route path="/shop/pack/:idOrSlug" element={<PackDetail />} />
+      <Route path="/packs/:idOrSlug" element={<PackDetail />} />
       <Route path="/shop/:id" element={<ProductDetail />} />
 
       {/* Cart, Checkout, Orders require authentication */}
