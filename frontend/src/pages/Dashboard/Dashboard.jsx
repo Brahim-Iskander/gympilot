@@ -10,6 +10,7 @@ import WeeklyProgress from './components/WeeklyProgress';
 import StrengthOverview from './components/StrengthOverview';
 import GoalsOverview from './components/GoalsOverview';
 import RecommendedSupplements from '../../components/RecommendedSupplements';
+import DashboardPacksShowcase from './components/DashboardPacksShowcase';
 import SEO from '../../components/SEO';
 
 export default function Dashboard() {
@@ -99,6 +100,7 @@ export default function Dashboard() {
         />
         <TodayWorkout aiPlan={aiPlan} loading={aiPlanLoading} />
         <WeeklyProgress aiPlan={aiPlan} workoutHistory={workoutHistory} />
+        <DashboardPacksShowcase />
         <RecommendedSupplements
           supplementPlan={aiPlan?.supplementPlan}
           userGoal={aiPlan?.goal}
