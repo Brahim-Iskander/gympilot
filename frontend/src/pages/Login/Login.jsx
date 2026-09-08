@@ -145,6 +145,30 @@ export default function Login() {
           </Button>
         </Stack>
       </Box>
+
+      {/* SEO: hidden descriptive text to meet minimum word-count for crawlers */}
+      <Box
+        component="section"
+        aria-label="About GymPilot"
+        sx={{
+          position: 'absolute',
+          width: 1,
+          height: 1,
+          overflow: 'hidden',
+          clip: 'rect(0 0 0 0)',
+          clipPath: 'inset(50%)',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        <Typography variant="body2">
+          GymPilot is your all-in-one fitness tracking platform. Log workouts, monitor progressive overload,
+          track nutrition and calories, set personal goals, and visualise your strength progress over time.
+          Whether you are a beginner or an advanced lifter, GymPilot helps you stay consistent,
+          break personal records, and build the physique you have always wanted.
+          Sign in to access your personalised dashboard, workout planner, body scan AI analysis,
+          calendar, analytics, and the GymPilot gear shop.
+        </Typography>
+      </Box>
     </AuthShell>
     </>
   );

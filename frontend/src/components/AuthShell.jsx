@@ -73,7 +73,7 @@ export default function AuthShell({ title, subtitle, children, footer }) {
               boxShadow: '0 30px 80px rgba(0,0,0,0.45)',
             }}
           >
-            <Typography variant="h5" sx={{ fontFamily: "'Sora','Inter',sans-serif" }}>
+            <Typography variant="h5" component="h1" sx={{ fontFamily: "'Sora','Inter',sans-serif" }}>
               {title}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75, mb: 3.5 }}>

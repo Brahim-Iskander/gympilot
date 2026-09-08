@@ -96,8 +96,9 @@ export default function AppLayout() {
     {
       id: 'shop',
       label: 'Shop / Gear',
-      icon: <ShoppingBagRounded />,
+      icon: <ShoppingBagRounded sx={{ color: '#FFB23E' }} />,
       path: '/shop',
+      labelColor: '#FFB23E',
     },
     {
       id: 'workouts',
@@ -370,6 +371,9 @@ export default function AppLayout() {
                 '& .MuiListItemText-primary': {
                   fontWeight: isActive ? 700 : 500,
                   fontSize: '0.9rem',
+                  ...(item.labelColor && !isActive && {
+                    color: item.labelColor,
+                  }),
                 },
 
                 transition: 'all 0.2s ease',
