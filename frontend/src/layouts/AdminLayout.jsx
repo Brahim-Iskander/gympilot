@@ -33,6 +33,7 @@ import {
   ConfirmationNumberRounded,
   LocalOfferRounded,
   PaidRounded,
+  EmailRounded,
 } from '@mui/icons-material';
 
 import Logo from '../components/Logo';
@@ -96,6 +97,12 @@ const ADMIN_NAV = [
     label: 'Store Vouchers',
     icon: <LocalOfferRounded />,
     path: '/admin/vouchers',
+  },
+  {
+    id: 'admin-mail',
+    label: 'Bulk Mail',
+    icon: <EmailRounded sx={{ color: '#00E5FF' }} />,
+    path: '/admin/mail',
   },
 ];
 

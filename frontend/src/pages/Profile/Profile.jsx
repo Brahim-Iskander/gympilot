@@ -38,6 +38,7 @@ import {
 import { Avatar, Badge, Card, LoadingSpinner, SectionHeader, TabNavigation } from '../../components/ui';
 import SEO from '../../components/SEO';
 import ReferralHub from './components/ReferralHub';
+import { useLanguage } from '../../i18n';
 
 const staticCardSx = {
   '&:hover': {
@@ -95,6 +96,7 @@ function StatTile({ icon, label, value }) {
 }
 
 export default function Profile() {
+  const { t } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') === 'referrals' ? 'referrals' : 'profile';
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -202,8 +204,8 @@ export default function Profile() {
       />
 
       <SectionHeader
-        title="Profile & Rewards"
-        subtitle="Your account, training parameters, and friend referrals"
+        title={t('profile.title')}
+        subtitle={t('profile.subtitle')}
         action={
           <Button
             component={RouterLink}
@@ -211,15 +213,15 @@ export default function Profile() {
             variant="contained"
             startIcon={<EditRoundedIcon />}
           >
-            Edit in Settings
+            {t('profile.editProfile')}
           </Button>
         }
       />
 
       <TabNavigation
         tabs={[
-          { id: 'profile', label: 'Athlete Profile', icon: <PersonRoundedIcon /> },
-          { id: 'referrals', label: `Refer & Earn (${user?.points ?? 0} pts)`, icon: <CardGiftcardRoundedIcon /> },
+          { id: 'profile', label: t('profile.tabs.profile'), icon: <PersonRoundedIcon /> },
+          { id: 'referrals', label: `${t('profile.tabs.referrals')} (${user?.points ?? 0} ${t('common.pts')})`, icon: <CardGiftcardRoundedIcon /> },
         ]}
         value={activeTab}
         onChange={handleTabChange}

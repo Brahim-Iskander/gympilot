@@ -41,9 +41,7 @@ export default function Footer() {
 
   const socialLinks = [
     { name: 'Instagram', icon: <InstagramIcon fontSize="small" />, url: 'https://instagram.com/gympilot.tn' },
-    { name: 'Facebook', icon: <FacebookIcon fontSize="small" />, url: 'https://facebook.com/gympilot.tn' },
-    { name: 'Twitter / X', icon: <TwitterIcon fontSize="small" />, url: 'https://twitter.com/gympilot_tn' },
-    { name: 'YouTube', icon: <YouTubeIcon fontSize="small" />, url: 'https://youtube.com/@gympilot' },
+    { name: 'Facebook', icon: <FacebookIcon fontSize="small" />, url: 'https://facebook.com/gympilot.tn' }
   ];
 
   return (

@@ -57,6 +57,7 @@ import {
 import { ticketService } from '../../services/ticketService';
 import { useAuth } from '../../context/AuthContext';
 import SEO from '../../components/SEO';
+import { useLanguage } from '../../i18n';
 
 const TOPIC_CONFIG = {
   GENERAL: { label: 'General Inquiry', color: '#8A7CFF', icon: <HelpOutlineRounded fontSize="small" /> },
@@ -67,6 +68,7 @@ const TOPIC_CONFIG = {
 };
 
 export default function SupportTickets() {
+  const { t } = useLanguage();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { user } = useAuth();
@@ -327,11 +329,11 @@ export default function SupportTickets() {
               <ConfirmationNumberRounded />
             </Avatar>
             <Typography variant="h4" fontWeight={900} sx={{ fontFamily: "'Sora', sans-serif" }}>
-              Support Center
+              {t('support.title')}
             </Typography>
           </Stack>
           <Typography variant="body2" color="text.secondary">
-            Submit questions, payment verification proofs, or membership requests directly to our administration team.
+            {t('support.subtitle')}
           </Typography>
         </Box>
 
@@ -343,7 +345,7 @@ export default function SupportTickets() {
             disabled={loading}
             sx={{ borderRadius: 3 }}
           >
-            Refresh
+            {t('common.filter')}
           </Button>
           <Button
             variant="contained"
@@ -359,7 +361,7 @@ export default function SupportTickets() {
               '&:hover': { bgcolor: '#b3f520' },
             }}
           >
-            New Ticket
+            {t('support.newTicket')}
           </Button>
         </Stack>
       </Box>

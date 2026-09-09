@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Box, Chip, Stack, Typography } from '@mui/material';
 import {
   Dumbbell01Icon,
@@ -12,52 +12,54 @@ import {
 import GoalsList from './components/GoalsList';
 import { SectionHeader } from '../../components/ui';
 import SEO from '../../components/SEO';
-
-const goalTypes = [
-  { id: 'strength', name: 'Strength', icon: <Dumbbell01Icon size={18} /> },
-  { id: 'weight', name: 'Weight', icon: <WeightScaleIcon size={18} /> },
-  { id: 'body', name: 'Body Composition', icon: <UserIcon size={18} /> },
-  { id: 'frequency', name: 'Workout Frequency', icon: <Calendar01Icon size={18} /> },
-  { id: 'nutrition', name: 'Nutrition', icon: <RestaurantIcon size={18} /> },
-  { id: 'custom', name: 'Custom', icon: <SparklesIcon size={18} /> },
-];
+import { useLanguage } from '../../i18n';
 
 export default function Goals() {
+  const { t } = useLanguage();
   const [activeFilter, setActiveFilter] = useState('all');
+
+  const goalTypes = useMemo(() => [
+    { id: 'strength', name: t('goals.types.strength'), icon: <Dumbbell01Icon size={18} /> },
+    { id: 'weight', name: t('goals.types.weight'), icon: <WeightScaleIcon size={18} /> },
+    { id: 'body', name: t('goals.types.body'), icon: <UserIcon size={18} /> },
+    { id: 'frequency', name: t('goals.types.frequency'), icon: <Calendar01Icon size={18} /> },
+    { id: 'nutrition', name: t('goals.types.nutrition'), icon: <RestaurantIcon size={18} /> },
+    { id: 'custom', name: t('goals.types.custom'), icon: <SparklesIcon size={18} /> },
+  ], [t]);
 
   return (
     <Box>
       <SEO
-        title="Fitness & Strength Goals"
-        description="Set, track, and crush your body composition, lift target, and workout frequency milestones on GymPilot."
+        title={`${t('goals.title')} — GymPilot`}
+        description={t('goals.subtitle')}
         path="/goals"
         noIndex
       />
       <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2} sx={{ mb: 4 }}>
         <Box>
           <Typography variant="h4" component="h1" sx={{ fontFamily: "'Sora','Inter',sans-serif", fontWeight: 800 }}>
-            Goals
+            {t('goals.title')}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            AI-proposed targets based on your onboarding profile
+            {t('goals.subtitle')}
           </Typography>
         </Box>
         <Chip
           icon={<SparklesIcon size={14} color="#C6FF3E" />}
-          label="AI Proposed"
+          label={t('goals.aiProposed')}
           size="small"
           sx={{ bgcolor: 'rgba(198,255,62,0.12)', color: 'primary.main', fontWeight: 700 }}
         />
       </Stack>
 
       <SectionHeader
-        title="Filter by Type"
+        title={t('goals.filterByType')}
         action={
-          <Stack direction="row" spacing={1} useFlexGap>
+          <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
             {['all', ...goalTypes.map((t) => t.id)].map((filter) => (
               <Chip
                 key={filter}
-                label={filter === 'all' ? 'All' : goalTypes.find((t) => t.id === filter)?.name || filter}
+                label={filter === 'all' ? t('goals.types.all') : goalTypes.find((t) => t.id === filter)?.name || filter}
                 size="small"
                 onClick={() => setActiveFilter(filter)}
                 variant={activeFilter === filter ? 'filled' : 'outlined'}

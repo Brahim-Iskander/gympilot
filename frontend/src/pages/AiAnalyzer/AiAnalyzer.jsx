@@ -37,6 +37,7 @@ import {
 import SEO from '../../components/SEO';
 import { aiPhotoAnalysisService } from '../../services/aiPhotoAnalysisService';
 import { useCart } from '../../context/CartContext';
+import { useLanguage } from '../../i18n';
 
 const EXAMPLE_GOALS = [
   'Build lean muscle & strength',
@@ -47,6 +48,7 @@ const EXAMPLE_GOALS = [
 ];
 
 export default function AiAnalyzer() {
+  const { t } = useLanguage();
   const { addItem, openCartDrawer } = useCart();
   const fileInputRef = useRef(null);
 
@@ -250,11 +252,11 @@ export default function AiAnalyzer() {
                 WebkitTextFillColor: 'transparent',
               }}
             >
-              AI Photo-Based Goal Analysis
+              {t('aiAnalyzer.title')}
             </Typography>
 
             <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 680, fontSize: { xs: '0.95rem', md: '1.1rem' } }}>
-              Upload a physique or wellness photo and specify your target. Our AI Vision model delivers actionable guidance, tailored nutrition insights, and matches certified store products.
+              {t('aiAnalyzer.subtitle')}
             </Typography>
 
             {/* Privacy Guarantee Pill */}

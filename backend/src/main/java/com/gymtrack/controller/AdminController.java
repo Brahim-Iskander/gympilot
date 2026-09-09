@@ -105,11 +105,10 @@ public class AdminController {
         return adminService.unbanUser(id);
     }
 
-    /** GET /api/admin/analytics/visitors - Visitor trend data */
-    @GetMapping("/analytics/visitors")
-    public AnalyticsChartResponse getVisitorAnalytics(
-            @RequestParam(defaultValue = "daily") String period) {
-        return adminService.getVisitorAnalytics(period);
+    /** POST /api/admin/mail/send - Send email to a single user or all users (bulk) */
+    @PostMapping("/mail/send")
+    public Map<String, Object> sendMail(@Valid @RequestBody com.gymtrack.dto.SendMailRequest request) {
+        return adminService.sendBulkMail(request);
     }
 
     /** GET /api/admin/analytics/registrations - New signups trend data */

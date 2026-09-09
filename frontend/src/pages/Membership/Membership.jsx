@@ -48,8 +48,10 @@ import { ticketService } from '../../services/ticketService';
 import { membershipService } from '../../services/membershipService';
 import { useAuth } from '../../context/AuthContext';
 import SEO from '../../components/SEO';
+import { useLanguage } from '../../i18n';
 
 export default function MembershipPage() {
+  const { t } = useLanguage();
   const theme = useTheme();
   const navigate = useNavigate();
   const { user, updateUser } = useAuth();
@@ -127,8 +129,8 @@ export default function MembershipPage() {
   return (
     <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>
       <SEO
-        title="Membership Plans & Pricing"
-        description="Upgrade your GymPilot tier. Unlock 1-on-1 certified live coach access, advanced AI analytics, and unlimited workout program generation."
+        title={`${t('membership.title')} — GymPilot`}
+        description={t('membership.subtitle')}
         path="/membership"
         noIndex
       />
@@ -143,7 +145,7 @@ export default function MembershipPage() {
         >
           <Chip
             icon={<WorkspacePremiumRounded sx={{ fontSize: '18px !important' }} />}
-            label="MEMBERSHIP PLANS"
+            label={t('membership.title').toUpperCase()}
             size="small"
             sx={{
               bgcolor: 'rgba(198,255,62,0.12)',
@@ -168,7 +170,7 @@ export default function MembershipPage() {
             letterSpacing: '-0.5px',
           }}
         >
-          Level Up Your Training
+          {t('membership.title')}
         </Typography>
 
         <Typography
@@ -181,8 +183,7 @@ export default function MembershipPage() {
             lineHeight: 1.6,
           }}
         >
-          Choose the plan that best matches your fitness ambitions. Enjoy seamless workout logging,
-          advanced progress tracking, and dedicated coaching support.
+          {t('membership.subtitle')}
         </Typography>
       </Box>
 

@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Box, Stack, Typography } from '@mui/material';
 import FitnessCenterRoundedIcon from '@mui/icons-material/FitnessCenterRounded';
 import PlayCircleRoundedIcon from '@mui/icons-material/PlayCircleRounded';
 import LibraryBooksRoundedIcon from '@mui/icons-material/LibraryBooksRounded';
 import { useAiPlan } from '../../hooks/useAiPlan';
+import { useLanguage } from '../../i18n';
 
 import MyPrograms from './components/MyPrograms';
 import StartWorkout from './components/StartWorkout';
@@ -12,13 +13,8 @@ import ExerciseLibrary from './components/ExerciseLibrary';
 import { TabNavigation } from '../../components/ui';
 import SEO from '../../components/SEO';
 
-const tabs = [
-  { id: 'programs', label: 'My Programs', icon: <FitnessCenterRoundedIcon /> },
-  { id: 'start', label: 'Start Workout', icon: <PlayCircleRoundedIcon /> },
-  { id: 'library', label: 'Exercise Library', icon: <LibraryBooksRoundedIcon /> },
-];
-
 export default function Workouts() {
+  const { t } = useLanguage();
   const [searchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') || (searchParams.get('day') !== null ? 'start' : 'programs');
   const initialDayIndex = parseInt(searchParams.get('day') || '0', 10);
@@ -27,6 +23,12 @@ export default function Workouts() {
   const [selectedDayIndex, setSelectedDayIndex] = useState(initialDayIndex);
   const { aiPlan, loading } = useAiPlan();
   const [addedExercises, setAddedExercises] = useState([]);
+
+  const tabs = useMemo(() => [
+    { id: 'programs', label: t('workouts.tabs.programs'), icon: <FitnessCenterRoundedIcon /> },
+    { id: 'start', label: t('workouts.tabs.start'), icon: <PlayCircleRoundedIcon /> },
+    { id: 'library', label: t('workouts.tabs.library'), icon: <LibraryBooksRoundedIcon /> },
+  ], [t]);
 
   useEffect(() => {
     const dayParam = searchParams.get('day');
@@ -55,14 +57,14 @@ export default function Workouts() {
   return (
     <Box>
       <SEO
-        title="Workout Log & Training Programs"
-        description="Track your workout routines, log sets, reps, and weights, and explore the exercise library on GymPilot."
+        title={`${t('workouts.title')} — GymPilot`}
+        description={t('workouts.subtitle')}
         path="/workouts"
         noIndex
       />
       <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2} sx={{ mb: 4 }}>
         <Typography variant="h4" component="h1" sx={{ fontFamily: "'Sora','Inter',sans-serif", fontWeight: 800 }}>
-          Workouts
+          {t('workouts.title')}
         </Typography>
       </Stack>
 

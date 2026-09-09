@@ -39,6 +39,7 @@ import VerifiedRoundedIcon from '@mui/icons-material/VerifiedRounded';
 import { aiService } from '../../services/aiService';
 import { useFitnessData } from '../../hooks/useFitnessData';
 import SEO from '../../components/SEO';
+import { useLanguage } from '../../i18n';
 
 const scanAnimation = keyframes`
   0% {
@@ -126,6 +127,7 @@ const SAMPLE_MEALS = [
 ];
 
 export default function CaloriesCalculator() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { logMeal } = useFitnessData();
   const fileInputRef = useRef(null);
@@ -246,11 +248,11 @@ export default function CaloriesCalculator() {
               <AutoAwesomeRoundedIcon fontSize="medium" />
             </Box>
             <Typography variant="h4" component="h1" sx={{ fontFamily: "'Sora','Inter',sans-serif", fontWeight: 800 }}>
-              AI Calorie & Food Vision
+              {t('caloriesCalculator.title')}
             </Typography>
           </Stack>
           <Typography variant="body1" color="text.secondary">
-            Upload or photograph any meal. Our AI vision instantly calculates calories, protein, carbs, fats, and health score.
+            {t('caloriesCalculator.subtitle')}
           </Typography>
         </Box>
 

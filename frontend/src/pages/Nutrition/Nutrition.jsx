@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Box, Typography, Stack } from '@mui/material';
 import RestaurantRoundedIcon from '@mui/icons-material/RestaurantRounded';
 import LocalDiningRoundedIcon from '@mui/icons-material/LocalDiningRounded';
@@ -11,16 +11,11 @@ import Macros from './components/Macros';
 import TunisianMealPlanner from './components/TunisianMealPlanner';
 import { TabNavigation } from '../../components/ui';
 import { useFitnessData } from '../../hooks/useFitnessData';
+import { useLanguage } from '../../i18n';
 import SEO from '../../components/SEO';
 
-const tabs = [
-  { id: 'dashboard', label: 'Dashboard', icon: <RestaurantRoundedIcon /> },
-  { id: 'planner', label: 'Planificateur IA (TND)', icon: <AutoAwesomeRoundedIcon /> },
-  { id: 'meals', label: 'Meals & Logs', icon: <LocalDiningRoundedIcon /> },
-  { id: 'macros', label: 'Macros Breakdown', icon: <PieChartRoundedIcon /> },
-];
-
 export default function Nutrition() {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('dashboard');
   const {
     aiPlan,
@@ -34,11 +29,18 @@ export default function Nutrition() {
     updateWater,
   } = useFitnessData();
 
+  const tabs = useMemo(() => [
+    { id: 'dashboard', label: t('nutrition.tabs.dashboard'), icon: <RestaurantRoundedIcon /> },
+    { id: 'planner', label: t('nutrition.tabs.planner'), icon: <AutoAwesomeRoundedIcon /> },
+    { id: 'meals', label: t('nutrition.tabs.meals'), icon: <LocalDiningRoundedIcon /> },
+    { id: 'macros', label: t('nutrition.tabs.macros'), icon: <PieChartRoundedIcon /> },
+  ], [t]);
+
   return (
     <Box>
       <SEO
-        title="Nutrition & Macro Targets"
-        description="Track daily calorie intake, macronutrient ratios (protein, carbs, fats), and suggested meal plans on GymPilot."
+        title={`${t('nutrition.title')} — GymPilot`}
+        description={t('nutrition.subtitle')}
         path="/nutrition"
         noIndex
       />
@@ -53,10 +55,10 @@ export default function Nutrition() {
       >
         <Box>
           <Typography variant="h4" component="h1" sx={{ fontFamily: "'Sora','Inter',sans-serif", fontWeight: 800 }}>
-            Nutrition & Fuel
+            {t('nutrition.title')}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Real-time daily calorie and macro tracking synchronized with your fitness goals.
+            {t('nutrition.subtitle')}
           </Typography>
         </Box>
       </Stack>

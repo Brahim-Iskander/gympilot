@@ -2,6 +2,7 @@ import { Box, Button, Card, Chip, Grid, Stack, Typography, styled, CircularProgr
 import FitnessCenterRoundedIcon from '@mui/icons-material/FitnessCenterRounded';
 import PlayCircleRoundedIcon from '@mui/icons-material/PlayCircleRounded';
 import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded';
+import { useLanguage } from '../../../i18n';
 
 const StyledCard = styled(Card)(() => ({
   borderRadius: 4,
@@ -17,11 +18,13 @@ const StyledCard = styled(Card)(() => ({
 }));
 
 export default function MyPrograms({ aiPlan, loading, onStart }) {
+  const { t } = useLanguage();
+
   if (loading) {
     return (
       <Box sx={{ py: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
         <CircularProgress sx={{ color: 'primary.main', mb: 2 }} />
-        <Typography variant="body2" color="text.secondary">Loading your personalized workout program...</Typography>
+        <Typography variant="body2" color="text.secondary">{t('workouts.myPrograms.loadingProgram')}</Typography>
       </Box>
     );
   }
@@ -36,10 +39,14 @@ export default function MyPrograms({ aiPlan, loading, onStart }) {
             <AutoAwesomeRoundedIcon sx={{ color: 'primary.main', fontSize: 28 }} />
             <Box>
               <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: "'Sora','Inter',sans-serif" }}>
-                Your AI Personalized Program
+                {t('workouts.myPrograms.aiProgramTitle')}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Customized for {aiPlan.goal || 'Fitness'}, {aiPlan.equipment || 'Full Gym'} ({aiPlan.daysPerWeek || aiPlan.workoutPlan.length} days/week)
+                {t('workouts.myPrograms.customizedFor', {
+                  goal: aiPlan.goal || 'Fitness',
+                  equipment: aiPlan.equipment || 'Full Gym',
+                  days: aiPlan.daysPerWeek || aiPlan.workoutPlan.length,
+                })}
               </Typography>
             </Box>
           </Stack>
@@ -52,7 +59,7 @@ export default function MyPrograms({ aiPlan, loading, onStart }) {
                     <Box>
                       <Chip
                         size="small"
-                        label={`Day ${idx + 1}`}
+                        label={t('workouts.myPrograms.dayBadge', { number: idx + 1 })}
                         sx={{ bgcolor: 'rgba(198,255,62,0.15)', color: '#C6FF3E', fontWeight: 700, mb: 1 }}
                       />
                       <Typography variant="h6" sx={{ fontWeight: 800 }}>
@@ -75,7 +82,7 @@ export default function MyPrograms({ aiPlan, loading, onStart }) {
                   </Stack>
 
                   <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ mb: 1, display: 'block' }}>
-                    EXERCISES ({day.exercises?.length || 0})
+                    {t('workouts.myPrograms.exercisesCount', { count: day.exercises?.length || 0 }).toUpperCase()}
                   </Typography>
 
                   <Stack spacing={1} sx={{ mb: 3, flex: 1 }}>
@@ -96,7 +103,7 @@ export default function MyPrograms({ aiPlan, loading, onStart }) {
                         </Typography>
                         <Chip
                           size="small"
-                          label={`${ex.sets} sets × ${ex.reps}`}
+                          label={`${ex.sets} ${t('common.sets')} × ${ex.reps}`}
                           sx={{ fontSize: '0.7rem', height: 20, bgcolor: 'rgba(255,255,255,0.06)' }}
                         />
                       </Box>
@@ -110,7 +117,7 @@ export default function MyPrograms({ aiPlan, loading, onStart }) {
                     startIcon={<PlayCircleRoundedIcon />}
                     sx={{ py: 1.2 }}
                   >
-                    Start Day {idx + 1} Workout
+                    {t('workouts.myPrograms.startDayButton')}
                   </Button>
                 </StyledCard>
               </Grid>
@@ -121,13 +128,13 @@ export default function MyPrograms({ aiPlan, loading, onStart }) {
         <StyledCard sx={{ p: 4, textAlign: 'center' }}>
           <FitnessCenterRoundedIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
           <Typography variant="h6" fontWeight={800} sx={{ mb: 1 }}>
-            No Customized Workout Plan Generated Yet
+            {t('workouts.myPrograms.noProgramTitle')}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3, maxWidth: 500, mx: 'auto' }}>
-            Complete your onboarding questionnaire to receive your custom AI workout and nutrition plan tailored specifically to your goals and equipment.
+            {t('workouts.myPrograms.noProgramSubtitle')}
           </Typography>
           <Button variant="contained" onClick={() => onStart(0)} startIcon={<PlayCircleRoundedIcon />}>
-            Start Workout
+            {t('workouts.tabs.start')}
           </Button>
         </StyledCard>
       )}

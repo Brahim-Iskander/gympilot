@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Tabs, Tab, Box, Paper } from '@mui/material';
 import { useLocation, useNavigate, Link as RouterLink } from 'react-router-dom';
 import DashboardRoundedIcon from '@mui/icons-material/DashboardRounded';
@@ -5,20 +6,22 @@ import Inventory2RoundedIcon from '@mui/icons-material/Inventory2Rounded';
 import ShoppingCartRoundedIcon from '@mui/icons-material/ShoppingCartRounded';
 import StorefrontRoundedIcon from '@mui/icons-material/StorefrontRounded';
 import LocalOfferRoundedIcon from '@mui/icons-material/LocalOfferRounded';
+import { useLanguage } from '../../../i18n';
 
 export default function SellerNavTabs() {
+  const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
 
   const currentPath = location.pathname;
 
-  const tabs = [
-    { label: 'Overview', path: '/seller', icon: <DashboardRoundedIcon fontSize="small" /> },
-    { label: 'Products & Inventory', path: '/seller/products', icon: <Inventory2RoundedIcon fontSize="small" /> },
-    { label: 'Special Offer Packs', path: '/seller/packs', icon: <LocalOfferRoundedIcon fontSize="small" /> },
-    { label: 'Customer Orders', path: '/seller/orders', icon: <ShoppingCartRoundedIcon fontSize="small" /> },
-    { label: 'Store Settings', path: '/seller/settings', icon: <StorefrontRoundedIcon fontSize="small" /> },
-  ];
+  const tabs = useMemo(() => [
+    { label: t('seller.tabs.overview'), path: '/seller', icon: <DashboardRoundedIcon fontSize="small" /> },
+    { label: t('seller.tabs.products'), path: '/seller/products', icon: <Inventory2RoundedIcon fontSize="small" /> },
+    { label: t('seller.tabs.packs'), path: '/seller/packs', icon: <LocalOfferRoundedIcon fontSize="small" /> },
+    { label: t('seller.tabs.orders'), path: '/seller/orders', icon: <ShoppingCartRoundedIcon fontSize="small" /> },
+    { label: t('seller.tabs.settings'), path: '/seller/settings', icon: <StorefrontRoundedIcon fontSize="small" /> },
+  ], [t]);
 
   const currentTab = tabs.find(t => t.path === currentPath)?.path || '/seller';
 
@@ -59,20 +62,21 @@ export default function SellerNavTabs() {
             label={tab.label}
             icon={tab.icon}
             iconPosition="start"
-            component={RouterLink}
-            to={tab.path}
             sx={{
-              minHeight: 38,
-              py: 0.75,
-              px: 2,
-              fontWeight: 700,
-              fontSize: '0.84rem',
+              minHeight: 40,
+              py: 1,
+              px: 2.5,
               borderRadius: 2,
-              textTransform: 'none',
-              zIndex: 1,
+              fontWeight: 700,
+              fontSize: '0.875rem',
               color: 'text.secondary',
+              zIndex: 1,
+              transition: 'all 0.2s ease',
               '&.Mui-selected': {
                 color: '#8A7CFF',
+              },
+              '&:hover': {
+                color: 'text.primary',
               },
             }}
           />

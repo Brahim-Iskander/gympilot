@@ -22,6 +22,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.stereotype.Service;
 
 import com.gymtrack.dto.AdminDashboardResponse;
+import com.gymtrack.dto.SendMailRequest;
 import com.gymtrack.dto.AdminUserResponse;
 import com.gymtrack.dto.AnalyticsChartResponse;
 import com.gymtrack.dto.AnalyticsChartResponse.DataPoint;
@@ -32,7 +33,6 @@ import com.gymtrack.exception.InvalidCredentialsException;
 import com.gymtrack.model.RoleAuditLog;
 import com.gymtrack.model.User;
 import com.gymtrack.repository.RoleAuditLogRepository;
-import com.gymtrack.repository.SiteVisitRepository;
 import com.gymtrack.repository.UserRepository;
 
 @Service
@@ -41,18 +41,18 @@ public class AdminService {
     private static final Logger log = LoggerFactory.getLogger(AdminService.class);
 
     private final UserRepository userRepository;
-    private final SiteVisitRepository siteVisitRepository;
     private final RoleAuditLogRepository roleAuditLogRepository;
     private final MongoTemplate mongoTemplate;
+    private final MailService mailService;
 
     public AdminService(UserRepository userRepository,
-                        SiteVisitRepository siteVisitRepository,
                         RoleAuditLogRepository roleAuditLogRepository,
-                        MongoTemplate mongoTemplate) {
+                        MongoTemplate mongoTemplate,
+                        MailService mailService) {
         this.userRepository = userRepository;
-        this.siteVisitRepository = siteVisitRepository;
         this.roleAuditLogRepository = roleAuditLogRepository;
         this.mongoTemplate = mongoTemplate;
+        this.mailService = mailService;
     }
 
     public AdminDashboardResponse getDashboardStats() {
@@ -60,17 +60,12 @@ public class AdminService {
         Instant todayStart = now.truncatedTo(ChronoUnit.DAYS);
         Instant weekAgo = now.minus(7, ChronoUnit.DAYS);
         Instant monthAgo = now.minus(30, ChronoUnit.DAYS);
-        Instant yearAgo = now.minus(365, ChronoUnit.DAYS);
 
         long totalUsers = userRepository.count();
         long newUsersToday = userRepository.countByCreatedAtAfter(todayStart);
         long newUsersThisWeek = userRepository.countByCreatedAtAfter(weekAgo);
         long newUsersThisMonth = userRepository.countByCreatedAtAfter(monthAgo);
         long bannedUsers = userRepository.countByBannedTrue();
-
-        long visitsToday = siteVisitRepository.countByVisitedAtAfter(todayStart);
-        long visitsThisMonth = siteVisitRepository.countByVisitedAtAfter(monthAgo);
-        long visitsThisYear = siteVisitRepository.countByVisitedAtAfter(yearAgo);
 
         long basicMembers = userRepository.countByMembershipTierAndMembershipStatus("BASIC", "ACTIVE");
         long premiumMembers = userRepository.countByMembershipTierAndMembershipStatus("PREMIUM", "ACTIVE");
@@ -85,9 +80,6 @@ public class AdminService {
                 newUsersThisWeek,
                 newUsersThisMonth,
                 bannedUsers,
-                visitsToday,
-                visitsThisMonth,
-                visitsThisYear,
                 totalMembers,
                 freeUsers,
                 basicMembers,
@@ -296,29 +288,6 @@ public class AdminService {
         return AdminUserResponse.from(saved);
     }
 
-    public AnalyticsChartResponse getVisitorAnalytics(String period) {
-        Instant from = getPeriodStartInstant(period);
-
-        Criteria criteria = Criteria.where("visitedAt").gte(from);
-        Aggregation aggregation = Aggregation.newAggregation(
-                Aggregation.match(criteria),
-                Aggregation.project("visitedAt")
-                        .andExpression("dateToString('%Y-%m-%d', visitedAt)").as("dateGroup"),
-                Aggregation.group("dateGroup").count().as("count"),
-                Aggregation.project("count").and("_id").as("date")
-        );
-
-        AggregationResults<AggregationDataPoint> results = mongoTemplate.aggregate(
-                aggregation, "site_visits", AggregationDataPoint.class
-        );
-
-        Map<String, Long> countByDate = results.getMappedResults().stream()
-                .collect(Collectors.toMap(AggregationDataPoint::date, AggregationDataPoint::count));
-
-        List<DataPoint> dataPoints = fillMissingDates(period, countByDate);
-        return new AnalyticsChartResponse(dataPoints);
-    }
-
     public AnalyticsChartResponse getRegistrationAnalytics(String period) {
         Instant from = getPeriodStartInstant(period);
 
@@ -369,4 +338,51 @@ public class AdminService {
     }
 
     private record AggregationDataPoint(String date, long count) {}
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Admin Bulk Mail
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Sends an admin email to a single user or all non-banned users.
+     *
+     * @param request contains subject, body, isHtml, and optional recipientEmail
+     * @return a map with "recipientCount" (how many emails were queued)
+     */
+    public Map<String, Object> sendBulkMail(SendMailRequest request) {
+        List<String> recipients;
+
+        if (request.recipientEmail() != null && !request.recipientEmail().isBlank()) {
+            // Single recipient mode
+            String email = request.recipientEmail().trim().toLowerCase();
+            recipients = List.of(email);
+            log.info("Admin sending single email to: {}, subject: {}", email, request.subject());
+
+            // Send synchronously for single recipient
+            mailService.sendAdminEmail(email, request.subject(), request.body(), request.isHtml());
+        } else {
+            // Bulk mode — all non-banned users
+            recipients = userRepository.findAllByBannedFalse().stream()
+                    .map(user -> user.getEmail())
+                    .filter(email -> email != null && !email.isBlank())
+                    .collect(Collectors.toList());
+
+            if (recipients.isEmpty()) {
+                log.warn("No eligible recipients found for bulk email");
+                return Map.of("recipientCount", 0, "message", "No eligible recipients found");
+            }
+
+            log.info("Admin sending bulk email to {} users, subject: {}", recipients.size(), request.subject());
+
+            // Send asynchronously for bulk
+            mailService.sendBulkAdminEmail(recipients, request.subject(), request.body(), request.isHtml());
+        }
+
+        return Map.of(
+                "recipientCount", recipients.size(),
+                "message", recipients.size() == 1
+                        ? "Email sent to " + recipients.get(0)
+                        : "Bulk email queued for " + recipients.size() + " recipients"
+        );
+    }
 }

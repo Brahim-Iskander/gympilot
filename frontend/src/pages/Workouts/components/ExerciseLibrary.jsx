@@ -27,6 +27,7 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
 import ExerciseTutorialModal from './ExerciseTutorialModal';
 import BodyMapSVG from './BodyMapSVG';
+import { useLanguage } from '../../../i18n';
 
 const StyledCard = styled(Card)(({ }) => ({
   borderRadius: 16,
@@ -80,6 +81,7 @@ const exercises = [
 ];
 
 function ExerciseCard({ exercise, onAdd, isAdded, onOpenTutorial }) {
+  const { t } = useLanguage();
   const difficultyColors = {
     Beginner: '#C6FF3E',
     Intermediate: '#FFC107',
@@ -199,7 +201,7 @@ function ExerciseCard({ exercise, onAdd, isAdded, onOpenTutorial }) {
               },
             }}
           >
-            Tutorial
+            {t('workouts.exerciseLibrary.viewTutorial')}
           </Button>
 
           {isAdded ? (
@@ -218,7 +220,7 @@ function ExerciseCard({ exercise, onAdd, isAdded, onOpenTutorial }) {
                 '&.Mui-disabled': { borderColor: 'rgba(198,255,62,0.2)', color: '#C6FF3E', opacity: 0.7 },
               }}
             >
-              Added
+              {t('workouts.exerciseLibrary.added')}
             </Button>
           ) : (
             <Button
@@ -237,7 +239,7 @@ function ExerciseCard({ exercise, onAdd, isAdded, onOpenTutorial }) {
                 '&:hover': { bgcolor: '#b3f520' },
               }}
             >
-              Add
+              {t('workouts.exerciseLibrary.addExerciseToSession')}
             </Button>
           )}
         </Stack>
@@ -247,6 +249,7 @@ function ExerciseCard({ exercise, onAdd, isAdded, onOpenTutorial }) {
 }
 
 export default function ExerciseLibrary({ onAddExercise, addedExerciseIds = [] }) {
+  const { t } = useLanguage();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -314,7 +317,7 @@ export default function ExerciseLibrary({ onAddExercise, addedExerciseIds = [] }
       <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2} sx={{ mb: 3 }}>
         <Box sx={{ flex: 1, minWidth: { xs: '100%', sm: 240 } }}>
           <TextField
-            placeholder="Search exercises by name..."
+            placeholder={t('workouts.exerciseLibrary.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             size="small"
@@ -339,7 +342,7 @@ export default function ExerciseLibrary({ onAddExercise, addedExerciseIds = [] }
           >
             {categories.map((cat) => (
               <MenuItem key={cat} value={cat}>
-                {cat === 'All' ? 'All Muscles' : cat}
+                {cat === 'All' ? t('workouts.exerciseLibrary.allMuscles') : cat}
               </MenuItem>
             ))}
           </TextField>
@@ -353,7 +356,7 @@ export default function ExerciseLibrary({ onAddExercise, addedExerciseIds = [] }
           >
             {equipment.map((eq) => (
               <MenuItem key={eq} value={eq}>
-                {eq === 'All' ? 'All Equipment' : eq}
+                {eq === 'All' ? t('workouts.exerciseLibrary.allEquipment') : eq}
               </MenuItem>
             ))}
           </TextField>

@@ -63,6 +63,7 @@ import { categoryService } from '../../services/categoryService';
 import { productPackService } from '../../services/productPackService';
 import { useCart } from '../../context/CartContext';
 import CartDrawer from '../../components/CartDrawer';
+import { useLanguage } from '../../i18n';
 
 const TRUST_BENEFITS = [
   {
@@ -107,6 +108,7 @@ const getCategoryIcon = (categoryName = '') => {
 };
 
 export default function Shop() {
+  const { t } = useLanguage();
   const { addToCart, itemCount, openCartDrawer } = useCart();
   const [searchParams] = useSearchParams();
 
@@ -307,7 +309,7 @@ export default function Shop() {
               borderRadius: 2,
             }}
           >
-            Dashboard
+            {t('nav.dashboard')}
           </Button>
 
           <Button
@@ -326,7 +328,7 @@ export default function Shop() {
               px: 2,
             }}
           >
-            Panier ({itemCount})
+            {t('shop.cart.title')} ({itemCount})
           </Button>
         </Stack>
 

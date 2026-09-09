@@ -560,4 +560,129 @@ public class MailService {
                 java.time.Year.now().getValue()
             );
     }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Admin Bulk / Single Email
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Sends a single admin-composed email (text or HTML).
+     * Plain-text bodies are automatically wrapped in the GymPilot branded template.
+     *
+     * @return true if the email was sent successfully via at least one provider
+     */
+    public boolean sendAdminEmail(String to, String subject, String body, boolean isHtml) {
+        String htmlBody = isHtml ? body : wrapPlainTextInTemplate(body);
+
+        if (hasBrevoApi()) {
+            boolean sent = sendViaBrevo(to, subject, htmlBody);
+            if (sent) return true;
+            log.warn("Brevo API failed for admin email to {}, trying next provider...", to);
+        }
+
+        if (hasResendApi()) {
+            boolean sent = sendViaResend(to, subject, htmlBody);
+            if (sent) return true;
+            log.warn("Resend API failed for admin email to {}, falling back to SMTP...", to);
+        }
+
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(new InternetAddress(fromAddress, fromName));
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(htmlBody, true);
+
+            mailSender.send(message);
+            log.info("Admin email sent successfully via SMTP to: {}", to);
+            return true;
+        } catch (Exception ex) {
+            log.error("Failed to send admin email via SMTP to: {}", to, ex);
+            return false;
+        }
+    }
+
+    /**
+     * Sends bulk admin emails asynchronously to a list of recipients.
+     * Includes a 100ms delay between sends to prevent rate-limiting.
+     *
+     * @param recipients list of email addresses
+     * @param subject    email subject
+     * @param body       email content (text or HTML)
+     * @param isHtml     whether the body is HTML
+     */
+    @Async("taskExecutor")
+    public void sendBulkAdminEmail(List<String> recipients, String subject, String body, boolean isHtml) {
+        log.info("Starting bulk admin email to {} recipients, subject: {}", recipients.size(), subject);
+        int success = 0;
+        int failed = 0;
+
+        for (String to : recipients) {
+            try {
+                boolean sent = sendAdminEmail(to, subject, body, isHtml);
+                if (sent) {
+                    success++;
+                } else {
+                    failed++;
+                }
+                // Small delay between sends to avoid hitting provider rate limits
+                Thread.sleep(100);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                log.warn("Bulk email interrupted after {}/{} emails", success + failed, recipients.size());
+                break;
+            } catch (Exception ex) {
+                failed++;
+                log.error("Bulk email failed for recipient: {}", to, ex);
+            }
+        }
+
+        log.info("Bulk admin email completed: {} sent, {} failed out of {} total",
+                success, failed, recipients.size());
+    }
+
+    /**
+     * Wraps a plain-text body in the GymPilot branded HTML email template.
+     */
+    private String wrapPlainTextInTemplate(String plainText) {
+        // Escape HTML special chars and convert newlines to <br>
+        String escaped = plainText
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("\n", "<br>");
+
+        return """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>GymPilot</title>
+              <style>
+                body { margin: 0; padding: 0; background-color: #0A0C0F; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #F4F6F8; }
+                .wrapper { width: 100%%; max-width: 600px; margin: 0 auto; padding: 40px 20px; box-sizing: border-box; }
+                .card { background-color: #12151B; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 36px 32px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+                .text { font-size: 15px; line-height: 1.7; color: #D1D5DB; }
+                .footer { text-align: center; margin-top: 32px; font-size: 12px; color: #64748B; }
+              </style>
+            </head>
+            <body>
+              <div class="wrapper">
+                <div class="card">
+                  """ + getLogoHtml() + """
+                  <div class="text">%s</div>
+                </div>
+                <div class="footer">
+                  &copy; %d GymPilot. All rights reserved.<br>
+                  You are receiving this email because you have an account on GymPilot.
+                </div>
+              </div>
+            </body>
+            </html>
+            """.formatted(escaped, java.time.Year.now().getValue());
+    }
 }

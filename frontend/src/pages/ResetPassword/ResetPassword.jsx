@@ -12,7 +12,6 @@ import {
   TextField,
   Typography,
   Avatar,
-  Paper,
 } from '@mui/material';
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
 import VisibilityOffRoundedIcon from '@mui/icons-material/VisibilityOffRounded';
@@ -24,8 +23,10 @@ import AuthShell from '../../components/AuthShell';
 import SEO from '../../components/SEO';
 import { authService } from '../../services/authService';
 import { getApiErrorMessage } from '../../utils/errors';
+import { useLanguage } from '../../i18n';
 
 export default function ResetPassword() {
+  const { t } = useLanguage();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get('token') || '';
@@ -48,7 +49,7 @@ export default function ResetPassword() {
     if (!token) {
       setValidating(false);
       setTokenValid(false);
-      setValidationError('Missing password reset token. Please check your link.');
+      setValidationError(t('common.error'));
       return;
     }
 
@@ -61,26 +62,26 @@ export default function ResetPassword() {
           setTokenEmail(res.email || '');
         } else {
           setTokenValid(false);
-          setValidationError(res.message || 'This reset link has expired or is invalid.');
+          setValidationError(res.message || t('common.error'));
         }
       } catch (err) {
         setTokenValid(false);
-        setValidationError(getApiErrorMessage(err) || 'Failed to validate reset link.');
+        setValidationError(getApiErrorMessage(err) || t('common.error'));
       } finally {
         setValidating(false);
       }
     };
 
     checkToken();
-  }, [token]);
+  }, [token, t]);
 
   const validate = () => {
     const errs = {};
     if (!newPassword || newPassword.length < 8) {
-      errs.newPassword = 'Password must be at least 8 characters';
+      errs.newPassword = t('auth.passwordHint');
     }
     if (newPassword !== confirmPassword) {
-      errs.confirmPassword = 'Passwords do not match';
+      errs.confirmPassword = t('auth.confirmPassword') + ' ' + t('common.error');
     }
     return errs;
   };
@@ -106,37 +107,35 @@ export default function ResetPassword() {
   return (
     <>
       <SEO
-        title="Reset Password"
-        description="Choose a new secure password for your GymPilot account."
+        title={t('auth.resetPasswordTitle')}
+        description={t('auth.resetPasswordSubtitle')}
         path="/reset-password"
         noIndex
       />
       <AuthShell
         title={
           validating
-            ? 'Verifying Link...'
+            ? t('common.loading')
             : resetSuccess
-            ? 'Password Reset Complete'
+            ? t('auth.passwordResetSuccess')
             : !tokenValid
-            ? 'Link Expired'
-            : 'Reset Password'
+            ? t('common.error')
+            : t('auth.resetPasswordTitle')
         }
         subtitle={
           validating
-            ? 'Please wait while we verify your security token.'
+            ? t('common.loading')
             : resetSuccess
-            ? 'Your new credentials are saved. You can now log in.'
+            ? t('auth.passwordResetSuccessDesc')
             : !tokenValid
-            ? 'This reset link cannot be used.'
-            : tokenEmail
-            ? `Choose a new secure password for ${tokenEmail}`
-            : 'Choose a strong password with at least 8 characters.'
+            ? validationError
+            : t('auth.resetPasswordSubtitle')
         }
         footer={
           <Typography variant="body2" color="text.secondary">
-            Remember your credentials?{' '}
+            {t('auth.rememberPassword')}{' '}
             <Link component={RouterLink} to="/login" sx={{ color: 'primary.main', fontWeight: 600 }}>
-              Sign In
+              {t('auth.signIn')}
             </Link>
           </Typography>
         }
@@ -162,10 +161,10 @@ export default function ResetPassword() {
 
           <Box>
             <Typography variant="h6" fontWeight={800} sx={{ color: 'text.primary', mb: 1 }}>
-              Password Updated Successfully
+              {t('auth.passwordResetSuccess')}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              You can now sign in to your GymPilot account with your new password.
+              {t('auth.passwordResetSuccessDesc')}
             </Typography>
           </Box>
 
@@ -184,7 +183,7 @@ export default function ResetPassword() {
               '&:hover': { bgcolor: '#b3f520' },
             }}
           >
-            Sign In Now
+            {t('auth.backToSignIn')}
           </Button>
         </Stack>
       ) : !tokenValid ? (
@@ -203,10 +202,10 @@ export default function ResetPassword() {
 
           <Box>
             <Typography variant="h6" fontWeight={800} sx={{ color: 'text.primary', mb: 1 }}>
-              Invalid or Expired Link
+              {t('common.error')}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {validationError || 'This password reset link is invalid or has already expired after 30 minutes.'}
+              {validationError}
             </Typography>
           </Box>
 
@@ -223,7 +222,7 @@ export default function ResetPassword() {
               fontWeight: 800,
             }}
           >
-            Request a New Reset Link
+            {t('auth.forgotPasswordTitle')}
           </Button>
         </Stack>
       ) : (
@@ -236,7 +235,7 @@ export default function ResetPassword() {
             )}
 
             <TextField
-              label="New Password"
+              label={t('auth.newPassword')}
               type={showPassword ? 'text' : 'password'}
               autoComplete="new-password"
               autoFocus
@@ -247,7 +246,7 @@ export default function ResetPassword() {
                 setFormErrors((prev) => ({ ...prev, newPassword: '' }));
               }}
               error={Boolean(formErrors.newPassword)}
-              helperText={formErrors.newPassword || 'Must be at least 8 characters'}
+              helperText={formErrors.newPassword || t('auth.passwordHint')}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
@@ -264,7 +263,7 @@ export default function ResetPassword() {
             />
 
             <TextField
-              label="Confirm New Password"
+              label={t('auth.confirmNewPassword')}
               type={showConfirmPassword ? 'text' : 'password'}
               autoComplete="new-password"
               required
@@ -307,7 +306,7 @@ export default function ResetPassword() {
                 '&:hover': { bgcolor: '#b3f520' },
               }}
             >
-              {submitting ? 'Updating Password...' : 'Reset Password'}
+              {submitting ? t('auth.resettingPassword') : t('auth.resetPasswordButton')}
             </Button>
           </Stack>
         </Box>

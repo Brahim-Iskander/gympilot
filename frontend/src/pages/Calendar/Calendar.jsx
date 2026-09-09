@@ -15,9 +15,12 @@ import EventRoundedIcon from '@mui/icons-material/EventRounded';
 import { SectionHeader, Card } from '../../components/ui';
 import { useAiPlan } from '../../hooks/useAiPlan';
 import SEO from '../../components/SEO';
+import { useLanguage } from '../../i18n';
 
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const MONTH_KEYS = [
+  'january', 'february', 'march', 'april', 'may', 'june',
+  'july', 'august', 'september', 'october', 'november', 'december'
+];
 
 const eventTypes = {
   workout: { color: '#C6FF3E', bg: 'rgba(198,255,62,0.15)', label: 'Workout' },
@@ -42,11 +45,22 @@ function formatDateKey(year, month, day) {
 }
 
 export default function Calendar() {
+  const { t } = useLanguage();
   const today = new Date();
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
   const [selectedDate, setSelectedDate] = useState(null);
   const [anchorEl, setAnchorEl] = useState(null);
+
+  const DAYS = useMemo(() => [
+    t('calendar.days.mon'),
+    t('calendar.days.tue'),
+    t('calendar.days.wed'),
+    t('calendar.days.thu'),
+    t('calendar.days.fri'),
+    t('calendar.days.sat'),
+    t('calendar.days.sun'),
+  ], [t]);
 
   const { aiPlan, loading } = useAiPlan();
 
@@ -146,8 +160,8 @@ export default function Calendar() {
         noIndex
       />
       <SectionHeader
-        title="Calendar"
-        subtitle={aiPlan ? "Your dynamic AI-generated schedule" : "Track your workouts, measurements, and goals"}
+        title={t('calendar.title')}
+        subtitle={t('calendar.subtitle')}
       />
 
       <Card sx={{ p: 0, overflow: 'hidden' }}>
@@ -163,14 +177,14 @@ export default function Calendar() {
               <ChevronLeftRoundedIcon />
             </IconButton>
             <Typography variant="h6" sx={{ fontFamily: "'Sora','Inter',sans-serif", fontWeight: 700, minWidth: 180, textAlign: 'center' }}>
-              {MONTHS[currentMonth]} {currentYear}
+              {t(`calendar.months.${MONTH_KEYS[currentMonth]}`)} {currentYear}
             </Typography>
             <IconButton onClick={handleNext} size="small" sx={{ color: 'text.secondary' }}>
               <ChevronRightRoundedIcon />
             </IconButton>
           </Stack>
           <Chip
-            label="Today"
+            label={t('calendar.today')}
             size="small"
             onClick={handleToday}
             sx={{

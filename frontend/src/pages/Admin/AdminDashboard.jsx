@@ -22,7 +22,7 @@ import {
   PeopleRounded,
   PersonAddRounded,
   BlockRounded,
-  VisibilityRounded,
+
   TrendingUpRounded,
   CardMembershipRounded,
   WorkspacePremiumRounded,
@@ -33,8 +33,6 @@ import {
 } from '@mui/icons-material';
 import {
   ResponsiveContainer,
-  AreaChart,
-  Area,
   BarChart,
   Bar,
   PieChart,
@@ -116,9 +114,7 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [ticketStats, setTicketStats] = useState(null);
-  const [visitorPeriod, setVisitorPeriod] = useState('daily');
   const [regPeriod, setRegPeriod] = useState('daily');
-  const [visitorData, setVisitorData] = useState([]);
   const [regData, setRegData] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -141,17 +137,7 @@ export default function AdminDashboard() {
     loadStats();
   }, []);
 
-  useEffect(() => {
-    async function loadVisitorData() {
-      try {
-        const res = await adminService.getVisitorAnalytics(visitorPeriod);
-        setVisitorData(res?.data ?? []);
-      } catch (err) {
-        console.error('Failed to load visitor chart', err);
-      }
-    }
-    loadVisitorData();
-  }, [visitorPeriod]);
+
 
   useEffect(() => {
     async function loadRegData() {
@@ -181,7 +167,7 @@ export default function AdminDashboard() {
               System Dashboard
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Real-time platform activity, visitor analytics, and growth statistics
+              Real-time platform activity and growth statistics
             </Typography>
           </Box>
           <Chip icon={<TrendingUpRounded />} label="Live Tracking" color="success" variant="outlined" sx={{ fontWeight: 700 }} />
@@ -210,16 +196,7 @@ export default function AdminDashboard() {
             loading={loading}
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Visits Today"
-            value={stats?.visitsToday}
-            subtitle={`${stats?.visitsThisMonth?.toLocaleString() ?? 0} this month`}
-            icon={VisibilityRounded}
-            color="primary.main"
-            loading={loading}
-          />
-        </Grid>
+
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Banned Accounts"
@@ -507,54 +484,7 @@ export default function AdminDashboard() {
 
       {/* Charts Row */}
       <Grid container spacing={3}>
-        {/* Visitor Traffic Chart */}
-        <Grid item xs={12} lg={6}>
-          <Paper elevation={0} sx={{ p: 3, border: '1px solid', borderColor: 'divider', borderRadius: 3, height: '100%' }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-              <Box>
-                <Typography variant="h6" fontWeight={700}>
-                  Visitor Traffic
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  API requests breakdown ({visitorPeriod})
-                </Typography>
-              </Box>
 
-              <ToggleButtonGroup
-                size="small"
-                value={visitorPeriod}
-                exclusive
-                onChange={(_, val) => val && setVisitorPeriod(val)}
-                sx={{ '& .MuiToggleButton-root': { textTransform: 'capitalize', px: 1.5, py: 0.5, fontWeight: 600 } }}
-              >
-                <ToggleButton value="daily">Daily</ToggleButton>
-                <ToggleButton value="monthly">Monthly</ToggleButton>
-                <ToggleButton value="yearly">Yearly</ToggleButton>
-              </ToggleButtonGroup>
-            </Stack>
-
-            <Box sx={{ width: '100%', height: 300 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={visitorData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="visitorGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#C6FF3E" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#C6FF3E" stopOpacity={0.0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                  <XAxis dataKey="date" tick={{ fill: '#98A1AC', fontSize: 11 }} />
-                  <YAxis tick={{ fill: '#98A1AC', fontSize: 11 }} />
-                  <RechartsTooltip
-                    contentStyle={{ backgroundColor: '#12151B', borderColor: 'rgba(255,255,255,0.1)', borderRadius: 8 }}
-                    labelStyle={{ color: '#fff', fontWeight: 700 }}
-                  />
-                  <Area type="monotone" dataKey="count" name="Visits" stroke="#C6FF3E" strokeWidth={3} fillOpacity={1} fill="url(#visitorGradient)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </Box>
-          </Paper>
-        </Grid>
 
         {/* User Registrations Chart */}
         <Grid item xs={12} lg={6}>

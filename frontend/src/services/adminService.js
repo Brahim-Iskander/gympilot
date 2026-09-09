@@ -37,10 +37,6 @@ export const adminService = {
     return api.patch(`/admin/users/${id}/membership`, { membershipTier, membershipStatus }).then((res) => res.data);
   },
 
-  getVisitorAnalytics(period = 'daily') {
-    return api.get('/admin/analytics/visitors', { params: { period } }).then((res) => res.data);
-  },
-
   getRegistrationAnalytics(period = 'daily') {
     return api.get('/admin/analytics/registrations', { params: { period } }).then((res) => res.data);
   },
@@ -75,6 +71,10 @@ export const adminService = {
 
   getTicketStats() {
     return api.get('/admin/tickets/stats').then((res) => res.data);
+  },
+
+  sendMail({ subject, body, isHtml, recipientEmail }) {
+    return api.post('/admin/mail/send', { subject, body, isHtml, recipientEmail }).then((res) => res.data);
   },
 };
 

@@ -45,4 +45,7 @@ public interface UserRepository extends MongoRepository<User, String> {
     java.util.List<User> findByReferredByOrderByCreatedAtDesc(String referralCode);
 
     long countByMembershipTierAndMembershipStatus(String membershipTier, String membershipStatus);
+
+    /** Returns all non-banned users (for bulk mail). */
+    java.util.List<User> findAllByBannedFalse();
 }

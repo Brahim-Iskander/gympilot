@@ -32,17 +32,19 @@ import { progressService } from '../../services/progressService';
 import { fitnessDataService } from '../../services/fitnessDataService';
 import { getApiErrorMessage } from '../../utils/errors';
 import SEO from '../../components/SEO';
-
-const tabs = [
-  { id: 'timeline', label: 'Timeline & Logs', icon: <HistoryRoundedIcon /> },
-  { id: 'weight', label: 'Weight', icon: <MonitorWeightRoundedIcon /> },
-  { id: 'measurements', label: 'Measurements', icon: <StraightenRoundedIcon /> },
-  { id: 'photos', label: 'Photos', icon: <PhotoCameraRoundedIcon /> },
-  { id: 'strength', label: 'Strength & PRs', icon: <FitnessCenterRoundedIcon /> },
-];
+import { useLanguage } from '../../i18n';
 
 export default function Progress() {
+  const { t } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const tabs = [
+    { id: 'timeline', label: t('progress.timeline'), icon: <HistoryRoundedIcon /> },
+    { id: 'weight', label: t('progress.weight'), icon: <MonitorWeightRoundedIcon /> },
+    { id: 'measurements', label: t('progress.measurements'), icon: <StraightenRoundedIcon /> },
+    { id: 'photos', label: t('progress.photos'), icon: <PhotoCameraRoundedIcon /> },
+    { id: 'strength', label: t('progress.strength'), icon: <FitnessCenterRoundedIcon /> },
+  ];
   const initialTab = searchParams.get('tab') || 'timeline';
   const [activeTab, setActiveTab] = useState(initialTab);
 
@@ -151,10 +153,10 @@ export default function Progress() {
       >
         <Box>
           <Typography variant="h4" component="h1" sx={{ fontFamily: "'Sora','Inter',sans-serif", fontWeight: 800 }}>
-            Progress & Body Tracking
+            {t('progress.title')}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Log body weights, circumferences, PR strength milestones, and progress photos with complete timeline history.
+            {t('progress.subtitle')}
           </Typography>
         </Box>
 
@@ -166,7 +168,7 @@ export default function Progress() {
             onClick={handleOpenAdd}
             sx={{ borderRadius: 2.5, fontWeight: 800, px: 2.5, py: 1 }}
           >
-            Log Progress Entry
+            {t('progress.logNewEntry')}
           </Button>
 
           <Button
@@ -177,7 +179,7 @@ export default function Progress() {
             onClick={() => navigate('/analytics')}
             sx={{ borderRadius: 2.5, fontWeight: 700, px: 2.5, py: 1 }}
           >
-            AI Analytics
+            {t('nav.analytics')}
           </Button>
         </Stack>
       </Stack>

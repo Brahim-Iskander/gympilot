@@ -36,6 +36,7 @@ import SEO from '../../components/SEO';
 import SellerNavTabs from './components/SellerNavTabs';
 import { sellerService } from '../../services/sellerService';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../i18n';
 
 function statusChip(status) {
   switch ((status || '').toUpperCase()) {
@@ -51,6 +52,7 @@ function statusChip(status) {
 }
 
 export default function SellerDashboard() {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -118,10 +120,10 @@ export default function SellerDashboard() {
         <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} gap={2} sx={{ mb: 4 }}>
           <Box>
             <Typography variant="h4" sx={{ fontFamily: "'Sora', sans-serif", fontWeight: 800 }}>
-              Welcome, {user?.storeName || user?.firstName || 'Seller'}!
+              {t('nav.welcomeUser', { name: user?.storeName || user?.firstName || 'Seller' })}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Here is an overview of your marketplace sales, inventory, and recent orders.
+              {t('seller.subtitle')}
             </Typography>
           </Box>
           <Stack direction="row" spacing={1.5}>
@@ -132,7 +134,7 @@ export default function SellerDashboard() {
               startIcon={<LocalOfferRoundedIcon />}
               sx={{ fontWeight: 800, borderRadius: 2 }}
             >
-              Special Offer Packs
+              {t('seller.tabs.packs')}
             </Button>
             <Button
               component={RouterLink}
@@ -141,7 +143,7 @@ export default function SellerDashboard() {
               startIcon={<AddRoundedIcon />}
               sx={{ fontWeight: 800, bgcolor: 'primary.main', color: '#0A0C0F', borderRadius: 2 }}
             >
-              Add New Product
+              {t('seller.addProduct')}
             </Button>
           </Stack>
         </Stack>

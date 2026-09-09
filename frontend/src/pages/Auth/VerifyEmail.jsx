@@ -22,8 +22,10 @@ import SEO from '../../components/SEO';
 import FullScreenLoader from '../../components/FullScreenLoader';
 import { useAuth } from '../../context/AuthContext';
 import { getApiErrorMessage } from '../../utils/errors';
+import { useLanguage } from '../../i18n';
 
 export default function VerifyEmail() {
+  const { t } = useLanguage();
   const { user, isAuthenticated, isVerified, onboardingCompleted, loading, verifyOtp, resendOtp, logout } = useAuth();
 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -66,19 +68,16 @@ export default function VerifyEmail() {
   }
 
   const handleInputChange = (index, value) => {
-    // Only accept numeric digit
     const digit = value.replace(/\D/g, '').slice(-1);
     const nextOtp = [...otp];
     nextOtp[index] = digit;
     setOtp(nextOtp);
     setError('');
 
-    // Auto-advance to next input
     if (digit && index < 5 && inputRefs.current[index + 1]) {
       inputRefs.current[index + 1].focus();
     }
 
-    // Auto-submit if all 6 digits entered
     if (digit && index === 5 && nextOtp.every((d) => d !== '')) {
       submitCode(nextOtp.join(''));
     }
@@ -121,7 +120,7 @@ export default function VerifyEmail() {
   const submitCode = async (codeString) => {
     const code = codeString || otp.join('');
     if (code.length !== 6) {
-      setError('Please enter the complete 6-digit code.');
+      setError(t('common.error'));
       return;
     }
 
@@ -131,7 +130,6 @@ export default function VerifyEmail() {
 
     try {
       await verifyOtp(code);
-      // verifyOtp in AuthContext automatically navigates to /onboarding upon success
     } catch (err) {
       setError(getApiErrorMessage(err));
     } finally {
@@ -148,7 +146,7 @@ export default function VerifyEmail() {
 
     try {
       const res = await resendOtp();
-      setSuccessMsg(res?.message || 'A new verification code has been sent to your email.');
+      setSuccessMsg(res?.message || t('auth.codeSentTo', { email: user?.email || '' }));
       setCooldown(60);
       setOtp(['', '', '', '', '', '']);
       if (inputRefs.current[0]) {
@@ -164,33 +162,29 @@ export default function VerifyEmail() {
   return (
     <>
       <SEO
-        title="Verify Your Email — GymPilot"
-        description="Enter the 6-digit verification code sent to your email address."
+        title={`${t('auth.verifyEmailTitle')} — GymPilot`}
+        description={t('auth.verifyEmailSubtitle')}
         path="/verify-email"
         noIndex
       />
 
       <AuthShell
-        title="Verify Your Email"
-        subtitle="Step 1 of 2: Confirm your account before beginning your fitness questionnaire."
+        title={t('auth.verifyEmailTitle')}
+        subtitle={t('auth.verifyEmailSubtitle')}
         footer={
           <Stack direction="row" spacing={1} justifyContent="center" alignItems="center">
-            <Typography variant="caption" color="text.secondary">
-              Wrong email address?
-            </Typography>
             <Button
               size="small"
               onClick={logout}
               startIcon={<LogoutRoundedIcon sx={{ fontSize: 16 }} />}
               sx={{ fontWeight: 700, fontSize: '0.8rem', color: 'text.secondary' }}
             >
-              Sign Out
+              {t('nav.signOut')}
             </Button>
           </Stack>
         }
       >
         <Stack spacing={3} alignItems="center">
-          {/* Header Icon */}
           <Box
             sx={{
               width: 72,
@@ -207,13 +201,12 @@ export default function VerifyEmail() {
             <MarkEmailReadRoundedIcon sx={{ fontSize: 38 }} />
           </Box>
 
-          {/* Instructions */}
           <Box sx={{ textAlign: 'center' }}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-              We sent a 6-digit verification code to:
+              {t('auth.codeSentTo', { email: '' })}
             </Typography>
             <Chip
-              label={user?.email || 'your email'}
+              label={user?.email || 'email'}
               size="medium"
               sx={{
                 fontWeight: 800,
@@ -227,7 +220,6 @@ export default function VerifyEmail() {
             />
           </Box>
 
-          {/* Feedback alerts */}
           {error && (
             <Alert severity="error" sx={{ width: '100%', borderRadius: 2 }} onClose={() => setError('')}>
               {error}
@@ -240,7 +232,6 @@ export default function VerifyEmail() {
             </Alert>
           )}
 
-          {/* 6-Digit OTP Inputs */}
           <Box
             onPaste={handlePaste}
             sx={{
@@ -290,7 +281,6 @@ export default function VerifyEmail() {
             ))}
           </Box>
 
-          {/* Action button */}
           <Button
             variant="contained"
             size="large"
@@ -305,10 +295,9 @@ export default function VerifyEmail() {
               borderRadius: 2.5,
             }}
           >
-            {submitting ? 'Verifying Code...' : 'Verify & Continue to Questionnaire'}
+            {submitting ? t('auth.verifyingCode') : t('auth.verifyCode')}
           </Button>
 
-          {/* Resend code section */}
           <Paper
             elevation={0}
             sx={{
@@ -321,10 +310,6 @@ export default function VerifyEmail() {
               textAlign: 'center',
             }}
           >
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              Didn't receive the email? Check your spam folder or request a new code.
-            </Typography>
-
             <Button
               variant="outlined"
               size="small"
@@ -334,17 +319,17 @@ export default function VerifyEmail() {
               sx={{ fontWeight: 700, borderRadius: 2 }}
             >
               {resending
-                ? 'Sending...'
+                ? t('common.loading')
                 : cooldown > 0
-                ? `Resend Code (${cooldown}s)`
-                : 'Resend Verification Code'}
+                ? t('auth.resendIn', { seconds: cooldown })
+                : t('auth.resendCode')}
             </Button>
           </Paper>
 
           <Stack direction="row" spacing={0.75} alignItems="center" justifyContent="center" sx={{ color: 'text.secondary' }}>
             <AccessTimeRoundedIcon sx={{ fontSize: 16 }} />
             <Typography variant="caption" color="text.secondary">
-              Code expires in <strong>10 minutes</strong>. Maximum 5 verification attempts allowed.
+              10 min
             </Typography>
           </Stack>
         </Stack>
