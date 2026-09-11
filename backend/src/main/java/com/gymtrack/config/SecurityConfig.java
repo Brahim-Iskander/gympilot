@@ -65,6 +65,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/referrals/validate").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/partners").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/community-chat/messages").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/announcements/active").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/products").permitAll()

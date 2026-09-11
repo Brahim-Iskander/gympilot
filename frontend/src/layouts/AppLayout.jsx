@@ -64,6 +64,7 @@ import {
 import Logo from '../components/Logo';
 import LanguageSelector from '../components/LanguageSelector';
 import CartDrawer from '../components/CartDrawer';
+import AnnouncementBanner from '../components/AnnouncementBanner';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useThemeMode } from '../context/ThemeContext';
@@ -1147,6 +1148,8 @@ export default function AppLayout() {
               minHeight: `${HEADER_HEIGHT}px !important`,
             }}
           />
+
+          <AnnouncementBanner />
 
           <Container
             maxWidth="xl"

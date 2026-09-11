@@ -34,6 +34,7 @@ import {
   LocalOfferRounded,
   PaidRounded,
   EmailRounded,
+  CampaignRounded,
 } from '@mui/icons-material';
 
 import Logo from '../components/Logo';
@@ -103,6 +104,12 @@ const ADMIN_NAV = [
     label: 'Bulk Mail',
     icon: <EmailRounded sx={{ color: '#00E5FF' }} />,
     path: '/admin/mail',
+  },
+  {
+    id: 'admin-announcements',
+    label: 'Announcements',
+    icon: <CampaignRounded sx={{ color: '#FF9800' }} />,
+    path: '/admin/announcements',
   },
 ];
 

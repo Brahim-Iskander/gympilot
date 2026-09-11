@@ -31,45 +31,7 @@ import ShareRoundedIcon from '@mui/icons-material/ShareRounded';
 import { productPackService } from '../../../services/productPackService';
 import { useCart } from '../../../context/CartContext';
 
-// Default inspirational showcase packs (fallback if database has no packs yet)
-const DEFAULT_SHOWCASE_PACKS = [
-  {
-    id: 'pack-trio-anabolique',
-    name: 'Pack Trio Anabolique : 100% Whey Isolate + Créatine + Zinc',
-    slug: 'pack-trio-whey-creatine-zinc',
-    tagline: 'Force explosive, construction de muscle sec et optimisation hormonale maximale.',
-    badge: '-22% OFF · Bestseller',
-    price: 249.0,
-    originalPrice: 318.0,
-    images: ['/pack-whey-creatine-zinc.jpg'],
-    stockQuantity: 12,
-    rating: 5.0,
-    reviewCount: 34,
-    items: [
-      { name: 'Ultra Whey Protein Isolate (2.27kg)', notes: '25g protéines pures & 5.5g BCAA par dose' },
-      { name: 'Micronized Creatine Monohydrate (300g)', notes: 'Puissance ATP & saturation cellulaire 60 jours' },
-      { name: 'Zinc Haute Biodisponibilité 25mg (90 gélules)', notes: 'Soutien testostérone naturelle, sommeil & immunité' },
-    ],
-  },
-  {
-    id: 'pack-masse-extreme',
-    name: 'Pack Mass Builder : Hyper Gainer 3kg + Créatine 300g + Shaker Pro',
-    slug: 'pack-mass-builder',
-    tagline: 'La solution complète pour hardgainers : surplus calorique dense et progression rapide.',
-    badge: '-18% OFF · Prise de Masse',
-    price: 219.0,
-    originalPrice: 268.0,
-    images: ['https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=600&auto=format&fit=crop&q=80'],
-    stockQuantity: 8,
-    rating: 4.9,
-    reviewCount: 22,
-    items: [
-      { name: 'Hyper Mass Gainer Advanced (3.0kg)', notes: '1150 kcal & 50g protéines par portion' },
-      { name: 'Quamtrax Pure Creatine (300g)', notes: '100% micronisée pour booster la force' },
-      { name: 'Shaker GymPilot Pro 700ml', notes: 'Anti-fuite avec bille mélangeuse inox' },
-    ],
-  },
-];
+
 
 export default function DashboardPacksShowcase() {
   const [packs, setPacks] = useState([]);
@@ -105,14 +67,10 @@ export default function DashboardPacksShowcase() {
         const activeNonExpired = (data || []).filter(
           (p) => !p.validUntil || new Date(p.validUntil).getTime() > Date.now()
         );
-        if (activeNonExpired && activeNonExpired.length > 0) {
-          setPacks(activeNonExpired);
-        } else {
-          setPacks(DEFAULT_SHOWCASE_PACKS);
-        }
+        setPacks(activeNonExpired || []);
       })
       .catch(() => {
-        setPacks(DEFAULT_SHOWCASE_PACKS);
+        setPacks([]);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -136,14 +94,14 @@ export default function DashboardPacksShowcase() {
   };
 
   if (loading) {
-    return (
-      <Box sx={{ my: 4, textAlign: 'center', py: 3 }}>
-        <CircularProgress size={28} color="primary" />
-      </Box>
-    );
+    return null;
   }
 
   const displayPacks = packs.slice(0, 3);
+
+  if (displayPacks.length === 0) {
+    return null;
+  }
 
   return (
     <Box sx={{ my: 5 }}>

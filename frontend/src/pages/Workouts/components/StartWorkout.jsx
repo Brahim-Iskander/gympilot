@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Button, Card, Chip, IconButton, Stack, Typography, styled, TextField, Tabs, Tab, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
-import EmojiEventsRoundedIcon from '@mui/icons-material/EmojiEventsRounded';
-import CelebrationRoundedIcon from '@mui/icons-material/CelebrationRounded';
+import { Box, Button, Card, Chip, IconButton, Stack, Typography, styled, TextField, Tabs, Tab, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions, Paper, Divider } from '@mui/material';
+import TaskAltRoundedIcon from '@mui/icons-material/TaskAltRounded';
+import TrendingUpRoundedIcon from '@mui/icons-material/TrendingUpRounded';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import TimerRoundedIcon from '@mui/icons-material/TimerRounded';
@@ -54,54 +54,157 @@ function SetRow({ set, index, onComplete, onUpdate, completed: isCompleted }) {
   };
 
   return (
-    <Stack direction="row" alignItems="center" spacing={1.5} sx={{ py: 1, borderBottom: '1px solid', borderColor: 'rgba(255,255,255,0.04)', '&:last-child': { borderBottom: 'none' } }}>
-      <Typography variant="body2" color="text.secondary" sx={{ width: 40, textAlign: 'center', fontWeight: 600 }}>
-        Set {index + 1}
+    <Stack
+      direction="row"
+      alignItems="center"
+      justifyContent="space-between"
+      spacing={{ xs: 0.5, sm: 1.5 }}
+      sx={{
+        py: 1,
+        borderBottom: '1px solid',
+        borderColor: 'rgba(255,255,255,0.04)',
+        '&:last-child': { borderBottom: 'none' },
+        width: '100%',
+        boxSizing: 'border-box',
+      }}
+    >
+      <Typography
+        variant="body2"
+        color="text.secondary"
+        sx={{
+          minWidth: { xs: 28, sm: 40 },
+          textAlign: 'center',
+          fontWeight: 700,
+          fontSize: { xs: '0.72rem', sm: '0.875rem' },
+        }}
+      >
+        #{index + 1}
       </Typography>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mr: 2 }}>
-        <IconButton size="small" onClick={() => handleWeightChange(-2.5)} sx={{ color: 'text.secondary' }}>
-          <KeyboardArrowDownRoundedIcon fontSize="small" />
+
+      {/* Weight Stepper */}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: { xs: 0.25, sm: 0.5 },
+          bgcolor: 'rgba(255,255,255,0.02)',
+          borderRadius: 2,
+          p: 0.25,
+          border: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
+        <IconButton
+          size="small"
+          onClick={() => handleWeightChange(-2.5)}
+          sx={{ color: 'text.secondary', p: { xs: 0.25, sm: 0.5 } }}
+        >
+          <KeyboardArrowDownRoundedIcon sx={{ fontSize: { xs: 15, sm: 18 } }} />
         </IconButton>
         <TextField
           size="small"
           value={weight}
-          onChange={(e) => { const val = parseFloat(e.target.value) || 0; setWeight(val); onUpdate(index, { ...set, weight: val }); }}
-          inputProps={{ inputMode: 'numeric' }}
-          sx={{ width: 70, '& .MuiInputBase-root': { py: 0.5 } }}
+          onChange={(e) => {
+            const val = parseFloat(e.target.value) || 0;
+            setWeight(val);
+            onUpdate(index, { ...set, weight: val });
+          }}
+          inputProps={{
+            inputMode: 'decimal',
+            style: { textAlign: 'center', padding: '4px 2px', fontWeight: 700 },
+          }}
+          sx={{
+            width: { xs: 44, sm: 58 },
+            '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+          }}
         />
-        <IconButton size="small" onClick={() => handleWeightChange(2.5)} sx={{ color: 'text.secondary' }}>
-          <KeyboardArrowUpRoundedIcon fontSize="small" />
+        <IconButton
+          size="small"
+          onClick={() => handleWeightChange(2.5)}
+          sx={{ color: 'text.secondary', p: { xs: 0.25, sm: 0.5 } }}
+        >
+          <KeyboardArrowUpRoundedIcon sx={{ fontSize: { xs: 15, sm: 18 } }} />
         </IconButton>
-        <Typography variant="body2" color="text.secondary" sx={{ ml: 0.5, mr: 1 }}>kg</Typography>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ pr: 0.5, fontWeight: 600, fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
+        >
+          kg
+        </Typography>
       </Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mr: 2 }}>
-        <IconButton size="small" onClick={() => handleRepsChange(-1)} sx={{ color: 'text.secondary' }}>
-          <KeyboardArrowDownRoundedIcon fontSize="small" />
+
+      {/* Reps Stepper */}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: { xs: 0.25, sm: 0.5 },
+          bgcolor: 'rgba(255,255,255,0.02)',
+          borderRadius: 2,
+          p: 0.25,
+          border: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
+        <IconButton
+          size="small"
+          onClick={() => handleRepsChange(-1)}
+          sx={{ color: 'text.secondary', p: { xs: 0.25, sm: 0.5 } }}
+        >
+          <KeyboardArrowDownRoundedIcon sx={{ fontSize: { xs: 15, sm: 18 } }} />
         </IconButton>
         <TextField
           size="small"
           value={reps}
-          onChange={(e) => { const val = parseInt(e.target.value) || 0; setReps(val); onUpdate(index, { ...set, reps: val }); }}
-          inputProps={{ inputMode: 'numeric' }}
-          sx={{ width: 50, '& .MuiInputBase-root': { py: 0.5 } }}
+          onChange={(e) => {
+            const val = parseInt(e.target.value) || 0;
+            setReps(val);
+            onUpdate(index, { ...set, reps: val });
+          }}
+          inputProps={{
+            inputMode: 'numeric',
+            style: { textAlign: 'center', padding: '4px 2px', fontWeight: 700 },
+          }}
+          sx={{
+            width: { xs: 36, sm: 48 },
+            '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+          }}
         />
-        <IconButton size="small" onClick={() => handleRepsChange(1)} sx={{ color: 'text.secondary' }}>
-          <KeyboardArrowUpRoundedIcon fontSize="small" />
+        <IconButton
+          size="small"
+          onClick={() => handleRepsChange(1)}
+          sx={{ color: 'text.secondary', p: { xs: 0.25, sm: 0.5 } }}
+        >
+          <KeyboardArrowUpRoundedIcon sx={{ fontSize: { xs: 15, sm: 18 } }} />
         </IconButton>
-        <Typography variant="body2" color="text.secondary" sx={{ ml: 0.5 }}>reps</Typography>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ pr: 0.5, fontWeight: 600, fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
+        >
+          reps
+        </Typography>
       </Box>
-      <Box sx={{ flex: 1 }} />
+
+      {/* Check Complete Button */}
       <IconButton
-        size="large"
+        size="medium"
         onClick={() => onComplete(index)}
         disabled={isCompleted}
         sx={{
-          bgcolor: isCompleted ? 'rgba(198,255,62,0.15)' : 'rgba(255,255,255,0.06)',
+          bgcolor: isCompleted ? 'rgba(198,255,62,0.18)' : 'rgba(255,255,255,0.06)',
           color: isCompleted ? '#C6FF3E' : 'text.secondary',
-          '&:hover': { bgcolor: isCompleted ? 'rgba(198,255,62,0.25)' : 'rgba(255,255,255,0.12)' },
+          border: '1px solid',
+          borderColor: isCompleted ? 'primary.main' : 'transparent',
+          p: { xs: 0.75, sm: 1 },
+          flexShrink: 0,
+          '&:hover': {
+            bgcolor: isCompleted ? 'rgba(198,255,62,0.25)' : 'rgba(255,255,255,0.12)',
+          },
         }}
       >
-        <CheckRoundedIcon />
+        <CheckRoundedIcon sx={{ fontSize: { xs: 18, sm: 22 } }} />
       </IconButton>
     </Stack>
   );
@@ -111,7 +214,7 @@ function ExerciseCard({ exercise, exerciseIndex, onSetComplete, onSetUpdate, onA
   const completedSets = exercise.sets.filter((s) => s.completed).length;
 
   return (
-    <StyledCard sx={{ p: 2, mb: 2 }}>
+    <StyledCard sx={{ p: { xs: 1.5, sm: 2.5 }, mb: 2 }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Box
@@ -233,7 +336,14 @@ export default function StartWorkout({ aiPlan, loading, addedExercises = [], sel
   };
 
   const [finishing, setFinishing] = useState(false);
-  const [completionModal, setCompletionModal] = useState({ open: false, workoutName: '' });
+  const [completionModal, setCompletionModal] = useState({
+    open: false,
+    workoutName: '',
+    duration: 0,
+    exercisesCount: 0,
+    setsCount: 0,
+    volume: 0,
+  });
   const navigate = useNavigate();
 
   const handleFinishWorkout = async () => {
@@ -288,10 +398,24 @@ export default function StartWorkout({ aiPlan, loading, addedExercises = [], sel
         }
       }
 
-      setCompletionModal({ open: true, workoutName: displayPlan.name });
+      setCompletionModal({
+        open: true,
+        workoutName: displayPlan.name,
+        duration: Math.round(totalSets * 2) || 45,
+        exercisesCount: completedExercisesList.length,
+        setsCount: completedSets,
+        volume: totalVolume,
+      });
     } catch (err) {
       console.error('Failed to save workout session:', err);
-      setCompletionModal({ open: true, workoutName: displayPlan.name });
+      setCompletionModal({
+        open: true,
+        workoutName: displayPlan.name,
+        duration: Math.round(totalSets * 2) || 45,
+        exercisesCount: completedExercises.length || 1,
+        setsCount: completedSets || 1,
+        volume: totalVolume,
+      });
     } finally {
       setFinishing(false);
     }
@@ -367,15 +491,15 @@ export default function StartWorkout({ aiPlan, loading, addedExercises = [], sel
         ))}
       </Stack>
 
-      <Box sx={{ position: 'sticky', bottom: 0, bgcolor: 'background.default', p: 3, borderTop: '1px solid', borderColor: 'divider', mx: { xs: -2, md: 0 }, px: { xs: 2, md: 0 } }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
+      <Box sx={{ position: 'sticky', bottom: 0, bgcolor: 'background.default', py: { xs: 1.5, sm: 2.5 }, px: { xs: 2, sm: 3 }, borderTop: '1px solid', borderColor: 'divider', mx: { xs: -2, md: 0 }, zIndex: 10 }}>
+        <Stack direction="row" justifyContent={{ xs: 'stretch', sm: 'flex-end' }} alignItems="center">
           <Button
             variant="contained"
             size="large"
             onClick={handleFinishWorkout}
             disabled={completedSets === 0}
             startIcon={<CheckRoundedIcon />}
-            sx={{ px: 4, minWidth: 200 }}
+            sx={{ px: 4, width: { xs: '100%', sm: 'auto' }, minWidth: 200, fontWeight: 700, py: 1.5, borderRadius: 2 }}
           >
             Finish Workout
           </Button>
@@ -392,42 +516,136 @@ export default function StartWorkout({ aiPlan, loading, addedExercises = [], sel
         PaperProps={{
           sx: {
             borderRadius: 4,
-            p: 2,
+            p: 1.5,
             textAlign: 'center',
             bgcolor: 'background.paper',
             border: '1px solid rgba(198, 255, 62, 0.3)',
-            boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
-            maxWidth: 420,
+            boxShadow: '0 24px 60px rgba(0,0,0,0.6)',
+            maxWidth: 440,
+            width: '100%',
           },
         }}
       >
-        <DialogTitle sx={{ pb: 1 }}>
+        <DialogTitle sx={{ pb: 1, pt: 3 }}>
           <Box
             sx={{
-              width: 64,
-              height: 64,
+              width: 72,
+              height: 72,
               borderRadius: '50%',
-              bgcolor: 'rgba(198, 255, 62, 0.15)',
-              color: '#C6FF3E',
+              bgcolor: 'rgba(198, 255, 62, 0.12)',
+              border: '2px solid',
+              borderColor: 'primary.main',
+              color: 'primary.main',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               mx: 'auto',
               mb: 2,
+              boxShadow: '0 0 24px rgba(198, 255, 62, 0.25)',
             }}
           >
-            <EmojiEventsRoundedIcon sx={{ fontSize: 36 }} />
+            <TaskAltRoundedIcon sx={{ fontSize: 40 }} />
           </Box>
-          <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: "'Sora', sans-serif", display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-            Workout Completed! <CelebrationRoundedIcon sx={{ fontSize: 26, color: 'primary.main' }} />
+          <Typography
+            variant="h5"
+            sx={{
+              fontWeight: 800,
+              fontFamily: "'Sora', sans-serif",
+              color: 'text.primary',
+            }}
+          >
+            Workout Completed!
           </Typography>
         </DialogTitle>
+
         <DialogContent sx={{ pb: 2 }}>
-          <Typography variant="body1" color="text.secondary">
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
             Outstanding effort! <strong>{completionModal.workoutName}</strong> has been logged and saved to your progress history.
           </Typography>
+
+          {/* Quick Session Stats */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2,
+              borderRadius: 2.5,
+              bgcolor: 'rgba(255, 255, 255, 0.03)',
+              border: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
+            <Stack
+              direction="row"
+              justifyContent="space-around"
+              divider={<Divider orientation="vertical" flexItem />}
+            >
+              <Box sx={{ textAlign: 'center', flex: 1 }}>
+                <Stack
+                  direction="row"
+                  spacing={0.5}
+                  alignItems="center"
+                  justifyContent="center"
+                  sx={{ color: 'primary.main', mb: 0.25 }}
+                >
+                  <TimerRoundedIcon sx={{ fontSize: 16 }} />
+                  <Typography
+                    variant="caption"
+                    sx={{ fontWeight: 700, color: 'text.secondary', fontSize: '0.68rem' }}
+                  >
+                    TIME
+                  </Typography>
+                </Stack>
+                <Typography variant="subtitle1" fontWeight={800}>
+                  {completionModal.duration || 45} min
+                </Typography>
+              </Box>
+
+              <Box sx={{ textAlign: 'center', flex: 1 }}>
+                <Stack
+                  direction="row"
+                  spacing={0.5}
+                  alignItems="center"
+                  justifyContent="center"
+                  sx={{ color: 'primary.main', mb: 0.25 }}
+                >
+                  <FitnessCenterRoundedIcon sx={{ fontSize: 16 }} />
+                  <Typography
+                    variant="caption"
+                    sx={{ fontWeight: 700, color: 'text.secondary', fontSize: '0.68rem' }}
+                  >
+                    EXERCISES
+                  </Typography>
+                </Stack>
+                <Typography variant="subtitle1" fontWeight={800}>
+                  {completionModal.exercisesCount || 0}
+                </Typography>
+              </Box>
+
+              <Box sx={{ textAlign: 'center', flex: 1 }}>
+                <Stack
+                  direction="row"
+                  spacing={0.5}
+                  alignItems="center"
+                  justifyContent="center"
+                  sx={{ color: 'primary.main', mb: 0.25 }}
+                >
+                  <TrendingUpRoundedIcon sx={{ fontSize: 16 }} />
+                  <Typography
+                    variant="caption"
+                    sx={{ fontWeight: 700, color: 'text.secondary', fontSize: '0.68rem' }}
+                  >
+                    VOLUME
+                  </Typography>
+                </Stack>
+                <Typography variant="subtitle1" fontWeight={800}>
+                  {completionModal.volume ? `${Math.round(completionModal.volume)} kg` : 'Logged'}
+                </Typography>
+              </Box>
+            </Stack>
+          </Paper>
         </DialogContent>
-        <DialogActions sx={{ justifyContent: 'center', pt: 1, pb: 1 }}>
+
+        <DialogActions sx={{ flexDirection: 'column', gap: 1, px: 3, pb: 3 }}>
           <Button
             variant="contained"
             fullWidth
@@ -439,6 +657,18 @@ export default function StartWorkout({ aiPlan, loading, addedExercises = [], sel
             sx={{ fontWeight: 700, py: 1.2, borderRadius: 2 }}
           >
             Go to Dashboard
+          </Button>
+          <Button
+            variant="outlined"
+            fullWidth
+            size="medium"
+            onClick={() => {
+              setCompletionModal({ open: false, workoutName: '' });
+              navigate('/progress');
+            }}
+            sx={{ fontWeight: 600, borderRadius: 2, color: 'text.secondary', textTransform: 'none' }}
+          >
+            View Progress History
           </Button>
         </DialogActions>
       </Dialog>

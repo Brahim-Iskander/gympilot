@@ -164,11 +164,14 @@ export default function BodyMapSVG({ selectedMuscle, onSelectMuscle }) {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: 2.5,
-        p: 3,
+        gap: { xs: 1.5, sm: 2.5 },
+        p: { xs: 1.5, sm: 2.5, md: 3 },
         borderRadius: 4,
         background: 'radial-gradient(120% 90% at 50% 8%, rgba(198,255,62,0.05), rgba(10,12,15,0) 60%), #0E1116',
         border: '1px solid rgba(255,255,255,0.06)',
+        width: '100%',
+        boxSizing: 'border-box',
+        overflow: 'hidden',
       }}
     >
       <style>{`
@@ -245,8 +248,22 @@ export default function BodyMapSVG({ selectedMuscle, onSelectMuscle }) {
       </Box>
 
       {/* ── SVG Body ── */}
-      <Box sx={{ width: '100%', maxWidth: 300, aspectRatio: '360 / 560', position: 'relative' }}>
-        <svg viewBox="0 0 360 560" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+      <Box
+        sx={{
+          width: '100%',
+          maxWidth: { xs: 260, sm: 280, md: 300 },
+          aspectRatio: '320 / 580',
+          position: 'relative',
+          mx: 'auto',
+          display: 'flex',
+          justifyContent: 'center',
+        }}
+      >
+        <svg
+          viewBox="30 -10 300 580"
+          xmlns="http://www.w3.org/2000/svg"
+          style={{ width: '100%', height: '100%', maxHeight: 440, display: 'block' }}
+        >
           <defs>
             <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
               <feGaussianBlur stdDeviation="5" result="blur" />
@@ -357,7 +374,13 @@ export default function BodyMapSVG({ selectedMuscle, onSelectMuscle }) {
       </Box>
 
       {/* ── Legend / tap targets — doubles as a mobile-friendly picker ── */}
-      <Stack direction="row" flexWrap="wrap" justifyContent="center" gap={0.75} sx={{ maxWidth: 280 }}>
+      <Stack
+        direction="row"
+        flexWrap="wrap"
+        justifyContent="center"
+        gap={{ xs: 0.5, sm: 0.75 }}
+        sx={{ width: '100%', maxWidth: { xs: '100%', sm: 300 }, px: 0.5 }}
+      >
         {legendItems.map((cat) => {
           const mapped = getMuscleCategory(cat);
           const active = selectedMuscle === mapped;

@@ -17,11 +17,14 @@ import {
   styled,
   useMediaQuery,
   useTheme,
+  Collapse,
 } from '@mui/material';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import FitnessCenterRoundedIcon from '@mui/icons-material/FitnessCenterRounded';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded';
+import ExpandLessRoundedIcon from '@mui/icons-material/ExpandLessRounded';
+import AccessibilityNewRoundedIcon from '@mui/icons-material/AccessibilityNewRounded';
 import SchoolRoundedIcon from '@mui/icons-material/SchoolRounded';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
@@ -257,6 +260,7 @@ export default function ExerciseLibrary({ onAddExercise, addedExerciseIds = [] }
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedEquipment, setSelectedEquipment] = useState('All');
   const [snackbar, setSnackbar] = useState('');
+  const [showMobileMap, setShowMobileMap] = useState(false);
 
   // Selected exercise for tutorial modal
   const [activeTutorialExercise, setActiveTutorialExercise] = useState(null);
@@ -296,11 +300,14 @@ export default function ExerciseLibrary({ onAddExercise, addedExerciseIds = [] }
         position: isMobile ? 'relative' : 'sticky',
         top: isMobile ? 'auto' : 24,
         alignSelf: 'flex-start',
-        p: 2.5,
+        p: isMobile ? 0 : 2.5,
         borderRadius: 4,
-        border: '1px solid rgba(255,255,255,0.07)',
-        background: 'linear-gradient(180deg, rgba(255,255,255,0.035) 0%, rgba(255,255,255,0.01) 100%)',
-        backdropFilter: 'blur(8px)',
+        border: isMobile ? 'none' : '1px solid rgba(255,255,255,0.07)',
+        background: isMobile
+          ? 'transparent'
+          : 'linear-gradient(180deg, rgba(255,255,255,0.035) 0%, rgba(255,255,255,0.01) 100%)',
+        backdropFilter: isMobile ? 'none' : 'blur(8px)',
+        boxSizing: 'border-box',
       }}
     >
       <BodyMapSVG
@@ -402,15 +409,39 @@ export default function ExerciseLibrary({ onAddExercise, addedExerciseIds = [] }
       {/* ── Responsive Layout: Body Map + Exercise List ── */}
       <Stack
         direction={isMobile ? 'column' : 'row'}
-        spacing={isMobile ? 3 : 4}
+        spacing={isMobile ? 2.5 : 4}
         alignItems="flex-start"
       >
-        {/* On mobile, body map goes on top. On desktop, exercise list first (left), body map second (right). */}
         {isMobile ? (
-          <>
-            {bodyMapPanel}
+          <Box sx={{ width: '100%' }}>
+            <Button
+              variant="outlined"
+              fullWidth
+              onClick={() => setShowMobileMap((prev) => !prev)}
+              startIcon={<AccessibilityNewRoundedIcon sx={{ color: 'primary.main' }} />}
+              endIcon={showMobileMap ? <ExpandLessRoundedIcon /> : <ExpandMoreRoundedIcon />}
+              sx={{
+                mb: 2,
+                borderRadius: 3,
+                py: 1.1,
+                fontWeight: 700,
+                textTransform: 'none',
+                borderColor: showMobileMap || selectedCategory !== 'All' ? 'primary.main' : 'rgba(255,255,255,0.12)',
+                color: showMobileMap || selectedCategory !== 'All' ? 'primary.main' : 'text.primary',
+                bgcolor: showMobileMap ? 'rgba(198,255,62,0.08)' : 'rgba(255,255,255,0.02)',
+              }}
+            >
+              {showMobileMap
+                ? 'Hide Interactive Muscle Map'
+                : selectedCategory !== 'All'
+                ? `Filter: ${selectedCategory} (Tap to change muscle)`
+                : 'Filter by Muscle (Interactive Body Map)'}
+            </Button>
+            <Collapse in={showMobileMap}>
+              <Box sx={{ mb: 2.5 }}>{bodyMapPanel}</Box>
+            </Collapse>
             {exerciseListPanel}
-          </>
+          </Box>
         ) : (
           <>
             {exerciseListPanel}

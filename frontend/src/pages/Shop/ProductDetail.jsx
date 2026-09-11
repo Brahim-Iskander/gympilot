@@ -39,6 +39,9 @@ import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import FlashOnRoundedIcon from '@mui/icons-material/FlashOnRounded';
 import ShareRoundedIcon from '@mui/icons-material/ShareRounded';
 import ContentCopyRoundedIcon from '@mui/icons-material/ContentCopyRounded';
+import AddShoppingCartRoundedIcon from '@mui/icons-material/AddShoppingCartRounded';
+import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded';
+import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 
 import SEO from '../../components/SEO';
 import Footer from '../../components/Footer';
@@ -81,6 +84,7 @@ export default function ProductDetail() {
       try {
         setLoading(true);
         setError('');
+        window.scrollTo({ top: 0, behavior: 'instant' });
         const data = await productService.getProductById(id);
         setProduct(data);
         if (data.images && data.images.length > 0) {
@@ -580,16 +584,100 @@ export default function ProductDetail() {
 
         {/* ===================== RELATED PRODUCTS ===================== */}
         {related.length > 0 && (
-          <Box sx={{ pt: 4, borderTop: '1px solid', borderColor: 'divider' }}>
-            <Typography variant="h5" sx={{ fontFamily: "'Sora', sans-serif", fontWeight: 800, mb: 3 }}>
-              You May Also Like
-            </Typography>
-            <Grid container spacing={3}>
+          <Box
+            sx={{
+              pt: { xs: 5, md: 7 },
+              pb: 2,
+              borderTop: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
+            {/* Section Header */}
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              justifyContent="space-between"
+              alignItems={{ xs: 'flex-start', sm: 'flex-end' }}
+              spacing={1.5}
+              sx={{ mb: 3.5 }}
+            >
+              <Box>
+                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}>
+                  <Box
+                    sx={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 1.5,
+                      bgcolor: 'rgba(198,255,62,0.12)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'primary.main',
+                    }}
+                  >
+                    <AutoAwesomeRoundedIcon sx={{ fontSize: 16 }} />
+                  </Box>
+                  <Typography
+                    variant="overline"
+                    sx={{
+                      fontWeight: 800,
+                      color: 'primary.main',
+                      letterSpacing: 1.2,
+                    }}
+                  >
+                    Recommended For You
+                  </Typography>
+                </Stack>
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontFamily: "'Sora', sans-serif",
+                    fontWeight: 800,
+                    fontSize: { xs: '1.5rem', sm: '1.85rem' },
+                    color: 'text.primary',
+                  }}
+                >
+                  You May Also Like
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  Curated gear & supplements tailored to complement your fitness journey
+                </Typography>
+              </Box>
+
+              <Button
+                component={RouterLink}
+                to="/shop"
+                endIcon={<ArrowForwardRoundedIcon sx={{ fontSize: 16 }} />}
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  fontSize: '0.85rem',
+                  color: 'text.secondary',
+                  '&:hover': { color: 'primary.main' },
+                }}
+              >
+                Browse All Products
+              </Button>
+            </Stack>
+
+            {/* Product Cards Grid */}
+            <Grid container spacing={{ xs: 2, sm: 2.5, md: 3 }}>
               {related.map((relItem) => {
                 const relImg =
                   relItem.images && relItem.images.length > 0
                     ? relItem.images[0]
                     : FALLBACK_IMAGE;
+
+                const relHasDiscount =
+                  relItem.originalPrice && relItem.originalPrice > relItem.price;
+                const relDiscountPercent = relHasDiscount
+                  ? Math.round(
+                      ((relItem.originalPrice - relItem.price) /
+                        relItem.originalPrice) *
+                        100
+                    )
+                  : 0;
+
+                const isOutOfStock = relItem.stockQuantity <= 0;
 
                 return (
                   <Grid item xs={12} sm={6} md={3} key={relItem.id}>
@@ -597,9 +685,10 @@ export default function ProductDetail() {
                       elevation={0}
                       component={RouterLink}
                       to={`/shop/${relItem.id}`}
+                      onClick={() => window.scrollTo({ top: 0, behavior: 'instant' })}
                       sx={{
                         height: '100%',
-                        borderRadius: 3,
+                        borderRadius: 3.5,
                         border: '1px solid',
                         borderColor: 'divider',
                         textDecoration: 'none',
@@ -608,23 +697,37 @@ export default function ProductDetail() {
                         overflow: 'hidden',
                         display: 'flex',
                         flexDirection: 'column',
-                        transition: 'transform .2s ease, border-color .2s ease',
-                        '&:hover': { transform: 'translateY(-4px)', borderColor: 'primary.main' },
+                        position: 'relative',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        '&:hover': {
+                          transform: 'translateY(-6px)',
+                          borderColor: 'primary.main',
+                          boxShadow: '0 16px 36px rgba(0, 0, 0, 0.25)',
+                          '& .rel-img': {
+                            transform: 'scale(1.08)',
+                          },
+                          '& .rel-quick-add': {
+                            opacity: 1,
+                            transform: 'translateY(0)',
+                          },
+                        },
                       }}
                     >
-                      {/* Image wrapped in the same aspect-ratio box as the main gallery */}
+                      {/* Product Image Area */}
                       <Box
                         sx={{
                           position: 'relative',
                           width: '100%',
-                          pt: '85%',
+                          pt: '82%',
                           bgcolor: 'background.elevated',
+                          overflow: 'hidden',
                         }}
                       >
                         <Box
                           component="img"
                           src={relImg}
                           alt={relItem.name}
+                          className="rel-img"
                           sx={{
                             position: 'absolute',
                             top: 0,
@@ -632,17 +735,251 @@ export default function ProductDetail() {
                             width: '100%',
                             height: '100%',
                             objectFit: 'cover',
+                            transition: 'transform 0.4s ease',
                           }}
                         />
+
+                        {/* Top-Left Floating Badges */}
+                        <Stack
+                          direction="row"
+                          spacing={0.75}
+                          sx={{
+                            position: 'absolute',
+                            top: 10,
+                            left: 10,
+                            zIndex: 2,
+                          }}
+                        >
+                          {relHasDiscount && (
+                            <Chip
+                              label={`-${relDiscountPercent}%`}
+                              size="small"
+                              sx={{
+                                bgcolor: '#ff334b',
+                                color: '#fff',
+                                fontWeight: 800,
+                                fontSize: '0.68rem',
+                                height: 22,
+                                boxShadow: '0 2px 8px rgba(255,51,75,0.4)',
+                              }}
+                            />
+                          )}
+                          {relItem.categoryName && (
+                            <Chip
+                              label={relItem.categoryName}
+                              size="small"
+                              sx={{
+                                bgcolor: 'rgba(0,0,0,0.65)',
+                                backdropFilter: 'blur(8px)',
+                                color: 'rgba(255,255,255,0.85)',
+                                fontWeight: 600,
+                                fontSize: '0.65rem',
+                                height: 22,
+                                border: '1px solid rgba(255,255,255,0.12)',
+                              }}
+                            />
+                          )}
+                        </Stack>
+
+                        {/* Stock indicator top-right */}
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            top: 10,
+                            right: 10,
+                            zIndex: 2,
+                          }}
+                        >
+                          {isOutOfStock ? (
+                            <Chip
+                              label="Out of Stock"
+                              size="small"
+                              sx={{
+                                bgcolor: 'rgba(0,0,0,0.75)',
+                                color: '#ff5252',
+                                fontWeight: 700,
+                                fontSize: '0.65rem',
+                                height: 22,
+                                border: '1px solid rgba(255,82,82,0.3)',
+                              }}
+                            />
+                          ) : (
+                            <Tooltip title="In Stock & Ready to Ship">
+                              <Box
+                                sx={{
+                                  width: 24,
+                                  height: 24,
+                                  borderRadius: '50%',
+                                  bgcolor: 'rgba(0,0,0,0.55)',
+                                  backdropFilter: 'blur(6px)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  border: '1px solid rgba(255,255,255,0.15)',
+                                }}
+                              >
+                                <Box
+                                  sx={{
+                                    width: 8,
+                                    height: 8,
+                                    borderRadius: '50%',
+                                    bgcolor: '#2ecc71',
+                                    boxShadow: '0 0 8px #2ecc71',
+                                  }}
+                                />
+                              </Box>
+                            </Tooltip>
+                          )}
+                        </Box>
+
+                        {/* Quick Add To Cart Button */}
+                        {!isOutOfStock && (
+                          <Box
+                            className="rel-quick-add"
+                            sx={{
+                              position: 'absolute',
+                              bottom: 10,
+                              right: 10,
+                              zIndex: 3,
+                              opacity: { xs: 1, sm: 0 },
+                              transform: { xs: 'none', sm: 'translateY(6px)' },
+                              transition: 'all 0.25s ease',
+                            }}
+                          >
+                            <Tooltip title="Quick Add to Cart" placement="left">
+                              <IconButton
+                                size="small"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  addToCart(relItem, 1);
+                                  openCartDrawer();
+                                }}
+                                sx={{
+                                  bgcolor: 'primary.main',
+                                  color: '#000',
+                                  boxShadow: '0 4px 14px rgba(198,255,62,0.4)',
+                                  '&:hover': {
+                                    bgcolor: '#d4ff66',
+                                    transform: 'scale(1.08)',
+                                  },
+                                  transition: 'transform 0.15s ease',
+                                }}
+                              >
+                                <AddShoppingCartRoundedIcon sx={{ fontSize: 18 }} />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+                        )}
                       </Box>
 
-                      <Box sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column' }}>
-                        <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }} noWrap>
+                      {/* Product Info */}
+                      <Box
+                        sx={{
+                          p: 2.25,
+                          flex: 1,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 0.75,
+                        }}
+                      >
+                        {/* Rating */}
+                        <Stack direction="row" spacing={0.75} alignItems="center">
+                          <Rating
+                            value={relItem.rating || 5}
+                            precision={0.5}
+                            readOnly
+                            size="small"
+                            sx={{
+                              fontSize: '0.85rem',
+                              '& .MuiRating-iconFilled': { color: '#FFB800' },
+                            }}
+                          />
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              fontWeight: 700,
+                              color: 'text.secondary',
+                              fontSize: '0.72rem',
+                            }}
+                          >
+                            ({relItem.reviewCount || 18})
+                          </Typography>
+                        </Stack>
+
+                        {/* Product Title */}
+                        <Typography
+                          variant="subtitle2"
+                          sx={{
+                            fontWeight: 700,
+                            lineHeight: 1.35,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            minHeight: 38,
+                            color: 'text.primary',
+                          }}
+                          title={relItem.name}
+                        >
                           {relItem.name}
                         </Typography>
-                        <Typography variant="subtitle2" sx={{ color: 'primary.main', fontWeight: 800, mt: 'auto' }}>
-                          {Number(relItem.price).toFixed(2)} TND
-                        </Typography>
+
+                        {/* Price & Sold Footer */}
+                        <Box sx={{ mt: 'auto', pt: 1 }}>
+                          <Stack
+                            direction="row"
+                            alignItems="baseline"
+                            spacing={1}
+                            justifyContent="space-between"
+                          >
+                            <Stack direction="row" alignItems="baseline" spacing={0.75}>
+                              <Typography
+                                variant="h6"
+                                sx={{
+                                  color: 'primary.main',
+                                  fontWeight: 800,
+                                  fontFamily: "'Sora', sans-serif",
+                                  fontSize: '1.05rem',
+                                }}
+                              >
+                                {Number(relItem.price).toFixed(2)}{' '}
+                                <Typography
+                                  component="span"
+                                  sx={{ fontSize: '0.72rem', fontWeight: 700 }}
+                                >
+                                  TND
+                                </Typography>
+                              </Typography>
+                              {relHasDiscount && (
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    color: 'text.secondary',
+                                    textDecoration: 'line-through',
+                                    fontSize: '0.75rem',
+                                  }}
+                                >
+                                  {Number(relItem.originalPrice).toFixed(2)}
+                                </Typography>
+                              )}
+                            </Stack>
+
+                            {relItem.unitsSold > 0 && (
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  fontSize: '0.68rem',
+                                  color: 'text.secondary',
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {relItem.unitsSold} sold
+                              </Typography>
+                            )}
+                          </Stack>
+                        </Box>
                       </Box>
                     </Card>
                   </Grid>
