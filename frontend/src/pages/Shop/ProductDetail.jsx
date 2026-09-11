@@ -46,6 +46,9 @@ import { productService } from '../../services/productService';
 import { useCart } from '../../context/CartContext';
 import CartDrawer from '../../components/CartDrawer';
 
+const FALLBACK_IMAGE =
+  'https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?w=400&auto=format&fit=crop&q=80';
+
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -72,7 +75,6 @@ export default function ProductDetail() {
     const text = `Check out ${product?.name} on GymPilot: ${url}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
-
 
   useEffect(() => {
     async function loadProduct() {
@@ -125,7 +127,7 @@ export default function ProductDetail() {
 
   const images = product.images && product.images.length > 0
     ? product.images
-    : ['https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?w=800&auto=format&fit=crop&q=80'];
+    : [FALLBACK_IMAGE];
 
   const specsList = product.specs ? Object.entries(product.specs) : [];
 
@@ -157,6 +159,22 @@ export default function ProductDetail() {
             {product.name}
           </Typography>
         </Breadcrumbs>
+
+        {/* Return to Shop Button */}
+        <Button
+          component={RouterLink}
+          to="/shop"
+          startIcon={<ArrowBackRoundedIcon />}
+          sx={{
+            mb: 3,
+            fontWeight: 700,
+            textTransform: 'none',
+            color: 'text.secondary',
+            '&:hover': { color: 'primary.main', bgcolor: 'rgba(198,255,62,0.08)' },
+          }}
+        >
+          Back to Shop
+        </Button>
 
         {/* Main Product Layout */}
         <Grid container spacing={{ xs: 4, md: 6 }} sx={{ mb: 8 }}>
@@ -567,40 +585,69 @@ export default function ProductDetail() {
               You May Also Like
             </Typography>
             <Grid container spacing={3}>
-              {related.map((relItem) => (
-                <Grid item xs={12} sm={6} md={3} key={relItem.id}>
-                  <Card
-                    elevation={0}
-                    component={RouterLink}
-                    to={`/shop/${relItem.id}`}
-                    sx={{
-                      p: 2,
-                      height: '100%',
-                      borderRadius: 3,
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      textDecoration: 'none',
-                      color: 'inherit',
-                      bgcolor: 'background.paper',
-                      transition: 'transform .2s ease, border-color .2s ease',
-                      '&:hover': { transform: 'translateY(-4px)', borderColor: 'primary.main' },
-                    }}
-                  >
-                    <Box
-                      component="img"
-                      src={relItem.images && relItem.images.length > 0 ? relItem.images[0] : ''}
-                      alt={relItem.name}
-                      sx={{ width: '100%', height: 160, objectFit: 'cover', borderRadius: 2, mb: 1.5 }}
-                    />
-                    <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }} noWrap>
-                      {relItem.name}
-                    </Typography>
-                    <Typography variant="subtitle2" sx={{ color: 'primary.main', fontWeight: 800 }}>
-                      {Number(relItem.price).toFixed(2)} TND
-                    </Typography>
-                  </Card>
-                </Grid>
-              ))}
+              {related.map((relItem) => {
+                const relImg =
+                  relItem.images && relItem.images.length > 0
+                    ? relItem.images[0]
+                    : FALLBACK_IMAGE;
+
+                return (
+                  <Grid item xs={12} sm={6} md={3} key={relItem.id}>
+                    <Card
+                      elevation={0}
+                      component={RouterLink}
+                      to={`/shop/${relItem.id}`}
+                      sx={{
+                        height: '100%',
+                        borderRadius: 3,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        textDecoration: 'none',
+                        color: 'inherit',
+                        bgcolor: 'background.paper',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        transition: 'transform .2s ease, border-color .2s ease',
+                        '&:hover': { transform: 'translateY(-4px)', borderColor: 'primary.main' },
+                      }}
+                    >
+                      {/* Image wrapped in the same aspect-ratio box as the main gallery */}
+                      <Box
+                        sx={{
+                          position: 'relative',
+                          width: '100%',
+                          pt: '85%',
+                          bgcolor: 'background.elevated',
+                        }}
+                      >
+                        <Box
+                          component="img"
+                          src={relImg}
+                          alt={relItem.name}
+                          sx={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                          }}
+                        />
+                      </Box>
+
+                      <Box sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }} noWrap>
+                          {relItem.name}
+                        </Typography>
+                        <Typography variant="subtitle2" sx={{ color: 'primary.main', fontWeight: 800, mt: 'auto' }}>
+                          {Number(relItem.price).toFixed(2)} TND
+                        </Typography>
+                      </Box>
+                    </Card>
+                  </Grid>
+                );
+              })}
             </Grid>
           </Box>
         )}
