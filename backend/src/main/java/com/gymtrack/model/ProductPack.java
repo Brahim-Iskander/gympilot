@@ -51,6 +51,8 @@ public class ProductPack {
     private int reviewCount = 8;
 
     private Instant validUntil;
+    private String durationUnit = "LIFETIME"; // "LIFETIME", "HOURS", "DAYS", "WEEKS"
+    private Integer durationValue;
 
     private String sellerId;
     private String sellerName;
@@ -267,6 +269,26 @@ public class ProductPack {
 
     public void setValidUntil(Instant validUntil) {
         this.validUntil = validUntil;
+    }
+
+    public boolean isExpired() {
+        return validUntil != null && validUntil.isBefore(Instant.now());
+    }
+
+    public String getDurationUnit() {
+        return durationUnit;
+    }
+
+    public void setDurationUnit(String durationUnit) {
+        this.durationUnit = durationUnit;
+    }
+
+    public Integer getDurationValue() {
+        return durationValue;
+    }
+
+    public void setDurationValue(Integer durationValue) {
+        this.durationValue = durationValue;
     }
 
     public Instant getCreatedAt() {

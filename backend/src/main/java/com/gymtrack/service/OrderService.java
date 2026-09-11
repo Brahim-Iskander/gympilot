@@ -264,11 +264,24 @@ public class OrderService {
 
         String sellerId = seller.getId();
 
-        long totalProducts = productRepository.countBySellerId(sellerId);
-        long activeProducts = productRepository.countBySellerIdAndActiveTrue(sellerId);
-        long outOfStock = productRepository.countBySellerIdAndStockQuantityLessThanEqual(sellerId, 0);
+        var totalProductsFuture = java.util.concurrent.CompletableFuture.supplyAsync(() -> productRepository.countBySellerId(sellerId));
+        var activeProductsFuture = java.util.concurrent.CompletableFuture.supplyAsync(() -> productRepository.countBySellerIdAndActiveTrue(sellerId));
+        var outOfStockFuture = java.util.concurrent.CompletableFuture.supplyAsync(() -> productRepository.countBySellerIdAndStockQuantityLessThanEqual(sellerId, 0));
+        var allOrdersFuture = java.util.concurrent.CompletableFuture.supplyAsync(() -> orderRepository.findAllOrdersBySellerId(sellerId));
+        var productsFuture = java.util.concurrent.CompletableFuture.supplyAsync(() -> productRepository.findBySellerId(sellerId));
 
-        List<Order> allOrders = orderRepository.findAllOrdersBySellerId(sellerId);
+        PageRequest pr = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createdAt"));
+        var recentOrdersFuture = java.util.concurrent.CompletableFuture.supplyAsync(() -> orderRepository.findOrdersBySellerId(sellerId, pr));
+
+        java.util.concurrent.CompletableFuture.allOf(
+                totalProductsFuture, activeProductsFuture, outOfStockFuture, allOrdersFuture, productsFuture, recentOrdersFuture
+        ).join();
+
+        long totalProducts = totalProductsFuture.join();
+        long activeProducts = activeProductsFuture.join();
+        long outOfStock = outOfStockFuture.join();
+
+        List<Order> allOrders = allOrdersFuture.join();
         long totalOrders = allOrders.size();
 
         double totalRevenue = 0.0;
@@ -288,15 +301,13 @@ public class OrderService {
         }
 
         // Find best selling product
-        List<Product> products = productRepository.findBySellerId(sellerId);
+        List<Product> products = productsFuture.join();
         String bestSellingProduct = products.stream()
                 .max((p1, p2) -> Integer.compare(p1.getUnitsSold(), p2.getUnitsSold()))
                 .map(Product::getName)
                 .orElse("None yet");
 
-        // Top 5 recent orders
-        PageRequest pr = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createdAt"));
-        List<OrderResponse> recentOrders = orderRepository.findOrdersBySellerId(sellerId, pr).getContent().stream()
+        List<OrderResponse> recentOrders = recentOrdersFuture.join().getContent().stream()
                 .map(OrderResponse::from)
                 .collect(Collectors.toList());
 

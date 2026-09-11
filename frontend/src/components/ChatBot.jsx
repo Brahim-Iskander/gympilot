@@ -197,17 +197,24 @@ export default function ChatBot() {
       loadCoachMessages(true);
     }
 
+    let closedTick = 0;
     const interval = setInterval(() => {
+      if (document.hidden) return;
+
       if (isOpen && activeTab === 1 && user && isMember) {
         loadCoachMessages(true);
       } else if (isOpen && activeTab === 2) {
         loadCommunityMessages(true);
       } else if (user && isMember) {
-        coachChatService.getUnreadCount()
-          .then((count) => setCoachUnreadCount(count))
-          .catch(() => {});
+        // When chat is closed, check unread badge every ~20s instead of every 3.5s
+        closedTick += 1;
+        if (closedTick % 5 === 0) {
+          coachChatService.getUnreadCount()
+            .then((count) => setCoachUnreadCount(count))
+            .catch(() => {});
+        }
       }
-    }, 3500);
+    }, 4000);
 
     return () => clearInterval(interval);
   }, [user, isMember, isOpen, activeTab, loadCoachMessages, loadCommunityMessages]);

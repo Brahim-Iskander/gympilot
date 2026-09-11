@@ -127,11 +127,12 @@ export default function AdminLayout() {
     }
 
     const interval = setInterval(() => {
+      if (document.hidden) return;
       coachChatService.getAdminUnreadCount().then(setCoachUnread).catch(() => { });
       if (isAdmin) {
         adminService.getTicketUnreadCount().then((res) => setTicketUnread(res.unreadCount || 0)).catch(() => { });
       }
-    }, 5000);
+    }, 15000);
     return () => clearInterval(interval);
   }, [isAdmin]);
 

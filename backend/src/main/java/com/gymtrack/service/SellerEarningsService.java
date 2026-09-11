@@ -27,10 +27,13 @@ import com.gymtrack.exception.InvalidCredentialsException;
 import com.gymtrack.model.Order;
 import com.gymtrack.model.OrderItem;
 import com.gymtrack.model.Product;
+import com.gymtrack.dto.AssignSellerRequest;
+import com.gymtrack.model.RoleAuditLog;
 import com.gymtrack.model.SellerPayout;
 import com.gymtrack.model.User;
 import com.gymtrack.repository.OrderRepository;
 import com.gymtrack.repository.ProductRepository;
+import com.gymtrack.repository.RoleAuditLogRepository;
 import com.gymtrack.repository.SellerPayoutRepository;
 import com.gymtrack.repository.UserRepository;
 
@@ -44,15 +47,18 @@ public class SellerEarningsService {
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final SellerPayoutRepository sellerPayoutRepository;
+    private final RoleAuditLogRepository roleAuditLogRepository;
 
     public SellerEarningsService(UserRepository userRepository,
                                  OrderRepository orderRepository,
                                  ProductRepository productRepository,
-                                 SellerPayoutRepository sellerPayoutRepository) {
+                                 SellerPayoutRepository sellerPayoutRepository,
+                                 RoleAuditLogRepository roleAuditLogRepository) {
         this.userRepository = userRepository;
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
         this.sellerPayoutRepository = sellerPayoutRepository;
+        this.roleAuditLogRepository = roleAuditLogRepository;
     }
 
     /**
@@ -178,6 +184,57 @@ public class SellerEarningsService {
         user.setCommissionRate(commissionRate);
         User saved = userRepository.save(user);
         log.info("Updated commission rate for seller {} ({}) to {}%", sellerId, saved.getEmail(), commissionRate);
+        return saved;
+    }
+
+    /**
+     * Promote an existing user to SELLER role with a specific commission rate and store name.
+     */
+    public User assignSeller(AssignSellerRequest request, String adminEmail) {
+        User user = null;
+        if (request.userId() != null && !request.userId().isBlank()) {
+            user = userRepository.findById(request.userId()).orElse(null);
+        }
+        if (user == null && request.email() != null && !request.email().isBlank()) {
+            user = userRepository.findByEmail(request.email().trim().toLowerCase()).orElse(null);
+        }
+        if (user == null) {
+            throw new InvalidCredentialsException("User not found with provided ID or email");
+        }
+
+        Set<String> prevRoles = user.getRoles() != null ? new HashSet<>(user.getRoles()) : new HashSet<>();
+        Set<String> newRoles = new HashSet<>(prevRoles);
+        newRoles.add("SELLER");
+        user.setRoles(newRoles);
+
+        double rate = request.commissionRate() != null ? request.commissionRate() : DEFAULT_COMMISSION_RATE;
+        user.setCommissionRate(rate);
+
+        if (request.storeName() != null && !request.storeName().isBlank()) {
+            user.setStoreName(request.storeName().trim());
+        } else if (user.getStoreName() == null || user.getStoreName().isBlank()) {
+            String name = (user.getFirstName() != null ? user.getFirstName() : "Vendor") + " Store";
+            user.setStoreName(name.trim());
+        }
+
+        User saved = userRepository.save(user);
+
+        // Audit log
+        String userDisplayName = (user.getFirstName() + " " + (user.getLastName() != null ? user.getLastName() : "")).trim();
+        RoleAuditLog auditLog = new RoleAuditLog(
+                user.getId(),
+                user.getEmail(),
+                userDisplayName,
+                "ADMIN",
+                adminEmail,
+                prevRoles,
+                newRoles,
+                "GRANTED_SELLER",
+                (request.notes() != null && !request.notes().isBlank() ? request.notes() + " | " : "") + "Commission set to " + rate + "%"
+        );
+        roleAuditLogRepository.save(auditLog);
+
+        log.info("Admin {} assigned SELLER role to {} with {}% commission", adminEmail, user.getEmail(), rate);
         return saved;
     }
 

@@ -3,6 +3,8 @@ package com.gymtrack.model;
 import java.time.Instant;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -10,6 +12,11 @@ import org.springframework.data.mongodb.core.mapping.Document;
  * Live Coach Chat message exchanged between an athlete (User) and the coaching staff.
  */
 @Document(collection = "coach_messages")
+@CompoundIndexes({
+    @CompoundIndex(name = "coach_msg_coach_unread_idx", def = "{ 'senderRole': 1, 'isReadByCoach': 1 }"),
+    @CompoundIndex(name = "coach_msg_user_unread_idx", def = "{ 'userId': 1, 'senderRole': 1, 'isReadByUser': 1 }"),
+    @CompoundIndex(name = "coach_msg_user_created_idx", def = "{ 'userId': 1, 'createdAt': 1 }")
+})
 public class CoachMessage {
 
     @Id
@@ -25,7 +32,7 @@ public class CoachMessage {
     /** "USER" or "COACH" */
     private String senderRole;
 
-    /** Name of the sender (e.g. "John Doe" or "GymTrack staff") */
+    /** Name of the sender (e.g. "John Doe" or "GymPilot Staff") */
     private String senderName;
 
     /** Text content of the message */

@@ -3,7 +3,6 @@ package com.gymtrack.controller;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,6 +17,11 @@ import org.springframework.web.bind.annotation.RestController;
 import com.gymtrack.dto.progress.ProgressAnalysisResponse;
 import com.gymtrack.dto.progress.ProgressEntryRequest;
 import com.gymtrack.dto.progress.ProgressEntryResponse;
+import com.gymtrack.exception.InvalidCredentialsException;
+import com.gymtrack.model.AiFeature;
+import com.gymtrack.model.User;
+import com.gymtrack.repository.UserRepository;
+import com.gymtrack.service.AiUsageService;
 import com.gymtrack.service.ProgressService;
 
 import jakarta.validation.Valid;
@@ -27,9 +31,15 @@ import jakarta.validation.Valid;
 public class ProgressController {
 
     private final ProgressService progressService;
+    private final AiUsageService aiUsageService;
+    private final UserRepository userRepository;
 
-    public ProgressController(ProgressService progressService) {
+    public ProgressController(ProgressService progressService,
+                              AiUsageService aiUsageService,
+                              UserRepository userRepository) {
         this.progressService = progressService;
+        this.aiUsageService = aiUsageService;
+        this.userRepository = userRepository;
     }
 
     @GetMapping
@@ -43,10 +53,10 @@ public class ProgressController {
     }
 
     @PostMapping
-    public ResponseEntity<ProgressEntryResponse> createEntry(Authentication authentication,
-                                                            @Valid @RequestBody ProgressEntryRequest request) {
-        ProgressEntryResponse response = progressService.createEntry(authentication.getName(), request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    @ResponseStatus(HttpStatus.CREATED)
+    public ProgressEntryResponse createEntry(Authentication authentication,
+                                             @Valid @RequestBody ProgressEntryRequest request) {
+        return progressService.createEntry(authentication.getName(), request);
     }
 
     @PutMapping("/{id}")
@@ -64,6 +74,12 @@ public class ProgressController {
 
     @PostMapping("/analyze")
     public ProgressAnalysisResponse analyzeProgress(Authentication authentication) {
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new InvalidCredentialsException("User not found"));
+
+        // Enforce quota limits for PROGRESS_ANALYSIS (Free: 3 lifetime, Basic: 5/mo, Premium: 15/mo)
+        aiUsageService.checkAndIncrementUsage(user, AiFeature.PROGRESS_ANALYSIS);
+
         return progressService.analyzeProgress(authentication.getName());
     }
 }

@@ -102,8 +102,11 @@ export default function DashboardPacksShowcase() {
     productPackService
       .getActivePacks()
       .then((data) => {
-        if (data && data.length > 0) {
-          setPacks(data);
+        const activeNonExpired = (data || []).filter(
+          (p) => !p.validUntil || new Date(p.validUntil).getTime() > Date.now()
+        );
+        if (activeNonExpired && activeNonExpired.length > 0) {
+          setPacks(activeNonExpired);
         } else {
           setPacks(DEFAULT_SHOWCASE_PACKS);
         }
@@ -162,7 +165,7 @@ export default function DashboardPacksShowcase() {
       >
         <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} gap={2}>
           <Box>
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap sx={{ mb: 1 }}>
               <Chip
                 icon={<LocalFireDepartmentRoundedIcon sx={{ fontSize: '1rem !important', color: '#FF4D4D' }} />}
                 label="OFFRES SPÉCIALES ATHLÈTES"
@@ -212,6 +215,7 @@ export default function DashboardPacksShowcase() {
             component={RouterLink}
             to="/shop"
             variant="outlined"
+            fullWidth={false}
             endIcon={<ArrowForwardRoundedIcon />}
             sx={{
               fontWeight: 800,
@@ -221,6 +225,7 @@ export default function DashboardPacksShowcase() {
               px: 2.5,
               py: 1,
               whiteSpace: 'nowrap',
+              width: { xs: '100%', sm: 'auto' },
               '&:hover': {
                 borderColor: 'primary.main',
                 bgcolor: 'rgba(198, 255, 62, 0.08)',
@@ -473,7 +478,7 @@ export default function DashboardPacksShowcase() {
                     <Divider sx={{ mb: 2 }} />
 
                     {/* Price & Add to Cart Action */}
-                    <Stack direction="row" justifyContent="space-between" alignItems="center" gap={2}>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="center" gap={2}>
                       <Box>
                         {pack.originalPrice && pack.originalPrice > pack.price && (
                           <Typography
@@ -502,7 +507,7 @@ export default function DashboardPacksShowcase() {
                         </Typography>
                       </Box>
 
-                      <Stack direction="row" spacing={1} alignItems="center">
+                      <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap sx={{ justifyContent: { xs: 'center', sm: 'flex-end' } }}>
                         <Button
                           variant={isAdded ? 'outlined' : 'contained'}
                           onClick={() => handleAddToCart(pack)}

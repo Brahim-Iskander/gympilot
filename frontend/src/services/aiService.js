@@ -50,5 +50,15 @@ export const aiService = {
       throw error;
     }
   },
+
+  async getUsageStatus() {
+    try {
+      const response = await api.get('/ai/usage');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching AI usage status:', error);
+      return null;
+    }
+  },
 };
 

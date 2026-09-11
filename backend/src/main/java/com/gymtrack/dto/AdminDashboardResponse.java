@@ -14,6 +14,9 @@ public record AdminDashboardResponse(
         long basicMembersCount,
         long premiumMembersCount,
         long activeMembersCount,
-        long inactiveMembersCount
+        long inactiveMembersCount,
+        long loginsToday,
+        long loginsThisMonth,
+        long loginsThisYear
 ) {
 }

@@ -1,4 +1,4 @@
-import { Box, Tab, Tabs, styled } from '@mui/material';
+import { Box, Tab, Tabs, styled, useMediaQuery, useTheme } from '@mui/material';
 
 const StyledTabs = styled(Tabs)(() => ({
   minHeight: 48,
@@ -49,9 +49,20 @@ export default function TabNavigation({
   sx,
   ...props
 }) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   return (
     <Box sx={{ borderBottom: variant === 'line' ? '1px solid' : 'none', borderColor: 'divider', ...sx }}>
-      <StyledTabs className={variant === 'pill' ? 'variant-pill' : 'variant-line'} value={value} onChange={onChange} {...props}>
+      <StyledTabs
+        className={variant === 'pill' ? 'variant-pill' : 'variant-line'}
+        value={value}
+        onChange={onChange}
+        variant="scrollable"
+        scrollButtons="auto"
+        allowScrollButtonsMobile
+        {...props}
+      >
         {tabs.map((tab) => (
           <StyledTab
             key={tab.id}
@@ -60,7 +71,11 @@ export default function TabNavigation({
             icon={tab.icon}
             disabled={tab.disabled}
             className={variant === 'pill' ? 'variant-pill' : 'variant-line'}
-            sx={{ minWidth: variant === 'pill' ? 120 : 80 }}
+            sx={{
+              minWidth: isMobile ? 0 : (variant === 'pill' ? 120 : 80),
+              fontSize: isMobile ? '0.78rem' : '0.875rem',
+              px: isMobile ? 1.5 : 2,
+            }}
           />
         ))}
       </StyledTabs>

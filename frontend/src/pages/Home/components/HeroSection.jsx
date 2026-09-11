@@ -11,6 +11,7 @@ import StarRoundedIcon from '@mui/icons-material/StarRounded';
 import FitnessCenterRoundedIcon from '@mui/icons-material/FitnessCenterRounded';
 import TimerRoundedIcon from '@mui/icons-material/TimerRounded';
 import WorkspacePremiumRoundedIcon from '@mui/icons-material/WorkspacePremiumRounded';
+import CardMembershipRoundedIcon from '@mui/icons-material/CardMembershipRounded';
 
 import heroImage from '../../../assets/hero-gym.jpg';
 import { useLanguage } from '../../../i18n';
@@ -358,6 +359,31 @@ export default function HeroSection() {
                   }}
                 >
                   Claim 14-Day Free Trial
+                </Button>
+
+                <Button
+                  component={RouterLink}
+                  to="/membership"
+                  variant="outlined"
+                  size="large"
+                  startIcon={<CardMembershipRoundedIcon />}
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: '0.98rem',
+                    py: 1.5,
+                    px: 3,
+                    borderRadius: 3,
+                    borderColor: 'rgba(138, 124, 255, 0.4)',
+                    color: '#8A7CFF',
+                    bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(138, 124, 255, 0.05)' : 'rgba(138, 124, 255, 0.04)'),
+                    '&:hover': {
+                      borderColor: '#8A7CFF',
+                      bgcolor: 'rgba(138, 124, 255, 0.12)',
+                      color: '#8A7CFF',
+                    },
+                  }}
+                >
+                  Plans & Pricing
                 </Button>
 
                 <Button

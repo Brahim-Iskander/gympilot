@@ -113,14 +113,22 @@ export default function AdminCoachChat() {
     }
   }, [selectedUserId, loadMessages]);
 
-  // Real-time polling every 3.5s for live chat updates
+  // Real-time polling for live chat updates
   useEffect(() => {
+    let tick = 0;
     const interval = setInterval(() => {
-      loadConversations(true);
+      if (document.hidden) return; // Don't poll when tab is not visible
+
+      tick += 1;
+      // Refresh active user's messages every 4s
       if (selectedUserId) {
         loadMessages(selectedUserId, true);
       }
-    }, 3500);
+      // Refresh conversations sidebar every 12s (every 3 ticks)
+      if (tick % 3 === 0) {
+        loadConversations(true);
+      }
+    }, 4000);
 
     return () => clearInterval(interval);
   }, [selectedUserId, loadConversations, loadMessages]);

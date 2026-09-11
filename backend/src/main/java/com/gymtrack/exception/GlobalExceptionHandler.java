@@ -81,6 +81,11 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage(), null);
     }
 
+    @ExceptionHandler(AiUsageLimitExceededException.class)
+    public ResponseEntity<ApiError> handleAiUsageLimitExceeded(AiUsageLimitExceededException ex) {
+        return build(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage(), null);
+    }
+
     @ExceptionHandler(DataAccessResourceFailureException.class)
     public ResponseEntity<ApiError> handleDatabaseUnavailable(DataAccessResourceFailureException ex) {
         log.error("MongoDB is unreachable", ex);

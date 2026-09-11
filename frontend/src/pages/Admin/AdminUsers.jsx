@@ -52,9 +52,12 @@ import {
   HistoryRounded,
   CloseRounded,
   VerifiedUserRounded,
+  AddBusinessRounded,
+  PercentRounded,
 } from '@mui/icons-material';
 
 import { adminService } from '../../services/adminService';
+import AddSellerModal from '../../components/admin/AddSellerModal';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -99,6 +102,12 @@ export default function AdminUsers() {
   const [drawerIsSeller, setDrawerIsSeller] = useState(false);
   const [drawerIsAdmin, setDrawerIsAdmin] = useState(false);
   const [drawerNotes, setDrawerNotes] = useState('');
+  const [drawerCommissionRate, setDrawerCommissionRate] = useState(10.0);
+  const [drawerStoreName, setDrawerStoreName] = useState('');
+
+  // Add Seller dialog state
+  const [addSellerOpen, setAddSellerOpen] = useState(false);
+  const [addSellerTargetUser, setAddSellerTargetUser] = useState(null);
 
   // Inline update loading states
   const [updatingCapabilities, setUpdatingCapabilities] = useState(false);
@@ -146,6 +155,8 @@ export default function AdminUsers() {
     setDrawerIsAdmin(user.isAdmin || roles.includes('ADMIN'));
     setDrawerIsCoach(user.isCoach || roles.includes('COACH'));
     setDrawerIsSeller(user.isSeller || roles.includes('SELLER'));
+    setDrawerCommissionRate(user.commissionRate ?? 10.0);
+    setDrawerStoreName(user.storeName || '');
     setDrawerNotes('');
     setDrawerTierValue(user.membershipTier ?? 'FREE');
     setDrawerStatusValue(user.membershipStatus ?? 'INACTIVE');
@@ -157,15 +168,24 @@ export default function AdminUsers() {
   const handleSaveCapabilities = async () => {
     if (!selectedUser) return;
 
+    const payload = {
+      isCoach: drawerIsCoach,
+      isSeller: drawerIsSeller,
+      isAdmin: drawerIsAdmin,
+      notes: drawerNotes,
+      commissionRate: drawerIsSeller ? (parseFloat(drawerCommissionRate) || 10.0) : undefined,
+      storeName: drawerIsSeller ? drawerStoreName : undefined,
+    };
+
     // Check if promoting to Admin
     const wasAdmin = selectedUser.isAdmin || (selectedUser.roles || []).includes('ADMIN');
     if (drawerIsAdmin && !wasAdmin) {
-      setPendingPromotion({ isCoach: drawerIsCoach, isSeller: drawerIsSeller, isAdmin: true, notes: drawerNotes });
+      setPendingPromotion({ ...payload, isAdmin: true });
       setConfirmRoleOpen(true);
       return;
     }
 
-    applyCapabilities({ isCoach: drawerIsCoach, isSeller: drawerIsSeller, isAdmin: drawerIsAdmin, notes: drawerNotes });
+    applyCapabilities(payload);
   };
 
   const applyCapabilities = async (payload) => {
@@ -271,11 +291,33 @@ export default function AdminUsers() {
 
         <Stack direction="row" spacing={1.5} alignItems="center" sx={{ width: { xs: '100%', sm: 'auto' } }}>
           <Button
+            variant="contained"
+            size="small"
+            startIcon={<AddBusinessRounded />}
+            onClick={() => {
+              setAddSellerTargetUser(null);
+              setAddSellerOpen(true);
+            }}
+            sx={{
+              fontWeight: 700,
+              borderRadius: 2,
+              bgcolor: 'rgba(0,230,118,0.15)',
+              color: '#00E676',
+              border: '1px solid rgba(0,230,118,0.35)',
+              '&:hover': { bgcolor: 'rgba(0,230,118,0.25)', borderColor: '#00E676' },
+              textTransform: 'none',
+              px: 2,
+            }}
+          >
+            Add Seller
+          </Button>
+
+          <Button
             variant="outlined"
             size="small"
             startIcon={<HistoryRounded />}
             onClick={handleOpenAuditLogs}
-            sx={{ fontWeight: 700, borderRadius: 2 }}
+            sx={{ fontWeight: 700, borderRadius: 2, textTransform: 'none' }}
           >
             Audit Log History
           </Button>
@@ -366,12 +408,14 @@ export default function AdminUsers() {
                             />
                           )}
                           {(user.isSeller || roles.includes('SELLER')) && (
-                            <Chip
-                              icon={<StorefrontRounded sx={{ fontSize: '14px !important' }} />}
-                              label="Seller"
-                              size="small"
-                              sx={{ bgcolor: 'rgba(0,230,118,0.15)', color: '#00E676', fontWeight: 800, height: 22, fontSize: '0.68rem', border: '1px solid rgba(0,230,118,0.35)' }}
-                            />
+                            <Tooltip title={`Platform takes ${user.commissionRate ?? 10}% commission on sales`}>
+                              <Chip
+                                icon={<StorefrontRounded sx={{ fontSize: '14px !important' }} />}
+                                label={`Seller • ${user.commissionRate ?? 10}%`}
+                                size="small"
+                                sx={{ bgcolor: 'rgba(0,230,118,0.15)', color: '#00E676', fontWeight: 800, height: 22, fontSize: '0.68rem', border: '1px solid rgba(0,230,118,0.35)' }}
+                              />
+                            </Tooltip>
                           )}
                           {!user.isAdmin && !user.isCoach && !user.isSeller && !roles.includes('ADMIN') && !roles.includes('COACH') && !roles.includes('SELLER') && (
                             <Chip
@@ -543,6 +587,78 @@ export default function AdminUsers() {
                       </Box>
                     }
                   />
+
+                  {drawerIsSeller && (
+                    <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px dashed', borderColor: 'rgba(0,230,118,0.3)' }}>
+                      <Stack spacing={1.5}>
+                        <Box>
+                          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
+                            <Typography variant="caption" fontWeight={700} color="#00E676">
+                              PLATFORM COMMISSION PERCENTAGE (%)
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              Fee per sale
+                            </Typography>
+                          </Stack>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            type="number"
+                            value={drawerCommissionRate}
+                            onChange={(e) => setDrawerCommissionRate(e.target.value)}
+                            inputProps={{ min: 0, max: 100, step: 0.5 }}
+                            InputProps={{
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  <PercentRounded fontSize="small" sx={{ color: '#00E676' }} />
+                                </InputAdornment>
+                              ),
+                              endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                            }}
+                            helperText="Percentage GymPilot retains from this vendor's total sales"
+                          />
+                          {/* Quick presets */}
+                          <Stack direction="row" spacing={0.75} sx={{ mt: 1 }}>
+                            {[5, 10, 15, 20].map((val) => (
+                              <Chip
+                                key={val}
+                                label={`${val}%`}
+                                size="small"
+                                clickable
+                                onClick={() => setDrawerCommissionRate(val)}
+                                variant={parseFloat(drawerCommissionRate) === val ? 'filled' : 'outlined'}
+                                color={parseFloat(drawerCommissionRate) === val ? 'success' : 'default'}
+                                sx={{ height: 22, fontSize: '0.7rem', fontWeight: 700 }}
+                              />
+                            ))}
+                          </Stack>
+                        </Box>
+
+                        <TextField
+                          fullWidth
+                          size="small"
+                          label="Store / Brand Name"
+                          placeholder="e.g. Pro Nutrition Shop"
+                          value={drawerStoreName}
+                          onChange={(e) => setDrawerStoreName(e.target.value)}
+                        />
+
+                        {/* Revenue split preview */}
+                        <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
+                          <Typography variant="caption" color="text.secondary" display="block">
+                            Sample 100 TND sale split:
+                          </Typography>
+                          <Typography variant="caption" fontWeight={700} color="#00E5FF">
+                            Platform cut: {(100 * ((parseFloat(drawerCommissionRate) || 0) / 100)).toFixed(2)} TND
+                          </Typography>
+                          {' • '}
+                          <Typography variant="caption" fontWeight={700} color="#00E676">
+                            Seller gets: {(100 * (1 - (parseFloat(drawerCommissionRate) || 0) / 100)).toFixed(2)} TND
+                          </Typography>
+                        </Box>
+                      </Stack>
+                    </Box>
+                  )}
                 </Box>
 
                 {/* Admin Switch */}
@@ -758,6 +874,19 @@ export default function AdminUsers() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* ── Add Seller Modal ────────────────────────────────────────────── */}
+      <AddSellerModal
+        open={addSellerOpen}
+        onClose={() => {
+          setAddSellerOpen(false);
+          setAddSellerTargetUser(null);
+        }}
+        onSellerAdded={() => {
+          fetchUsers();
+        }}
+        preselectedUser={addSellerTargetUser}
+      />
     </Container>
   );
 }

@@ -55,6 +55,7 @@ public class ProductPackController {
     public ResponseEntity<ProductPack> getPackByIdOrSlug(@PathVariable String identifier) {
         return productPackService.getPackById(identifier)
                 .or(() -> productPackService.getPackBySlug(identifier))
+                .filter(p -> p.isActive() && !p.isExpired())
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

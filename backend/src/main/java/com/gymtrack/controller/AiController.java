@@ -1,5 +1,7 @@
 package com.gymtrack.controller;
 
+import java.util.Map;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,16 +11,18 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.gymtrack.dto.AiAnalyticsResponse;
+import com.gymtrack.dto.AiUsageStatusResponse;
 import com.gymtrack.dto.ChatRequest;
 import com.gymtrack.dto.ChatResponse;
 import com.gymtrack.dto.nutrition.MealPlannerDtos.MealPlannerRequest;
 import com.gymtrack.dto.nutrition.MealPlannerDtos.MealPlannerResponse;
-import com.gymtrack.dto.onboarding.OnboardingResponse;
+import com.gymtrack.exception.InvalidCredentialsException;
+import com.gymtrack.model.User;
 import com.gymtrack.model.UserOnboarding;
 import com.gymtrack.repository.UserOnboardingRepository;
+import com.gymtrack.repository.UserRepository;
 import com.gymtrack.service.AiService;
-
-import java.util.Map;
+import com.gymtrack.service.AiUsageService;
 
 @RestController
 @RequestMapping("/api/ai")
@@ -26,10 +30,28 @@ public class AiController {
 
     private final AiService aiService;
     private final UserOnboardingRepository onboardingRepository;
+    private final AiUsageService aiUsageService;
+    private final UserRepository userRepository;
 
-    public AiController(AiService aiService, UserOnboardingRepository onboardingRepository) {
+    public AiController(AiService aiService,
+                        UserOnboardingRepository onboardingRepository,
+                        AiUsageService aiUsageService,
+                        UserRepository userRepository) {
         this.aiService = aiService;
         this.onboardingRepository = onboardingRepository;
+        this.aiUsageService = aiUsageService;
+        this.userRepository = userRepository;
+    }
+
+    /** GET /api/ai/usage - Get current user's AI quotas and remaining usage */
+    @GetMapping("/usage")
+    public ResponseEntity<AiUsageStatusResponse> getUsageStatus(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new InvalidCredentialsException("Authentication required.");
+        }
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new InvalidCredentialsException("User not found"));
+        return ResponseEntity.ok(aiUsageService.getUsageStatus(user));
     }
 
     @PostMapping("/chat")
@@ -71,4 +93,3 @@ public class AiController {
         return ResponseEntity.ok(response);
     }
 }
-

@@ -98,6 +98,9 @@ export default function AppRoutes() {
       <Route path="/packs/:idOrSlug" element={<PackDetail />} />
       <Route path="/shop/:id" element={<ProductDetail />} />
 
+      {/* Membership is public – guests see Navbar+Footer, authenticated users use AppLayout */}
+      <Route path="/membership" element={<MembershipPage />} />
+
       {/* Cart, Checkout, Orders require authentication */}
       <Route element={<AppLayout />}>
         <Route
@@ -216,14 +219,6 @@ export default function AppRoutes() {
           element={
             <ProtectedRoute>
               <SupportTickets />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/membership"
-          element={
-            <ProtectedRoute>
-              <MembershipPage />
             </ProtectedRoute>
           }
         />

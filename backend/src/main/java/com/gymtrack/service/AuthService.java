@@ -23,8 +23,10 @@ import com.gymtrack.exception.InvalidPasswordException;
 import com.gymtrack.model.EmailOtp;
 import com.gymtrack.model.PasswordResetToken;
 import com.gymtrack.model.User;
+import com.gymtrack.model.UserLogin;
 import com.gymtrack.repository.EmailOtpRepository;
 import com.gymtrack.repository.PasswordResetTokenRepository;
+import com.gymtrack.repository.UserLoginRepository;
 import com.gymtrack.repository.UserRepository;
 import com.gymtrack.security.JwtService;
 
@@ -36,6 +38,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final EmailOtpRepository emailOtpRepository;
+    private final UserLoginRepository userLoginRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
@@ -52,6 +55,7 @@ public class AuthService {
     public AuthService(UserRepository userRepository,
                        PasswordResetTokenRepository passwordResetTokenRepository,
                        EmailOtpRepository emailOtpRepository,
+                       UserLoginRepository userLoginRepository,
                        PasswordEncoder passwordEncoder,
                        AuthenticationManager authenticationManager,
                        JwtService jwtService,
@@ -60,6 +64,7 @@ public class AuthService {
         this.userRepository = userRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.emailOtpRepository = emailOtpRepository;
+        this.userLoginRepository = userLoginRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
@@ -210,6 +215,13 @@ public class AuthService {
 
         mailService.sendOtpVerificationEmail(saved.getEmail(), saved.getFirstName(), otpCode);
 
+        // Record initial login audit
+        try {
+            userLoginRepository.save(new UserLogin(saved.getId(), saved.getEmail(), Instant.now()));
+        } catch (Exception ex) {
+            log.warn("Failed to record login audit for registration {}: {}", saved.getEmail(), ex.getMessage());
+        }
+
         return new AuthResponse(jwtService.generateToken(saved.getEmail()), UserResponse.from(saved));
     }
 
@@ -232,8 +244,16 @@ public class AuthService {
         referralService.ensureReferralCode(user);
 
         // Track last login time
-        user.setLastLoginAt(Instant.now());
+        Instant now = Instant.now();
+        user.setLastLoginAt(now);
         userRepository.save(user);
+
+        // Record login audit event
+        try {
+            userLoginRepository.save(new UserLogin(user.getId(), user.getEmail(), now));
+        } catch (Exception ex) {
+            log.warn("Failed to record login audit for {}: {}", user.getEmail(), ex.getMessage());
+        }
 
         return new AuthResponse(jwtService.generateToken(user.getEmail()), UserResponse.from(user));
     }

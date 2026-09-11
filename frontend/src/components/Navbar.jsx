@@ -63,6 +63,7 @@ export default function Navbar() {
 
   const navLinks = [
     { label: t('nav.features'), onClick: goFeatures },
+    { label: t('nav.membership', 'Membership'), to: '/membership', onClick: closeDrawer },
     { label: t('nav.shop'), to: '/shop', onClick: closeDrawer },
     { label: t('nav.aiAnalyzer'), to: '/analyze', onClick: closeDrawer },
   ];

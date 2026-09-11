@@ -222,8 +222,18 @@ export default function GoalsList({ filter = 'all' }) {
                         {typeInfo?.icon || <Flag01Icon size={18} />}
                       </Box>
                       <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-                          <Typography variant="body2" fontWeight={700} noWrap>
+                        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ minWidth: 0 }}>
+                          <Typography
+                            variant="body2"
+                            fontWeight={700}
+                            sx={{
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              maxWidth: { xs: '140px', sm: '220px', md: '100%' },
+                            }}
+                            title={goal.title}
+                          >
                             {goal.title}
                           </Typography>
                           {goal.isAi && (
@@ -240,7 +250,7 @@ export default function GoalsList({ filter = 'all' }) {
                         </Typography>
                       </Box>
                     </Stack>
-                    <Stack direction="row" spacing={0.5}>
+                    <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0, ml: 1 }}>
                       <IconButton size="small" onClick={() => handleOpenEdit(goal)} sx={{ color: 'text.secondary' }}>
                         <Edit02Icon size={16} />
                       </IconButton>

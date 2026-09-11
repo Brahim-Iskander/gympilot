@@ -49,12 +49,14 @@ import { membershipService } from '../../services/membershipService';
 import { useAuth } from '../../context/AuthContext';
 import SEO from '../../components/SEO';
 import { useLanguage } from '../../i18n';
+import Navbar from '../../components/Navbar';
+import Footer from '../../components/Footer';
 
 export default function MembershipPage() {
   const { t } = useLanguage();
   const theme = useTheme();
   const navigate = useNavigate();
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, isAuthenticated } = useAuth();
 
   const BASIC_POINTS_COST = 250;
   const PREMIUM_POINTS_COST = 500;
@@ -68,6 +70,7 @@ export default function MembershipPage() {
 
   const basicFeatures = [
     'Complete access to workout logger & exercise history',
+    '5 AI Body Scans & 5 AI Progress Analyses per month',
     'Custom exercise builder with target muscle groups',
     'Body measurement & weight progression charts',
     'Daily calorie & macronutrient goals tracker',
@@ -76,6 +79,7 @@ export default function MembershipPage() {
 
   const premiumFeatures = [
     'Everything included in the Basic Plan',
+    '15 AI Body Scans & 15 AI Progress Analyses per month',
     'AI-powered workout & nutrition generator',
     '1-on-1 Dedicated Coach Live Desk consultations',
     'Advanced analytics & 1RM strength predictions',
@@ -84,6 +88,10 @@ export default function MembershipPage() {
   ];
 
   const handleSubscribeBasic = async () => {
+    if (!user) {
+      navigate('/login?redirect=/membership');
+      return;
+    }
     try {
       setLoading(true);
       setErrorMessage('');
@@ -108,6 +116,10 @@ export default function MembershipPage() {
   };
 
   const handleRedeemWithPoints = async (tier) => {
+    if (!user) {
+      navigate('/login?redirect=/membership');
+      return;
+    }
     try {
       setRedeemingTier(tier);
       setErrorMessage('');
@@ -126,13 +138,18 @@ export default function MembershipPage() {
     }
   };
 
-  return (
-    <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>
+  const pageContent = (
+    <Container
+      maxWidth="lg"
+      sx={{
+        py: { xs: 3, md: 5 },
+        pt: !isAuthenticated ? { xs: 11, md: 13 } : { xs: 3, md: 5 },
+      }}
+    >
       <SEO
         title={`${t('membership.title')} — GymPilot`}
         description={t('membership.subtitle')}
         path="/membership"
-        noIndex
       />
       {/* Header Section */}
       <Box sx={{ textAlign: 'center', mb: { xs: 4, md: 6 } }}>
@@ -186,6 +203,50 @@ export default function MembershipPage() {
           {t('membership.subtitle')}
         </Typography>
       </Box>
+
+      {/* Guest Welcome Banner */}
+      {!user && (
+        <Paper
+          elevation={0}
+          sx={{
+            p: { xs: 2.5, sm: 3 },
+            mb: 4,
+            borderRadius: 3,
+            bgcolor: 'rgba(198,255,62,0.06)',
+            border: '1px solid rgba(198,255,62,0.25)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 2,
+          }}
+        >
+          <Box>
+            <Typography variant="subtitle1" fontWeight={800} color="text.primary">
+              New to GymPilot? Claim your 14-Day Free Trial!
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Sign up today to explore full workout tracking, 3 free lifetime AI Body Scans & Progress Analyses, and reward points.
+            </Typography>
+          </Box>
+          <Stack direction="row" spacing={1.5}>
+            <Button
+              variant="contained"
+              onClick={() => navigate('/register?redirect=/membership')}
+              sx={{ fontWeight: 800, borderRadius: 2.5 }}
+            >
+              Start Free Trial
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => navigate('/login?redirect=/membership')}
+              sx={{ fontWeight: 700, borderRadius: 2.5 }}
+            >
+              Sign In
+            </Button>
+          </Stack>
+        </Paper>
+      )}
 
       {/* Points Balance Banner */}
       {user && (
@@ -806,4 +867,18 @@ export default function MembershipPage() {
       </Box>
     </Container>
   );
+
+  if (!isAuthenticated) {
+    return (
+      <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <Navbar />
+        <Box component="main" sx={{ flexGrow: 1 }}>
+          {pageContent}
+        </Box>
+        <Footer />
+      </Box>
+    );
+  }
+
+  return pageContent;
 }

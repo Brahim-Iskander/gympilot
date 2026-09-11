@@ -84,4 +84,17 @@ public class SellerEarningsAdminController {
             @Valid @RequestBody UpdateSellerCommissionRequest request) {
         return sellerEarningsService.updateCommissionRate(sellerId, request.commissionRate());
     }
+
+    /**
+     * POST /api/admin/seller-earnings/assign-seller
+     * Add/promote a user to SELLER role with their platform commission percentage and store name.
+     */
+    @PostMapping("/assign-seller")
+    @ResponseStatus(HttpStatus.CREATED)
+    public User assignSeller(
+            @Valid @RequestBody com.gymtrack.dto.AssignSellerRequest request,
+            Principal principal) {
+        String adminEmail = principal != null ? principal.getName() : "admin@gympilot.com";
+        return sellerEarningsService.assignSeller(request, adminEmail);
+    }
 }

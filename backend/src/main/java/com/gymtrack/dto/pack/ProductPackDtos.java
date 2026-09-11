@@ -42,6 +42,10 @@ public class ProductPackDtos {
 
             int stockQuantity,
 
-            Instant validUntil
+            Instant validUntil,
+
+            String durationUnit,
+
+            Integer durationValue
     ) {}
 }

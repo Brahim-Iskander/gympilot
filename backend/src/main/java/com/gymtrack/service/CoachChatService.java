@@ -2,11 +2,13 @@ package com.gymtrack.service;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -70,7 +72,7 @@ public class CoachChatService {
             coachMessageRepository.saveAll(messages);
         }
 
-        // If no messages exist yet, send a welcoming initial message from GymTrack staff
+        // If no messages exist yet, send a welcoming initial message from GymPilot Staff
         if (messages.isEmpty()) {
             String fullName = user != null ? (user.getFirstName() + " " + user.getLastName()).trim() : "Athlete";
             String email = user != null ? user.getEmail() : "";
@@ -80,8 +82,8 @@ public class CoachChatService {
                     fullName,
                     email,
                     "COACH",
-                    "GymTrack staff",
-                    "Welcome " + fullName + "! 👋 We're the GymTrack staff. Feel free to ask us anything about your workout program, progressive overload, nutrition macros, or form cues. We're here to support your fitness journey!"
+                    "GymPilot Staff",
+                    "Welcome " + fullName + "! 👋 We're the GymPilot Staff. Feel free to ask us anything about your workout program, progressive overload, nutrition macros, or form cues. We're here to support your fitness journey!"
             );
             welcomeMsg.setReadByUser(true);
             CoachMessage saved = coachMessageRepository.save(welcomeMsg);
@@ -133,6 +135,9 @@ public class CoachChatService {
      */
     public List<CoachConversationSummaryResponse> getAllConversationsForCoach() {
         List<CoachMessage> allMessages = coachMessageRepository.findAll();
+        if (allMessages.isEmpty()) {
+            return Collections.emptyList();
+        }
 
         // Group messages by userId
         Map<String, List<CoachMessage>> grouped = new HashMap<>();
@@ -141,6 +146,15 @@ public class CoachChatService {
                 grouped.computeIfAbsent(msg.getUserId(), k -> new ArrayList<>()).add(msg);
             }
         }
+
+        // Batch fetch all users in 1 single query instead of N queries
+        Set<String> userIds = grouped.keySet();
+        Map<String, User> userMap = userRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u, (u1, u2) -> u1));
+
+        // Batch fetch all onboardings in 1 single query instead of N queries
+        Map<String, UserOnboarding> onboardingMap = userOnboardingRepository.findByUserIdIn(userIds).stream()
+                .collect(Collectors.toMap(UserOnboarding::getUserId, o -> o, (o1, o2) -> o1));
 
         List<CoachConversationSummaryResponse> summaries = new ArrayList<>();
 
@@ -154,23 +168,21 @@ public class CoachChatService {
                     .filter(m -> "USER".equalsIgnoreCase(m.getSenderRole()) && !m.isReadByCoach())
                     .count();
 
-            User user = userRepository.findById(userId).orElse(null);
-            String fullName = user != null ? (user.getFirstName() + " " + user.getLastName()).trim() : lastMsg.getUserFullName();
+            User user = userMap.get(userId);
+            String fullName = user != null ? (user.getFirstName() + " " + (user.getLastName() != null ? user.getLastName() : "")).trim() : lastMsg.getUserFullName();
             String email = user != null ? user.getEmail() : lastMsg.getUserEmail();
 
             CoachConversationSummaryResponse summary = new CoachConversationSummaryResponse();
             summary.setUserId(userId);
-            summary.setUserFullName(fullName);
+            summary.setUserFullName(fullName != null && !fullName.isBlank() ? fullName : "Athlete");
             summary.setUserEmail(email);
             summary.setLastMessage(lastMsg.getMessage());
             summary.setLastMessageAt(lastMsg.getCreatedAt());
             summary.setLastSenderRole(lastMsg.getSenderRole());
             summary.setUnreadCount(unreadCount);
 
-            // Fetch user profile / onboarding for extra coach context
-            Optional<UserOnboarding> onboardingOpt = userOnboardingRepository.findByUserId(userId);
-            if (onboardingOpt.isPresent()) {
-                UserOnboarding onboarding = onboardingOpt.get();
+            UserOnboarding onboarding = onboardingMap.get(userId);
+            if (onboarding != null) {
                 summary.setGoal(onboarding.getGoal());
                 summary.setWeightKg(onboarding.getWeightKg());
                 summary.setExperienceLevel(onboarding.getExperienceLevel());
@@ -221,9 +233,9 @@ public class CoachChatService {
         String targetEmail = targetUser != null ? targetUser.getEmail() : "";
 
         User coachUser = resolveUser(coachIdentifier);
-        String coachName = coachUser != null ? (coachUser.getFirstName() + " " + coachUser.getLastName()).trim() : "GymTrack staff";
+        String coachName = coachUser != null ? (coachUser.getFirstName() + " " + coachUser.getLastName()).trim() : "GymPilot Staff";
         if (coachName.isBlank()) {
-            coachName = "GymTrack staff";
+            coachName = "GymPilot Staff";
         }
 
         CoachMessage message = new CoachMessage(

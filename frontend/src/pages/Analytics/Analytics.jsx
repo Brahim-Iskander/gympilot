@@ -49,9 +49,11 @@ import WaterDropRoundedIcon from '@mui/icons-material/WaterDropRounded';
 import ShowChartRoundedIcon from '@mui/icons-material/ShowChartRounded';
 import FlagRoundedIcon from '@mui/icons-material/FlagRounded';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
+import CardMembershipRoundedIcon from '@mui/icons-material/CardMembershipRounded';
 
 import { Card, StatCard, SectionHeader, ChartCard, EmptyState, LoadingSpinner } from '../../components/ui';
 import { progressService } from '../../services/progressService';
+import { aiService } from '../../services/aiService';
 import { onboardingService } from '../../services/onboardingService';
 import { getApiErrorMessage } from '../../utils/errors';
 import { useLanguage } from '../../i18n/LanguageContext';
@@ -226,6 +228,7 @@ export default function Analytics() {
   const [loadingData, setLoadingData] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState('');
+  const [usageStatus, setUsageStatus] = useState(null);
 
   // Consent modal state
   const [consentDialogOpen, setConsentDialogOpen] = useState(false);
@@ -234,6 +237,16 @@ export default function Analytics() {
   });
 
   const navigate = useNavigate();
+
+  // Load AI usage quota
+  const loadQuota = useCallback(async () => {
+    try {
+      const data = await aiService.getUsageStatus();
+      if (data) setUsageStatus(data);
+    } catch (e) {
+      console.error('Failed to load AI usage quota', e);
+    }
+  }, []);
 
   // Load user data + progress entries
   const loadData = useCallback(async () => {
@@ -256,7 +269,8 @@ export default function Analytics() {
 
   useEffect(() => {
     loadData();
-  }, [loadData]);
+    loadQuota();
+  }, [loadData, loadQuota]);
 
   // Load cached analysis or trigger fresh analysis if consented
   useEffect(() => {
@@ -297,9 +311,16 @@ export default function Analytics() {
           timestamp,
         })
       );
+      // Refresh quota after successful analysis
+      loadQuota();
     } catch (err) {
       console.error('AI Analysis failed:', err);
-      setError(getApiErrorMessage(err) || 'Failed to complete AI progress analysis.');
+      if (err?.response?.status === 429) {
+        setError('You have reached your AI Progress Analysis quota limit. Upgrade your plan to continue.');
+        loadQuota();
+      } else {
+        setError(getApiErrorMessage(err) || 'Failed to complete AI progress analysis.');
+      }
     } finally {
       setAnalyzing(false);
     }
@@ -437,7 +458,7 @@ export default function Analytics() {
               color="primary"
               startIcon={<RefreshRoundedIcon className={analyzing ? 'spin' : ''} />}
               onClick={() => runAiAnalysis(false)}
-              disabled={analyzing}
+              disabled={analyzing || usageStatus?.progressAnalysis?.isExceeded}
               sx={{ fontWeight: 800, borderRadius: 2.5 }}
             >
               {analyzing ? 'Analyzing with AI...' : aiAnalysis ? 'Regenerate Analysis' : 'Run AI Analysis'}
@@ -455,6 +476,49 @@ export default function Analytics() {
           </Stack>
         }
       />
+
+      {/* AI Progress Analysis Quota Badge */}
+      {usageStatus?.progressAnalysis && (
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2,
+            mb: 3,
+            borderRadius: 2.5,
+            bgcolor: usageStatus.progressAnalysis.isExceeded ? 'rgba(255,82,82,0.08)' : 'rgba(198, 255, 62, 0.08)',
+            border: '1px solid',
+            borderColor: usageStatus.progressAnalysis.isExceeded ? 'rgba(255,82,82,0.3)' : 'rgba(198, 255, 62, 0.3)',
+          }}
+        >
+          <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+            <AutoAwesomeRoundedIcon sx={{ color: usageStatus.progressAnalysis.isExceeded ? 'error.main' : 'primary.main', fontSize: 20 }} />
+            <Typography variant="body2" fontWeight={700} color="text.primary">
+              AI Progress Analyses:{' '}
+              <Box component="span" sx={{ color: usageStatus.progressAnalysis.isExceeded ? 'error.main' : 'primary.main', fontWeight: 800 }}>
+                {usageStatus.isAdmin
+                  ? 'Unlimited (Admin)'
+                  : `${usageStatus.progressAnalysis.remaining} of ${usageStatus.progressAnalysis.limit} remaining (${usageStatus.progressAnalysis.period.toLowerCase()})`}
+              </Box>
+            </Typography>
+            {usageStatus.progressAnalysis.isExceeded && (
+              <Chip
+                label="Upgrade Plan"
+                icon={<CardMembershipRoundedIcon />}
+                size="small"
+                onClick={() => navigate('/membership')}
+                sx={{
+                  fontWeight: 700,
+                  bgcolor: 'rgba(138,124,255,0.15)',
+                  color: '#8A7CFF',
+                  border: '1px solid rgba(138,124,255,0.3)',
+                  cursor: 'pointer',
+                  '&:hover': { bgcolor: 'rgba(138,124,255,0.25)' },
+                }}
+              />
+            )}
+          </Stack>
+        </Paper>
+      )}
 
       {error && (
         <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
@@ -846,15 +910,30 @@ export default function Analytics() {
               <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 500, mx: 'auto', mb: 2.5 }}>
                 Click below to send your profile metrics and progress history to our AI analyst for personalized feedback.
               </Typography>
-              <Button
-                variant="contained"
-                color="primary"
-                startIcon={<AutoAwesomeRoundedIcon />}
-                onClick={() => runAiAnalysis(false)}
-                sx={{ fontWeight: 800, borderRadius: 2.5, px: 3.5, py: 1 }}
-              >
-                Run AI Progress Analysis
-              </Button>
+              {usageStatus?.progressAnalysis?.isExceeded ? (
+                <Alert
+                  severity="warning"
+                  icon={<WarningAmberRoundedIcon />}
+                  sx={{ borderRadius: 2, maxWidth: 520, mx: 'auto' }}
+                  action={
+                    <Button color="inherit" size="small" onClick={() => navigate('/membership')} sx={{ fontWeight: 700 }}>
+                      Upgrade
+                    </Button>
+                  }
+                >
+                  You've reached your {usageStatus.progressAnalysis.period.toLowerCase()} limit of {usageStatus.progressAnalysis.limit} AI Progress Analyses. Upgrade to continue.
+                </Alert>
+              ) : (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<AutoAwesomeRoundedIcon />}
+                  onClick={() => runAiAnalysis(false)}
+                  sx={{ fontWeight: 800, borderRadius: 2.5, px: 3.5, py: 1 }}
+                >
+                  Run AI Progress Analysis
+                </Button>
+              )}
             </Box>
           )}
         </Stack>

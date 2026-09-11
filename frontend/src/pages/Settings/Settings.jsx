@@ -16,6 +16,7 @@ import {
   ListItemText,
   MenuItem,
   Select,
+  Snackbar,
   Stack,
   Switch,
   TextField,
@@ -101,13 +102,24 @@ export default function Settings() {
   const [trainingMessage, setTrainingMessage] = useState({ type: '', text: '' });
   const [trainingErrors, setTrainingErrors] = useState({});
 
-  const [notifications, setNotifications] = useState({
-    workoutReminders: true,
-    goalReminders: true,
-    achievementNotifications: true,
-    weeklySummary: true,
-    nutritionReminders: false,
+  const NOTIFICATIONS_STORAGE_KEY = 'gymtrack_notification_prefs';
+
+  const [notifications, setNotifications] = useState(() => {
+    try {
+      const saved = localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      // ignore parse errors
+    }
+    return {
+      workoutReminders: true,
+      goalReminders: true,
+      achievementNotifications: true,
+      weeklySummary: true,
+      nutritionReminders: false,
+    };
   });
+  const [notifSnackbar, setNotifSnackbar] = useState('');
 
   const [security, setSecurity] = useState({
     currentPassword: '',
@@ -781,27 +793,42 @@ export default function Settings() {
       case 'notifications':
         return (
           <Stack spacing={2}>
-            <Alert severity="info" variant="outlined">
-              Notification preferences are stored on this device for now.
+            <Alert severity="info" variant="outlined" sx={{ borderRadius: 2 }}>
+              Notifications are not yet available. This feature is coming soon!
             </Alert>
-            <List disablePadding>
+            <List disablePadding sx={{ opacity: 0.55, pointerEvents: 'none' }}>
               {NOTIFICATION_ITEMS.map((item, index) => (
                 <Box key={item.key}>
                   <Box sx={{ display: 'flex', alignItems: 'center', py: 1.25, gap: 2 }}>
                     <Box sx={{ flex: 1 }}>
-                      <Typography variant="body2" fontWeight={600}>
-                        {item.label}
-                      </Typography>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Typography variant="body2" fontWeight={600}>
+                          {item.label}
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            bgcolor: 'rgba(198, 255, 62, 0.12)',
+                            color: 'primary.main',
+                            fontWeight: 700,
+                            fontSize: '0.65rem',
+                            px: 1,
+                            py: 0.25,
+                            borderRadius: 1,
+                            letterSpacing: 0.5,
+                          }}
+                        >
+                          COMING SOON
+                        </Typography>
+                      </Stack>
                       <Typography variant="caption" color="text.secondary">
                         {item.desc}
                       </Typography>
                     </Box>
                     <Switch
                       edge="end"
-                      checked={notifications[item.key]}
-                      onChange={(e) =>
-                        setNotifications({ ...notifications, [item.key]: e.target.checked })
-                      }
+                      checked={false}
+                      disabled
                       color="primary"
                     />
                   </Box>
@@ -951,6 +978,15 @@ export default function Settings() {
           {renderSection()}
         </Card>
       </Box>
+
+      {/* Notification preference saved feedback */}
+      <Snackbar
+        open={Boolean(notifSnackbar)}
+        autoHideDuration={2000}
+        onClose={() => setNotifSnackbar('')}
+        message={notifSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
     </Box>
   );
 }

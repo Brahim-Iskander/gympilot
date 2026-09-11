@@ -10,5 +10,7 @@ public interface UserOnboardingRepository extends MongoRepository<UserOnboarding
 
     Optional<UserOnboarding> findByUserId(String userId);
 
+    java.util.List<UserOnboarding> findByUserIdIn(java.util.Collection<String> userIds);
+
     boolean existsByUserId(String userId);
 }

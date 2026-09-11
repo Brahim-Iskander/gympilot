@@ -25,8 +25,8 @@ export const adminService = {
     return api.patch(`/admin/users/${id}/role`, { role }).then((res) => res.data);
   },
 
-  updateUserCapabilities(id, { roles, isSeller, isCoach, isAdmin, notes }) {
-    return api.patch(`/admin/users/${id}/roles`, { roles, isSeller, isCoach, isAdmin, notes }).then((res) => res.data);
+  updateUserCapabilities(id, { roles, isSeller, isCoach, isAdmin, notes, commissionRate, storeName }) {
+    return api.patch(`/admin/users/${id}/roles`, { roles, isSeller, isCoach, isAdmin, notes, commissionRate, storeName }).then((res) => res.data);
   },
 
   getRoleAuditLogs(params = {}) {
@@ -39,6 +39,10 @@ export const adminService = {
 
   getRegistrationAnalytics(period = 'daily') {
     return api.get('/admin/analytics/registrations', { params: { period } }).then((res) => res.data);
+  },
+
+  getLoginAnalytics(period = 'daily') {
+    return api.get('/admin/analytics/logins', { params: { period } }).then((res) => res.data);
   },
 
   getTickets(params = {}) {

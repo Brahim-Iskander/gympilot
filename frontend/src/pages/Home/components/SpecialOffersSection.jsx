@@ -33,11 +33,19 @@ export default function SpecialOffersSection() {
     productPackService
       .getFeaturedPacks()
       .then((data) => {
-        if (data && data.length > 0) {
-          setPacks(data);
+        const nonExpired = (data || []).filter(
+          (p) => !p.validUntil || new Date(p.validUntil).getTime() > Date.now()
+        );
+        if (nonExpired && nonExpired.length > 0) {
+          setPacks(nonExpired);
         } else {
           // Fallback to active packs if none specifically marked as featured
-          return productPackService.getActivePacks().then((all) => setPacks(all || []));
+          return productPackService.getActivePacks().then((all) => {
+            const activeNonExpired = (all || []).filter(
+              (p) => !p.validUntil || new Date(p.validUntil).getTime() > Date.now()
+            );
+            setPacks(activeNonExpired);
+          });
         }
       })
       .catch((err) => console.error('Failed to load featured packs:', err))

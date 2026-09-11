@@ -2,6 +2,7 @@ package com.gymtrack.service;
 
 import java.text.Normalizer;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -40,18 +41,31 @@ public class ProductPackService {
 
     public List<ProductPack> getAllPacks(boolean activeOnly) {
         if (activeOnly) {
-            return productPackRepository.findByActiveTrueOrderByCreatedAtDesc();
+            Instant now = Instant.now();
+            return productPackRepository.findByActiveTrueOrderByCreatedAtDesc().stream()
+                    .filter(p -> p.getValidUntil() == null || p.getValidUntil().isAfter(now))
+                    .toList();
         }
         return productPackRepository.findAllByOrderByCreatedAtDesc();
     }
 
-    @Cacheable(value = CacheConfig.CACHE_ACTIVE_PACKS)
     public List<ProductPack> getActivePacks() {
-        return getAllPacks(true);
+        Instant now = Instant.now();
+        return getAllActivePacksCached().stream()
+                .filter(p -> p.getValidUntil() == null || p.getValidUntil().isAfter(now))
+                .toList();
+    }
+
+    @Cacheable(value = CacheConfig.CACHE_ACTIVE_PACKS)
+    public List<ProductPack> getAllActivePacksCached() {
+        return productPackRepository.findByActiveTrueOrderByCreatedAtDesc();
     }
 
     public List<ProductPack> getFeaturedPacks() {
-        return productPackRepository.findByFeaturedTrueAndActiveTrueOrderByCreatedAtDesc();
+        Instant now = Instant.now();
+        return productPackRepository.findByFeaturedTrueAndActiveTrueOrderByCreatedAtDesc().stream()
+                .filter(p -> p.getValidUntil() == null || p.getValidUntil().isAfter(now))
+                .toList();
     }
 
     public Optional<ProductPack> getPackById(String id) {
@@ -120,9 +134,7 @@ public class ProductPackService {
         pack.setSellerStoreName(sellerStore);
         pack.setSellerStoreLogo(sellerLogo);
 
-        if (dto.validUntil() != null) {
-            pack.setValidUntil(dto.validUntil());
-        }
+        applyDurationSettings(pack, dto);
 
         ProductPack saved = productPackRepository.save(pack);
         log.info("Seller {} created product pack offer: {} (id: {})", seller.getEmail(), saved.getName(), saved.getId());
@@ -154,19 +166,19 @@ public class ProductPackService {
                 dto.stockQuantity() > 0 ? dto.stockQuantity() : 50
         );
 
-        if (dto.validUntil() != null) {
-            pack.setValidUntil(dto.validUntil());
-        }
+        applyDurationSettings(pack, dto);
 
         ProductPack saved = productPackRepository.save(pack);
         log.info("Admin created new product pack offer: {} (id: {})", saved.getName(), saved.getId());
         return saved;
     }
 
+    @CacheEvict(value = CacheConfig.CACHE_ACTIVE_PACKS, allEntries = true)
     public ProductPack updatePack(String id, PackRequestDto dto) {
         return updatePackForSeller(id, dto, null, true);
     }
 
+    @CacheEvict(value = CacheConfig.CACHE_ACTIVE_PACKS, allEntries = true)
     public ProductPack updatePackForSeller(String id, PackRequestDto dto, String userEmail, boolean isAdmin) {
         ProductPack pack = productPackRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Product pack not found with ID: " + id));
@@ -192,7 +204,7 @@ public class ProductPackService {
             pack.setFeatured(dto.featured());
         }
         pack.setStockQuantity(dto.stockQuantity() > 0 ? dto.stockQuantity() : 0);
-        pack.setValidUntil(dto.validUntil());
+        applyDurationSettingsOnUpdate(pack, dto);
         pack.setUpdatedAt(Instant.now());
 
         ProductPack updated = productPackRepository.save(pack);
@@ -275,5 +287,75 @@ public class ProductPackService {
         String normalized = Normalizer.normalize(nowhitespace, Normalizer.Form.NFD);
         String slug = NONLATIN.matcher(normalized).replaceAll("");
         return slug.toLowerCase(Locale.ENGLISH).replaceAll("-+", "-");
+    }
+
+    private void applyDurationSettings(ProductPack pack, PackRequestDto dto) {
+        String unit = dto.durationUnit() != null ? dto.durationUnit().trim().toUpperCase() : "LIFETIME";
+        Integer val = dto.durationValue();
+
+        if ("LIFETIME".equalsIgnoreCase(unit) || "NONE".equalsIgnoreCase(unit) || "UNLIMITED".equalsIgnoreCase(unit)) {
+            pack.setDurationUnit("LIFETIME");
+            pack.setDurationValue(null);
+            pack.setValidUntil(null);
+        } else if (val != null && val > 0) {
+            pack.setDurationUnit(unit);
+            pack.setDurationValue(val);
+            Instant now = Instant.now();
+            if ("HOURS".equalsIgnoreCase(unit) || "HOUR".equalsIgnoreCase(unit)) {
+                pack.setValidUntil(now.plus(val, ChronoUnit.HOURS));
+            } else if ("DAYS".equalsIgnoreCase(unit) || "DAY".equalsIgnoreCase(unit)) {
+                pack.setValidUntil(now.plus(val, ChronoUnit.DAYS));
+            } else if ("WEEKS".equalsIgnoreCase(unit) || "WEEK".equalsIgnoreCase(unit)) {
+                pack.setValidUntil(now.plus((long) val * 7, ChronoUnit.DAYS));
+            } else if (dto.validUntil() != null) {
+                pack.setValidUntil(dto.validUntil());
+            }
+        } else if (dto.validUntil() != null) {
+            pack.setDurationUnit(unit != null && !unit.isBlank() ? unit : "DAYS");
+            pack.setDurationValue(val);
+            pack.setValidUntil(dto.validUntil());
+        } else {
+            pack.setDurationUnit("LIFETIME");
+            pack.setDurationValue(null);
+            pack.setValidUntil(null);
+        }
+    }
+
+    private void applyDurationSettingsOnUpdate(ProductPack pack, PackRequestDto dto) {
+        String unit = dto.durationUnit() != null ? dto.durationUnit().trim().toUpperCase() : "LIFETIME";
+        Integer val = dto.durationValue();
+
+        if ("LIFETIME".equalsIgnoreCase(unit) || "NONE".equalsIgnoreCase(unit) || "UNLIMITED".equalsIgnoreCase(unit)) {
+            pack.setDurationUnit("LIFETIME");
+            pack.setDurationValue(null);
+            pack.setValidUntil(null);
+            return;
+        }
+
+        boolean unitChanged = !unit.equalsIgnoreCase(pack.getDurationUnit());
+        boolean valueChanged = (val != null && !val.equals(pack.getDurationValue())) || (val == null && pack.getDurationValue() != null);
+        boolean isCurrentlyExpired = pack.isExpired();
+
+        pack.setDurationUnit(unit);
+        pack.setDurationValue(val);
+
+        if (unitChanged || valueChanged || isCurrentlyExpired) {
+            Instant now = Instant.now();
+            if (val != null && val > 0) {
+                if ("HOURS".equalsIgnoreCase(unit) || "HOUR".equalsIgnoreCase(unit)) {
+                    pack.setValidUntil(now.plus(val, ChronoUnit.HOURS));
+                } else if ("DAYS".equalsIgnoreCase(unit) || "DAY".equalsIgnoreCase(unit)) {
+                    pack.setValidUntil(now.plus(val, ChronoUnit.DAYS));
+                } else if ("WEEKS".equalsIgnoreCase(unit) || "WEEK".equalsIgnoreCase(unit)) {
+                    pack.setValidUntil(now.plus((long) val * 7, ChronoUnit.DAYS));
+                } else if (dto.validUntil() != null) {
+                    pack.setValidUntil(dto.validUntil());
+                }
+            } else if (dto.validUntil() != null) {
+                pack.setValidUntil(dto.validUntil());
+            }
+        } else if (dto.validUntil() != null) {
+            pack.setValidUntil(dto.validUntil());
+        }
     }
 }

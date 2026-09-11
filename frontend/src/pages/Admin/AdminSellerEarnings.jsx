@@ -65,9 +65,12 @@ import {
   HistoryRounded,
   ArrowUpwardRounded,
   ArrowDownwardRounded,
+  AddBusinessRounded,
+  PaymentsRounded,
 } from '@mui/icons-material';
 
 import { sellerEarningsService } from '../../services/sellerEarningsService';
+import AddSellerModal from '../../components/admin/AddSellerModal';
 
 // Format currency in TND
 function formatCurrency(val) {
@@ -138,6 +141,7 @@ export default function AdminSellerEarnings() {
   const [editSeller, setEditSeller] = useState(null);
   const [newCommissionRate, setNewCommissionRate] = useState(10);
   const [commissionSubmitting, setCommissionSubmitting] = useState(false);
+  const [addSellerOpen, setAddSellerOpen] = useState(false);
 
   // Fetch overview data
   const fetchData = async (isSilent = false) => {
@@ -314,6 +318,26 @@ export default function AdminSellerEarnings() {
           </Box>
 
           <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+            {/* Add Seller Button */}
+            <Button
+              variant="contained"
+              startIcon={<AddBusinessRounded />}
+              onClick={() => setAddSellerOpen(true)}
+              sx={{
+                borderRadius: 2.5,
+                textTransform: 'none',
+                fontWeight: 700,
+                bgcolor: '#00E676',
+                color: '#000',
+                px: 2,
+                '&:hover': {
+                  bgcolor: '#00C853',
+                },
+              }}
+            >
+              Add Seller
+            </Button>
+
             {/* Period Toggle */}
             <ToggleButtonGroup
               size="small"
@@ -1568,6 +1592,45 @@ export default function AdminSellerEarnings() {
               }}
               helperText="E.g. 10 for 10% platform fee, 5 for 5%, 0 for fee-free"
             />
+
+            {/* Quick Presets */}
+            <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
+              {[5, 10, 15, 20].map((val) => (
+                <Chip
+                  key={val}
+                  label={`${val}%`}
+                  size="small"
+                  clickable
+                  onClick={() => setNewCommissionRate(val)}
+                  variant={parseFloat(newCommissionRate) === val ? 'filled' : 'outlined'}
+                  color={parseFloat(newCommissionRate) === val ? 'primary' : 'default'}
+                  sx={{ fontWeight: 700, borderRadius: 1.5 }}
+                />
+              ))}
+            </Stack>
+
+            {/* Revenue Split Preview */}
+            <Paper
+              elevation={0}
+              sx={{
+                mt: 2,
+                p: 1.5,
+                borderRadius: 2,
+                bgcolor: 'rgba(0, 229, 255, 0.04)',
+                border: '1px solid rgba(0, 229, 255, 0.2)',
+              }}
+            >
+              <Typography variant="caption" color="text.secondary" display="block">
+                Sample 100 TND order revenue split:
+              </Typography>
+              <Typography variant="caption" fontWeight={700} color="#00E5FF">
+                Platform fee: {(100 * ((parseFloat(newCommissionRate) || 0) / 100)).toFixed(2)} TND
+              </Typography>
+              {' • '}
+              <Typography variant="caption" fontWeight={700} color="#00E676">
+                Seller payout: {(100 * (1 - (parseFloat(newCommissionRate) || 0) / 100)).toFixed(2)} TND
+              </Typography>
+            </Paper>
           </DialogContent>
 
           <DialogActions sx={{ p: 2.5, pt: 1 }}>
@@ -1586,6 +1649,16 @@ export default function AdminSellerEarnings() {
           </DialogActions>
         </form>
       </Dialog>
+
+      {/* ----------------- ADD SELLER MODAL ----------------- */}
+      <AddSellerModal
+        open={addSellerOpen}
+        onClose={() => setAddSellerOpen(false)}
+        onSellerAdded={() => {
+          fetchData(true);
+          setActionSuccess('New seller onboarded successfully with specified commission rate!');
+        }}
+      />
     </>
   );
 }

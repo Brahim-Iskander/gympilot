@@ -8,6 +8,8 @@ import java.util.Map;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -15,6 +17,10 @@ import org.springframework.data.mongodb.core.mapping.Document;
  * Customer order document for the GymPilot Marketplace.
  */
 @Document(collection = "orders")
+@CompoundIndexes({
+    @CompoundIndex(name = "order_seller_created_idx", def = "{ 'items.sellerId': 1, 'createdAt': -1 }"),
+    @CompoundIndex(name = "order_buyer_created_idx", def = "{ 'buyerId': 1, 'createdAt': -1 }")
+})
 public class Order {
 
     @Id

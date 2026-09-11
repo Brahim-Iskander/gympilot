@@ -55,6 +55,7 @@ import TrendingUpRoundedIcon from '@mui/icons-material/TrendingUpRounded';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import Inventory2RoundedIcon from '@mui/icons-material/Inventory2Rounded';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
+import AccessTimeRoundedIcon from '@mui/icons-material/AccessTimeRounded';
 
 import SEO from '../../components/SEO';
 import Footer from '../../components/Footer';
@@ -64,6 +65,7 @@ import { productPackService } from '../../services/productPackService';
 import { useCart } from '../../context/CartContext';
 import CartDrawer from '../../components/CartDrawer';
 import { useLanguage } from '../../i18n';
+import { getPackDurationStatus } from '../../utils/durationHelper';
 
 const TRUST_BENEFITS = [
   {
@@ -179,7 +181,14 @@ export default function Shop() {
   useEffect(() => {
     categoryService.getAll().then((data) => setCategories(data || [])).catch(() => {});
     productService.getFeatured().then((data) => setFeaturedProducts(data || [])).catch(() => {});
-    productPackService.getActivePacks().then((data) => setPacks(data || [])).catch(() => {});
+    productPackService.getActivePacks()
+      .then((data) => {
+        const activePacks = (data || []).filter(
+          (p) => !p.validUntil || new Date(p.validUntil).getTime() > Date.now()
+        );
+        setPacks(activePacks);
+      })
+      .catch(() => {});
   }, []);
 
   const handleAddPackToCart = (pack) => {
@@ -836,6 +845,24 @@ export default function Shop() {
                                 color: '#FFFFFF',
                                 fontWeight: 900,
                                 fontSize: '0.72rem',
+                              }}
+                            />
+                          )}
+                          {pack.validUntil && (
+                            <Chip
+                              icon={<AccessTimeRoundedIcon sx={{ fontSize: '13px !important', color: '#FFD700 !important' }} />}
+                              label={getPackDurationStatus(pack).label}
+                              size="small"
+                              sx={{
+                                position: 'absolute',
+                                bottom: 8,
+                                left: 12,
+                                bgcolor: 'rgba(10,12,15,0.82)',
+                                backdropFilter: 'blur(8px)',
+                                color: '#FFFFFF',
+                                fontWeight: 800,
+                                fontSize: '0.68rem',
+                                border: '1px solid rgba(255,215,0,0.4)',
                               }}
                             />
                           )}

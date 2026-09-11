@@ -118,6 +118,13 @@ public class AdminController {
         return adminService.getRegistrationAnalytics(period);
     }
 
+    /** GET /api/admin/analytics/logins - User logins activity trend data */
+    @GetMapping("/analytics/logins")
+    public AnalyticsChartResponse getLoginAnalytics(
+            @RequestParam(defaultValue = "daily") String period) {
+        return adminService.getLoginAnalytics(period);
+    }
+
     /** GET /api/admin/partners - List partners */
     @GetMapping("/partners")
     public List<Partner> getPartners() {

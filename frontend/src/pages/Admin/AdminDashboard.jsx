@@ -22,6 +22,7 @@ import {
   PeopleRounded,
   PersonAddRounded,
   BlockRounded,
+  LoginRounded,
 
   TrendingUpRounded,
   CardMembershipRounded,
@@ -35,6 +36,8 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
+  AreaChart,
+  Area,
   PieChart,
   Pie,
   Cell,
@@ -116,6 +119,8 @@ export default function AdminDashboard() {
   const [ticketStats, setTicketStats] = useState(null);
   const [regPeriod, setRegPeriod] = useState('daily');
   const [regData, setRegData] = useState([]);
+  const [loginPeriod, setLoginPeriod] = useState('daily');
+  const [loginData, setLoginData] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -137,7 +142,17 @@ export default function AdminDashboard() {
     loadStats();
   }, []);
 
-
+  useEffect(() => {
+    async function loadLoginData() {
+      try {
+        const res = await adminService.getLoginAnalytics(loginPeriod);
+        setLoginData(res?.data ?? []);
+      } catch (err) {
+        console.error('Failed to load login chart', err);
+      }
+    }
+    loadLoginData();
+  }, [loginPeriod]);
 
   useEffect(() => {
     async function loadRegData() {
@@ -193,6 +208,18 @@ export default function AdminDashboard() {
             subtitle={`+${stats?.newUsersThisWeek ?? 0} this week`}
             icon={PersonAddRounded}
             color="primary.main"
+            loading={loading}
+          />
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Logins Today"
+            value={stats?.loginsToday}
+            subtitle={`+${stats?.loginsThisMonth ?? 0} this month • +${stats?.loginsThisYear ?? 0} this year`}
+            icon={LoginRounded}
+            color="#00E676"
+            bgColor="rgba(0,230,118,0.12)"
             loading={loading}
           />
         </Grid>
@@ -484,12 +511,71 @@ export default function AdminDashboard() {
 
       {/* Charts Row */}
       <Grid container spacing={3}>
+        {/* User Logins Activity Chart */}
+        <Grid item xs={12} lg={6}>
+          <Paper elevation={0} sx={{ p: 3, border: '1px solid', borderColor: 'divider', borderRadius: 3, height: '100%' }}>
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              justifyContent="space-between"
+              alignItems={{ xs: 'flex-start', sm: 'center' }}
+              spacing={1.5}
+              sx={{ mb: 3 }}
+            >
+              <Box>
+                <Typography variant="h6" fontWeight={700}>
+                  User Logins
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Authentication activity ({loginPeriod})
+                </Typography>
+              </Box>
 
+              <ToggleButtonGroup
+                size="small"
+                value={loginPeriod}
+                exclusive
+                onChange={(_, val) => val && setLoginPeriod(val)}
+                sx={{ '& .MuiToggleButton-root': { textTransform: 'capitalize', px: 1.5, py: 0.5, fontWeight: 600 } }}
+              >
+                <ToggleButton value="daily">Daily</ToggleButton>
+                <ToggleButton value="monthly">Monthly</ToggleButton>
+                <ToggleButton value="yearly">Yearly</ToggleButton>
+              </ToggleButtonGroup>
+            </Stack>
+
+            <Box sx={{ width: '100%', height: 300 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={loginData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="loginGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#00E676" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#00E676" stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
+                  <XAxis dataKey="date" tick={{ fill: '#98A1AC', fontSize: 11 }} />
+                  <YAxis tick={{ fill: '#98A1AC', fontSize: 11 }} allowDecimals={false} />
+                  <RechartsTooltip
+                    contentStyle={{ backgroundColor: '#12151B', borderColor: 'rgba(255,255,255,0.1)', borderRadius: 8 }}
+                    labelStyle={{ color: '#fff', fontWeight: 700 }}
+                  />
+                  <Area type="monotone" dataKey="count" name="Logins" stroke="#00E676" strokeWidth={3} fillOpacity={1} fill="url(#loginGradient)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </Box>
+          </Paper>
+        </Grid>
 
         {/* User Registrations Chart */}
         <Grid item xs={12} lg={6}>
           <Paper elevation={0} sx={{ p: 3, border: '1px solid', borderColor: 'divider', borderRadius: 3, height: '100%' }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              justifyContent="space-between"
+              alignItems={{ xs: 'flex-start', sm: 'center' }}
+              spacing={1.5}
+              sx={{ mb: 3 }}
+            >
               <Box>
                 <Typography variant="h6" fontWeight={700}>
                   User Growth

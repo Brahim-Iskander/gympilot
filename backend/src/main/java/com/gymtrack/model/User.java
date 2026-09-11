@@ -45,6 +45,7 @@ public class User {
     private Double commissionRate = 10.0;
 
     /** Whether this account has been banned by an admin. */
+    @Indexed
     private boolean banned = false;
 
     /** When the account was banned (null if never banned). */
@@ -54,9 +55,11 @@ public class User {
     private Instant lastLoginAt;
 
     /** FREE, BASIC, or PREMIUM. Defaults to BASIC for 2-week free trial on registration. */
+    @Indexed
     private String membershipTier = "BASIC";
 
     /** ACTIVE or INACTIVE. Defaults to ACTIVE during trial. */
+    @Indexed
     private String membershipStatus = "ACTIVE";
 
     /** Expiration timestamp for the 2-week Basic plan free trial. */
@@ -82,6 +85,7 @@ public class User {
     private boolean isVerified = false;
 
     @CreatedDate
+    @Indexed
     private Instant createdAt;
 
     public User() {

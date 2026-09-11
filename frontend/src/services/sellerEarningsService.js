@@ -16,4 +16,8 @@ export const sellerEarningsService = {
   updateCommission(sellerId, commissionRate) {
     return api.patch(`/admin/seller-earnings/${sellerId}/commission`, { commissionRate }).then((res) => res.data);
   },
+
+  assignSeller(payload) {
+    return api.post('/admin/seller-earnings/assign-seller', payload).then((res) => res.data);
+  },
 };

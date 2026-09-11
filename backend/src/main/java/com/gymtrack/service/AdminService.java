@@ -32,7 +32,9 @@ import com.gymtrack.dto.UpdateUserRolesRequest;
 import com.gymtrack.exception.InvalidCredentialsException;
 import com.gymtrack.model.RoleAuditLog;
 import com.gymtrack.model.User;
+import com.gymtrack.model.UserLogin;
 import com.gymtrack.repository.RoleAuditLogRepository;
+import com.gymtrack.repository.UserLoginRepository;
 import com.gymtrack.repository.UserRepository;
 
 @Service
@@ -42,17 +44,41 @@ public class AdminService {
 
     private final UserRepository userRepository;
     private final RoleAuditLogRepository roleAuditLogRepository;
+    private final UserLoginRepository userLoginRepository;
     private final MongoTemplate mongoTemplate;
     private final MailService mailService;
 
     public AdminService(UserRepository userRepository,
                         RoleAuditLogRepository roleAuditLogRepository,
+                        UserLoginRepository userLoginRepository,
                         MongoTemplate mongoTemplate,
                         MailService mailService) {
         this.userRepository = userRepository;
         this.roleAuditLogRepository = roleAuditLogRepository;
+        this.userLoginRepository = userLoginRepository;
         this.mongoTemplate = mongoTemplate;
         this.mailService = mailService;
+    }
+
+    @jakarta.annotation.PostConstruct
+    public void initLoginLogsIfEmpty() {
+        try {
+            if (userLoginRepository.count() == 0) {
+                List<User> users = userRepository.findAll();
+                List<UserLogin> backfills = new ArrayList<>();
+                for (User u : users) {
+                    if (u.getLastLoginAt() != null) {
+                        backfills.add(new UserLogin(u.getId(), u.getEmail(), u.getLastLoginAt()));
+                    }
+                }
+                if (!backfills.isEmpty()) {
+                    userLoginRepository.saveAll(backfills);
+                    log.info("Backfilled {} initial login records from user lastLoginAt timestamps", backfills.size());
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to backfill initial user logins: {}", e.getMessage());
+        }
     }
 
     public AdminDashboardResponse getDashboardStats() {
@@ -60,19 +86,46 @@ public class AdminService {
         Instant todayStart = now.truncatedTo(ChronoUnit.DAYS);
         Instant weekAgo = now.minus(7, ChronoUnit.DAYS);
         Instant monthAgo = now.minus(30, ChronoUnit.DAYS);
+        Instant yearAgo = now.minus(365, ChronoUnit.DAYS);
 
-        long totalUsers = userRepository.count();
-        long newUsersToday = userRepository.countByCreatedAtAfter(todayStart);
-        long newUsersThisWeek = userRepository.countByCreatedAtAfter(weekAgo);
-        long newUsersThisMonth = userRepository.countByCreatedAtAfter(monthAgo);
-        long bannedUsers = userRepository.countByBannedTrue();
+        var totalUsersFuture = java.util.concurrent.CompletableFuture.supplyAsync(() -> userRepository.count());
+        var newUsersTodayFuture = java.util.concurrent.CompletableFuture.supplyAsync(() -> userRepository.countByCreatedAtAfter(todayStart));
+        var newUsersThisWeekFuture = java.util.concurrent.CompletableFuture.supplyAsync(() -> userRepository.countByCreatedAtAfter(weekAgo));
+        var newUsersThisMonthFuture = java.util.concurrent.CompletableFuture.supplyAsync(() -> userRepository.countByCreatedAtAfter(monthAgo));
+        var bannedUsersFuture = java.util.concurrent.CompletableFuture.supplyAsync(() -> userRepository.countByBannedTrue());
 
-        long basicMembers = userRepository.countByMembershipTierAndMembershipStatus("BASIC", "ACTIVE");
-        long premiumMembers = userRepository.countByMembershipTierAndMembershipStatus("PREMIUM", "ACTIVE");
-        long activeMembers = userRepository.countByMembershipStatus("ACTIVE");
-        long inactiveMembers = userRepository.countByMembershipStatus("INACTIVE");
-        long freeUsers = userRepository.countByMembershipTier("FREE");
+        var basicMembersFuture = java.util.concurrent.CompletableFuture.supplyAsync(() -> userRepository.countByMembershipTierAndMembershipStatus("BASIC", "ACTIVE"));
+        var premiumMembersFuture = java.util.concurrent.CompletableFuture.supplyAsync(() -> userRepository.countByMembershipTierAndMembershipStatus("PREMIUM", "ACTIVE"));
+        var activeMembersFuture = java.util.concurrent.CompletableFuture.supplyAsync(() -> userRepository.countByMembershipStatus("ACTIVE"));
+        var inactiveMembersFuture = java.util.concurrent.CompletableFuture.supplyAsync(() -> userRepository.countByMembershipStatus("INACTIVE"));
+        var freeUsersFuture = java.util.concurrent.CompletableFuture.supplyAsync(() -> userRepository.countByMembershipTier("FREE"));
+
+        var loginsTodayFuture = java.util.concurrent.CompletableFuture.supplyAsync(() -> userLoginRepository.countByLoggedAtAfter(todayStart));
+        var loginsThisMonthFuture = java.util.concurrent.CompletableFuture.supplyAsync(() -> userLoginRepository.countByLoggedAtAfter(monthAgo));
+        var loginsThisYearFuture = java.util.concurrent.CompletableFuture.supplyAsync(() -> userLoginRepository.countByLoggedAtAfter(yearAgo));
+
+        java.util.concurrent.CompletableFuture.allOf(
+                totalUsersFuture, newUsersTodayFuture, newUsersThisWeekFuture, newUsersThisMonthFuture, bannedUsersFuture,
+                basicMembersFuture, premiumMembersFuture, activeMembersFuture, inactiveMembersFuture, freeUsersFuture,
+                loginsTodayFuture, loginsThisMonthFuture, loginsThisYearFuture
+        ).join();
+
+        long totalUsers = totalUsersFuture.join();
+        long newUsersToday = newUsersTodayFuture.join();
+        long newUsersThisWeek = newUsersThisWeekFuture.join();
+        long newUsersThisMonth = newUsersThisMonthFuture.join();
+        long bannedUsers = bannedUsersFuture.join();
+
+        long basicMembers = basicMembersFuture.join();
+        long premiumMembers = premiumMembersFuture.join();
+        long activeMembers = activeMembersFuture.join();
+        long inactiveMembers = inactiveMembersFuture.join();
+        long freeUsers = freeUsersFuture.join();
         long totalMembers = basicMembers + premiumMembers;
+
+        long loginsToday = loginsTodayFuture.join();
+        long loginsThisMonth = loginsThisMonthFuture.join();
+        long loginsThisYear = loginsThisYearFuture.join();
 
         return new AdminDashboardResponse(
                 totalUsers,
@@ -85,7 +138,10 @@ public class AdminService {
                 basicMembers,
                 premiumMembers,
                 activeMembers,
-                inactiveMembers
+                inactiveMembers,
+                loginsToday,
+                loginsThisMonth,
+                loginsThisYear
         );
     }
 
@@ -186,8 +242,21 @@ public class AdminService {
         if (request.isSeller() != null) {
             if (request.isSeller()) {
                 newRoles.add("SELLER");
+                if (request.commissionRate() != null) {
+                    user.setCommissionRate(request.commissionRate());
+                }
+                if (request.storeName() != null && !request.storeName().isBlank()) {
+                    user.setStoreName(request.storeName().trim());
+                }
             } else {
                 newRoles.remove("SELLER");
+            }
+        } else if (newRoles.contains("SELLER")) {
+            if (request.commissionRate() != null) {
+                user.setCommissionRate(request.commissionRate());
+            }
+            if (request.storeName() != null && !request.storeName().isBlank()) {
+                user.setStoreName(request.storeName().trim());
             }
         }
 
@@ -302,6 +371,29 @@ public class AdminService {
 
         AggregationResults<AggregationDataPoint> results = mongoTemplate.aggregate(
                 aggregation, "users", AggregationDataPoint.class
+        );
+
+        Map<String, Long> countByDate = results.getMappedResults().stream()
+                .collect(Collectors.toMap(AggregationDataPoint::date, AggregationDataPoint::count));
+
+        List<DataPoint> dataPoints = fillMissingDates(period, countByDate);
+        return new AnalyticsChartResponse(dataPoints);
+    }
+
+    public AnalyticsChartResponse getLoginAnalytics(String period) {
+        Instant from = getPeriodStartInstant(period);
+
+        Criteria criteria = Criteria.where("loggedAt").gte(from);
+        Aggregation aggregation = Aggregation.newAggregation(
+                Aggregation.match(criteria),
+                Aggregation.project("loggedAt")
+                        .andExpression("dateToString('%Y-%m-%d', loggedAt)").as("dateGroup"),
+                Aggregation.group("dateGroup").count().as("count"),
+                Aggregation.project("count").and("_id").as("date")
+        );
+
+        AggregationResults<AggregationDataPoint> results = mongoTemplate.aggregate(
+                aggregation, "user_logins", AggregationDataPoint.class
         );
 
         Map<String, Long> countByDate = results.getMappedResults().stream()

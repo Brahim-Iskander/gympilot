@@ -34,12 +34,14 @@ import LocalFireDepartmentRoundedIcon from '@mui/icons-material/LocalFireDepartm
 import BoltRoundedIcon from '@mui/icons-material/BoltRounded';
 import SecurityRoundedIcon from '@mui/icons-material/SecurityRounded';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
+import AccessTimeRoundedIcon from '@mui/icons-material/AccessTimeRounded';
 
 import SEO from '../../components/SEO';
 import Footer from '../../components/Footer';
 import { productPackService } from '../../services/productPackService';
 import { useCart } from '../../context/CartContext';
 import CartDrawer from '../../components/CartDrawer';
+import { getPackDurationStatus } from '../../utils/durationHelper';
 
 // Rich fallback for showcase packs
 const FALLBACK_PACKS = {
@@ -121,9 +123,14 @@ export default function PackDetail() {
         setError('');
         const data = await productPackService.getPack(idOrSlug);
         if (data) {
-          setPack(data);
-          if (data.images && data.images.length > 0) {
-            setSelectedImage(data.images[0]);
+          if (data.validUntil && new Date(data.validUntil).getTime() <= Date.now()) {
+            setError('Cette offre promotionnelle a expiré et n\'est plus disponible.');
+            setPack(null);
+          } else {
+            setPack(data);
+            if (data.images && data.images.length > 0) {
+              setSelectedImage(data.images[0]);
+            }
           }
         } else if (FALLBACK_PACKS[idOrSlug]) {
           setPack(FALLBACK_PACKS[idOrSlug]);
@@ -433,6 +440,26 @@ export default function PackDetail() {
               )}
 
               <Divider sx={{ my: 2 }} />
+
+              {/* Limited Duration Alert Badge */}
+              {pack.validUntil && (
+                <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+                  <Chip
+                    icon={<AccessTimeRoundedIcon sx={{ fontSize: '15px !important', color: '#FFD700 !important' }} />}
+                    label={getPackDurationStatus(pack).label}
+                    sx={{
+                      bgcolor: 'rgba(255, 215, 0, 0.1)',
+                      color: '#FFD700',
+                      border: '1px solid rgba(255, 215, 0, 0.3)',
+                      fontWeight: 800,
+                      fontSize: '0.75rem',
+                    }}
+                  />
+                  <Typography variant="caption" color="text.secondary">
+                    Offre limitée dans le temps.
+                  </Typography>
+                </Stack>
+              )}
 
               {/* Price Anchor */}
               <Box sx={{ mb: 2.5 }}>

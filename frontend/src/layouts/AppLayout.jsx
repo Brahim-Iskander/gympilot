@@ -371,6 +371,9 @@ export default function AppLayout() {
                 '& .MuiListItemText-primary': {
                   fontWeight: isActive ? 700 : 500,
                   fontSize: '0.9rem',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
                   ...(item.labelColor && !isActive && {
                     color: item.labelColor,
                   }),
@@ -759,7 +762,7 @@ export default function AppLayout() {
                   alignItems: 'center',
                   justifyContent: 'flex-end',
 
-                  gap: 1.5,
+                  gap: { xs: 0.75, sm: 1.5 },
                 }}
               >
                 {/* SEARCH */}
@@ -1003,7 +1006,9 @@ export default function AppLayout() {
                 </Box>
 
                 {/* LANGUAGE SELECTOR */}
-                <LanguageSelector />
+                <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+                  <LanguageSelector />
+                </Box>
 
                 {/* SHOPPING CART */}
                 <Tooltip title="Shopping Cart">

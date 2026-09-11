@@ -33,6 +33,7 @@ import com.gymtrack.model.EmailOtp;
 import com.gymtrack.model.User;
 import com.gymtrack.repository.EmailOtpRepository;
 import com.gymtrack.repository.PasswordResetTokenRepository;
+import com.gymtrack.repository.UserLoginRepository;
 import com.gymtrack.repository.UserRepository;
 import com.gymtrack.security.JwtService;
 
@@ -47,6 +48,9 @@ class EmailOtpServiceTest {
 
     @Mock
     private EmailOtpRepository emailOtpRepository;
+
+    @Mock
+    private UserLoginRepository userLoginRepository;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -71,6 +75,7 @@ class EmailOtpServiceTest {
                 userRepository,
                 passwordResetTokenRepository,
                 emailOtpRepository,
+                userLoginRepository,
                 passwordEncoder,
                 authenticationManager,
                 jwtService,

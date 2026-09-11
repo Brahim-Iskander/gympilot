@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -32,11 +32,14 @@ import {
   ArrowForwardRounded,
   CloseRounded,
   AddShoppingCartRounded,
+  CardMembershipRounded,
 } from '@mui/icons-material';
 
 import SEO from '../../components/SEO';
 import { aiPhotoAnalysisService } from '../../services/aiPhotoAnalysisService';
+import { aiService } from '../../services/aiService';
 import { useCart } from '../../context/CartContext';
+import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../i18n';
 
 const EXAMPLE_GOALS = [
@@ -49,6 +52,8 @@ const EXAMPLE_GOALS = [
 
 export default function AiAnalyzer() {
   const { t } = useLanguage();
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const { addItem, openCartDrawer } = useCart();
   const fileInputRef = useRef(null);
 
@@ -59,6 +64,18 @@ export default function AiAnalyzer() {
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
   const [addedProductIds, setAddedProductIds] = useState(new Set());
+  const [usageStatus, setUsageStatus] = useState(null);
+
+  const loadQuota = async () => {
+    if (isAuthenticated) {
+      const data = await aiService.getUsageStatus();
+      if (data) setUsageStatus(data);
+    }
+  };
+
+  useEffect(() => {
+    loadQuota();
+  }, [isAuthenticated]);
 
   // Client-side image compression using canvas
   const compressImage = (file) => {
@@ -163,6 +180,10 @@ export default function AiAnalyzer() {
 
   const handleAnalyze = async (e) => {
     e.preventDefault();
+    if (!isAuthenticated) {
+      navigate('/login?redirect=/analyze');
+      return;
+    }
     if (images.length === 0) {
       setError('Please upload at least one photo to analyze.');
       return;
@@ -180,13 +201,16 @@ export default function AiAnalyzer() {
         goal: goal.trim(),
       });
       setResult(data);
+      loadQuota();
     } catch (err) {
       console.error('Analysis failed:', err);
-      setError(
-        err.response?.data?.message ||
-        err.message ||
-        'Analysis failed. Please try again with clearer photos or a shorter goal.'
-      );
+      const apiMsg = err.response?.data?.message || err.message;
+      if (err.response?.status === 429) {
+        setError(apiMsg || 'You have reached your Body Scan limit. Upgrade your membership to continue scanning.');
+        loadQuota();
+      } else {
+        setError(apiMsg || 'Analysis failed. Please try again with clearer photos or a shorter goal.');
+      }
     } finally {
       setLoading(false);
     }
@@ -230,13 +254,17 @@ export default function AiAnalyzer() {
               label="GymPilot Pro · Vision AI Body & Physique Scan"
               sx={{
                 fontWeight: 800,
-                fontSize: '0.8rem',
+                fontSize: { xs: '0.68rem', sm: '0.8rem' },
                 bgcolor: 'rgba(198, 255, 62, 0.12)',
                 color: 'primary.main',
                 border: '1px solid',
                 borderColor: 'rgba(198, 255, 62, 0.3)',
                 px: 1,
                 py: 0.5,
+                height: 'auto',
+                '& .MuiChip-label': {
+                  whiteSpace: 'normal',
+                },
               }}
             />
 
@@ -258,6 +286,74 @@ export default function AiAnalyzer() {
             <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 680, fontSize: { xs: '0.95rem', md: '1.1rem' } }}>
               {t('aiAnalyzer.subtitle')}
             </Typography>
+
+            {/* Quota & Membership Status Badge */}
+            {isAuthenticated && usageStatus?.bodyScan && (
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 1.5,
+                  px: 2.5,
+                  borderRadius: 3,
+                  bgcolor: usageStatus.bodyScan.isExceeded ? 'rgba(255,82,82,0.08)' : 'rgba(198, 255, 62, 0.08)',
+                  border: '1px solid',
+                  borderColor: usageStatus.bodyScan.isExceeded ? 'rgba(255,82,82,0.3)' : 'rgba(198, 255, 62, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1.5,
+                  flexWrap: 'wrap',
+                  justifyContent: 'center',
+                }}
+              >
+                <AutoAwesomeRounded sx={{ color: usageStatus.bodyScan.isExceeded ? 'error.main' : 'primary.main', fontSize: 20 }} />
+                <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                  Body Scans: <Box component="span" sx={{ color: usageStatus.bodyScan.isExceeded ? 'error.main' : 'primary.main', fontWeight: 800 }}>
+                    {usageStatus.isAdmin ? 'Unlimited (Admin)' : `${usageStatus.bodyScan.remaining} of ${usageStatus.bodyScan.limit} remaining (${usageStatus.bodyScan.period.toLowerCase()})`}
+                  </Box>
+                </Typography>
+                {usageStatus.bodyScan.isExceeded && (
+                  <Button
+                    size="small"
+                    variant="contained"
+                    onClick={() => navigate('/membership')}
+                    startIcon={<CardMembershipRounded />}
+                    sx={{ fontWeight: 800, borderRadius: 2, fontSize: '0.75rem', py: 0.5 }}
+                  >
+                    Upgrade Plan
+                  </Button>
+                )}
+              </Paper>
+            )}
+
+            {!isAuthenticated && (
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 1.5,
+                  px: 2.5,
+                  borderRadius: 3,
+                  bgcolor: 'rgba(138, 124, 255, 0.08)',
+                  border: '1px solid rgba(138, 124, 255, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1.5,
+                  flexWrap: 'wrap',
+                  justifyContent: 'center',
+                }}
+              >
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  Create a free account to claim your <Box component="span" sx={{ color: '#8A7CFF', fontWeight: 800 }}>3 Free Lifetime Body Scans</Box>!
+                </Typography>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => navigate('/register?redirect=/analyze')}
+                  sx={{ fontWeight: 800, borderRadius: 2, fontSize: '0.75rem', py: 0.5, borderColor: '#8A7CFF', color: '#8A7CFF' }}
+                >
+                  Sign Up Free
+                </Button>
+              </Paper>
+            )}
 
             {/* Privacy Guarantee Pill */}
             <Paper
@@ -291,7 +387,7 @@ export default function AiAnalyzer() {
           {result ? (
             <Stack spacing={4}>
               {/* Top Result Actions */}
-              <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'center' }} flexWrap="wrap" gap={2}>
                 <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: "'Sora', sans-serif" }}>
                   Your Personalized Assessment
                 </Typography>
@@ -863,19 +959,41 @@ export default function AiAnalyzer() {
                       ))}
                     </Stack>
 
+                    {usageStatus?.bodyScan?.isExceeded && (
+                      <Alert
+                        severity="warning"
+                        action={
+                          <Button
+                            color="inherit"
+                            size="small"
+                            onClick={() => navigate('/membership')}
+                            startIcon={<CardMembershipRounded />}
+                            sx={{ fontWeight: 800 }}
+                          >
+                            Upgrade
+                          </Button>
+                        }
+                        sx={{ mb: 2.5, borderRadius: 2.5 }}
+                      >
+                        You have reached your {usageStatus.bodyScan.period.toLowerCase()} limit of {usageStatus.bodyScan.limit} Body Scans. Upgrade to Basic (5/mo) or Premium (15/mo) to continue.
+                      </Alert>
+                    )}
+
                     <Button
                       type="submit"
                       variant="contained"
                       fullWidth
                       size="large"
-                      disabled={loading || images.length === 0 || !goal.trim()}
+                      disabled={loading || images.length === 0 || !goal.trim() || usageStatus?.bodyScan?.isExceeded}
                       startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <AutoAwesomeRounded />}
                       sx={{
                         py: 1.5,
                         fontWeight: 900,
-                        fontSize: '1rem',
+                        fontSize: { xs: '0.85rem', sm: '1rem' },
                         borderRadius: 3,
                         boxShadow: '0 4px 20px rgba(198, 255, 62, 0.25)',
+                        whiteSpace: { xs: 'normal', sm: 'nowrap' },
+                        lineHeight: 1.3,
                       }}
                     >
                       {loading ? 'Analyzing Photos & Tailoring Guidance...' : 'Analyze Photos & Get Recommendations'}
