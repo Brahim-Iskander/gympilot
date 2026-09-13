@@ -562,6 +562,228 @@ public class MailService {
     }
 
     // ──────────────────────────────────────────────────────────────────────────
+    // Seller New-Order Notification
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Sends a rich HTML notification email to a seller when a new order containing
+     * their products is placed. Only includes the line items belonging to that seller.
+     *
+     * @param order         the full order
+     * @param sellerEmail   the seller's email address
+     * @param sellerName    the seller's display name / store name
+     * @param sellerItems   the subset of OrderItems belonging to this seller
+     */
+    @Async("taskExecutor")
+    public void sendNewOrderNotificationToSeller(Order order, String sellerEmail,
+                                                  String sellerName, List<OrderItem> sellerItems) {
+        if (order == null || sellerEmail == null || sellerEmail.isBlank() || sellerItems == null || sellerItems.isEmpty()) {
+            log.warn("Cannot send seller notification: missing data (sellerEmail={}, items={})",
+                    sellerEmail, sellerItems != null ? sellerItems.size() : 0);
+            return;
+        }
+
+        String to = sellerEmail.trim();
+        String subject = "New Order Received #" + order.getOrderNumber() + " — GymPilot Marketplace";
+        String htmlBody = buildSellerOrderNotificationHtml(order, sellerName, sellerItems);
+
+        if (hasBrevoApi()) {
+            boolean sent = sendViaBrevo(to, subject, htmlBody);
+            if (sent) return;
+            log.warn("Brevo API failed for seller order notification, trying next provider...");
+        }
+
+        if (hasResendApi()) {
+            boolean sent = sendViaResend(to, subject, htmlBody);
+            if (sent) return;
+            log.warn("Resend API failed for seller order notification, falling back to SMTP...");
+        }
+
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(new InternetAddress(fromAddress, fromName));
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(htmlBody, true);
+
+            mailSender.send(message);
+            log.info("Seller order notification email sent successfully via SMTP to: {}", to);
+        } catch (Exception ex) {
+            log.error("Failed to send seller order notification email via SMTP to: {}", to, ex);
+            log.warn("=== [FALLBACK LOG] SELLER ORDER NOTIFICATION FOR [{}]: Order #{} ===",
+                    to, order.getOrderNumber());
+        }
+    }
+
+    /**
+     * Builds a modern HTML email template notifying a seller about a new order.
+     */
+    private String buildSellerOrderNotificationHtml(Order order, String sellerName, List<OrderItem> sellerItems) {
+        String safeSeller = escapeHtml(sellerName != null && !sellerName.isBlank() ? sellerName : "Seller");
+        String safeBuyer = escapeHtml(order.getBuyerName() != null ? order.getBuyerName() : "Customer");
+
+        StringBuilder itemsRows = new StringBuilder();
+        double sellerSubtotal = 0.0;
+        int totalUnits = 0;
+
+        for (OrderItem item : sellerItems) {
+            sellerSubtotal += item.getSubtotal();
+            totalUnits += item.getQuantity();
+            itemsRows.append("<tr>")
+                .append("<td style=\"padding: 12px 10px; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 14px; color: #F4F6F8; font-weight: 600;\">")
+                .append(escapeHtml(item.getProductName())).append("</td>")
+                .append("<td style=\"padding: 12px 10px; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 14px; text-align: center; color: #98A1AC;\">")
+                .append(item.getQuantity()).append("</td>")
+                .append("<td style=\"padding: 12px 10px; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 14px; text-align: right; color: #98A1AC;\">")
+                .append(String.format("%.2f TND", item.getPrice())).append("</td>")
+                .append("<td style=\"padding: 12px 10px; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 14px; text-align: right; color: #C6FF3E; font-weight: 700;\">")
+                .append(String.format("%.2f TND", item.getSubtotal())).append("</td>")
+                .append("</tr>");
+        }
+
+        Map<String, String> addr = order.getShippingAddress() != null ? order.getShippingAddress() : Map.of();
+        String shipName = escapeHtml(addr.getOrDefault("fullName", safeBuyer));
+        String shipPhone = escapeHtml(addr.getOrDefault("phone", "Not provided"));
+        String shipStreet = escapeHtml(addr.getOrDefault("address", ""));
+        String shipCity = escapeHtml(addr.getOrDefault("city", ""));
+        String shipPostal = escapeHtml(addr.getOrDefault("postalCode", ""));
+        String shipCountry = escapeHtml(addr.getOrDefault("country", "Tunisia"));
+
+        String paymentMethod = order.getPaymentMethod() != null ? order.getPaymentMethod() : "CASH_ON_DELIVERY";
+        String paymentDisplay = switch (paymentMethod.toUpperCase()) {
+            case "CREDIT_CARD" -> "Credit Card";
+            case "PAYPAL" -> "PayPal";
+            default -> "Cash on Delivery";
+        };
+
+        return """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>New Order Notification</title>
+              <style>
+                body { margin: 0; padding: 0; background-color: #0A0C0F; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #F4F6F8; }
+                .wrapper { width: 100%%; max-width: 640px; margin: 0 auto; padding: 32px 16px; box-sizing: border-box; }
+                .card { background-color: #12151B; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 32px 28px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+                .title { font-size: 22px; font-weight: 800; color: #F4F6F8; margin-top: 0; margin-bottom: 8px; text-align: center; }
+                .subtitle { font-size: 14px; color: #98A1AC; text-align: center; margin-bottom: 24px; }
+                .order-badge { display: inline-block; background: rgba(198,255,62,0.12); color: #C6FF3E; border: 1px solid rgba(198,255,62,0.3); border-radius: 8px; padding: 6px 14px; font-weight: 800; font-size: 13px; margin-bottom: 20px; }
+                .stats-row { display: flex; justify-content: center; gap: 16px; margin-bottom: 24px; }
+                .stat-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 14px 20px; text-align: center; flex: 1; max-width: 180px; }
+                .stat-value { font-size: 22px; font-weight: 900; color: #C6FF3E; display: block; }
+                .stat-label { font-size: 11px; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; display: block; }
+                .section-header { font-size: 15px; font-weight: 700; color: #C6FF3E; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 24px; margin-bottom: 12px; }
+                table.order-table { width: 100%%; border-collapse: collapse; margin-bottom: 16px; }
+                table.order-table th { font-size: 12px; text-transform: uppercase; color: #64748B; padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.12); text-align: left; }
+                .info-box { background-color: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 16px; font-size: 14px; line-height: 1.6; color: #98A1AC; margin-bottom: 16px; }
+                .info-box strong { color: #F4F6F8; }
+                .total-row td { padding: 14px 10px; border-top: 2px solid rgba(255,255,255,0.14); font-size: 16px; font-weight: 800; }
+                .action-notice { background: rgba(198,255,62,0.06); border-left: 3px solid #C6FF3E; border-radius: 6px; padding: 14px 18px; margin-top: 24px; }
+                .action-notice p { font-size: 13px; color: #C6FF3E; margin: 0; line-height: 1.5; }
+                .footer { text-align: center; margin-top: 32px; font-size: 12px; color: #64748B; line-height: 1.6; }
+              </style>
+            </head>
+            <body>
+              <div class="wrapper">
+                <div class="card">
+                  """ + getLogoHtml() + """
+                  <h1 class="title">New Order Received!</h1>
+                  <p class="subtitle">Hi %s, a customer just placed an order containing your products.</p>
+
+                  <div style="text-align: center;">
+                    <span class="order-badge">Order #%s</span>
+                  </div>
+
+                  <table style="width: 100%%; border-collapse: collapse; margin-bottom: 20px;">
+                    <tr>
+                      <td style="text-align: center; padding: 10px;">
+                        <div class="stat-card" style="display: inline-block;">
+                          <span class="stat-value">%d</span>
+                          <span class="stat-label">Items</span>
+                        </div>
+                      </td>
+                      <td style="text-align: center; padding: 10px;">
+                        <div class="stat-card" style="display: inline-block;">
+                          <span class="stat-value">%.2f</span>
+                          <span class="stat-label">Revenue (TND)</span>
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <div class="section-header">Your Items in This Order</div>
+                  <table class="order-table">
+                    <thead>
+                      <tr>
+                        <th>Product</th>
+                        <th style="text-align: center;">Qty</th>
+                        <th style="text-align: right;">Unit Price</th>
+                        <th style="text-align: right;">Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      %s
+                      <tr class="total-row">
+                        <td colspan="3" style="text-align: right; color: #F4F6F8;">Your Total:</td>
+                        <td style="text-align: right; color: #C6FF3E; font-size: 20px;">%.2f TND</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <div class="section-header">Customer Information</div>
+                  <div class="info-box">
+                    <strong>Name:</strong> %s<br>
+                    <strong>Email:</strong> %s<br>
+                    <strong>Payment:</strong> %s
+                  </div>
+
+                  <div class="section-header">Shipping Address</div>
+                  <div class="info-box">
+                    <strong>Recipient:</strong> %s<br>
+                    <strong>Phone:</strong> %s<br>
+                    <strong>Address:</strong> %s, %s %s, %s
+                  </div>
+
+                  <div class="action-notice">
+                    <p>
+                      <strong>Action Required:</strong> Please prepare and ship the items listed above.
+                      You can manage this order from your <strong>Seller Dashboard</strong> on GymPilot.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="footer">
+                  &copy; %d GymPilot Marketplace. All rights reserved.<br>
+                  This is an automated notification — please do not reply directly to this email.
+                </div>
+              </div>
+            </body>
+            </html>
+            """.formatted(
+                safeSeller,
+                order.getOrderNumber(),
+                totalUnits,
+                sellerSubtotal,
+                itemsRows.toString(),
+                sellerSubtotal,
+                safeBuyer,
+                escapeHtml(order.getBuyerEmail()),
+                paymentDisplay,
+                shipName,
+                shipPhone,
+                shipStreet,
+                shipCity,
+                shipPostal,
+                shipCountry,
+                java.time.Year.now().getValue()
+            );
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
     // Admin Bulk / Single Email
     // ──────────────────────────────────────────────────────────────────────────
 

@@ -47,6 +47,7 @@ import {
   AdminPanelSettingsRounded,
   SupportAgentRounded,
   MenuRounded,
+  CloseRounded,
   LogoutRounded,
   NotificationsRounded,
   SearchRounded,
@@ -84,7 +85,7 @@ export default function AppLayout() {
   const navigate = useNavigate();
 
   const { user, isAdmin, isCoach, isSeller, logout } = useAuth();
-  const { itemCount, openCartDrawer } = useCart();
+  const { itemCount, openCartDrawer, toggleCartDrawer, cartDrawerOpen } = useCart();
   const { mode, toggleTheme } = useThemeMode();
 
   const NAV_ITEMS = [
@@ -743,15 +744,16 @@ export default function AppLayout() {
               {isMobile && (
                 <IconButton
                   onClick={() =>
-                    setSidebarOpen(true)
+                    setSidebarOpen((prev) => !prev)
                   }
                   sx={{
                     mr: isRtl ? 0 : 1,
                     ml: isRtl ? 1 : 0,
                     color: 'text.primary',
                   }}
+                  aria-label={sidebarOpen ? 'Close menu' : 'Open menu'}
                 >
-                  <MenuRounded />
+                  {sidebarOpen ? <CloseRounded /> : <MenuRounded />}
                 </IconButton>
               )}
 
@@ -1012,16 +1014,18 @@ export default function AppLayout() {
                 </Box>
 
                 {/* SHOPPING CART */}
-                <Tooltip title="Shopping Cart">
+                <Tooltip title={cartDrawerOpen ? 'Close Cart' : 'Shopping Cart'}>
                   <IconButton
-                    onClick={openCartDrawer}
+                    onClick={toggleCartDrawer}
                     sx={{
-                      color: 'text.secondary',
+                      color: cartDrawerOpen ? 'primary.main' : 'text.secondary',
+                      bgcolor: cartDrawerOpen ? 'action.selected' : 'transparent',
                       '&:hover': {
                         color: 'text.primary',
                         bgcolor: 'action.hover',
                       },
                     }}
+                    aria-label={cartDrawerOpen ? 'Close Cart' : 'Shopping Cart'}
                   >
                     <Badge badgeContent={itemCount} color="primary">
                       <ShoppingBagRounded />

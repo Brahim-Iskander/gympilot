@@ -111,7 +111,7 @@ const getCategoryIcon = (categoryName = '') => {
 
 export default function Shop() {
   const { t } = useLanguage();
-  const { addToCart, itemCount, openCartDrawer } = useCart();
+  const { addToCart, itemCount, openCartDrawer, toggleCartDrawer, cartDrawerOpen } = useCart();
   const [searchParams] = useSearchParams();
 
   const [categories, setCategories] = useState([]);
@@ -324,7 +324,7 @@ export default function Shop() {
           <Button
             variant="outlined"
             size="small"
-            onClick={openCartDrawer}
+            onClick={toggleCartDrawer}
             startIcon={
               <Badge badgeContent={itemCount} color="primary" sx={{ '& .MuiBadge-badge': { fontWeight: 900 } }}>
                 <ShoppingBagRoundedIcon sx={{ fontSize: 19 }} />
@@ -333,7 +333,8 @@ export default function Shop() {
             sx={{
               fontWeight: 800,
               borderRadius: 2.5,
-              borderColor: 'divider',
+              borderColor: cartDrawerOpen ? 'primary.main' : 'divider',
+              color: cartDrawerOpen ? 'primary.main' : 'text.primary',
               px: 2,
             }}
           >
@@ -1519,8 +1520,8 @@ export default function Shop() {
         {/* ===================== FLOATING CART TRIGGER ===================== */}
         <Fab
           color="primary"
-          aria-label="cart"
-          onClick={openCartDrawer}
+          aria-label={cartDrawerOpen ? 'close cart' : 'cart'}
+          onClick={toggleCartDrawer}
           sx={{
             position: 'fixed',
             bottom: 32,
@@ -1534,7 +1535,11 @@ export default function Shop() {
           }}
         >
           <Badge badgeContent={itemCount} color="error" sx={{ '& .MuiBadge-badge': { fontWeight: 900 } }}>
-            <ShoppingBagRoundedIcon sx={{ color: '#0A0C0F', fontSize: 26 }} />
+            {cartDrawerOpen ? (
+              <ClearRoundedIcon sx={{ color: '#0A0C0F', fontSize: 26 }} />
+            ) : (
+              <ShoppingBagRoundedIcon sx={{ color: '#0A0C0F', fontSize: 26 }} />
+            )}
           </Badge>
         </Fab>
       </Container>

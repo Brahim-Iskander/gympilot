@@ -27,6 +27,7 @@ import ShoppingCartRoundedIcon from '@mui/icons-material/ShoppingCartRounded';
 import StorefrontRoundedIcon from '@mui/icons-material/StorefrontRounded';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import DarkModeRoundedIcon from '@mui/icons-material/DarkModeRounded';
 import LightModeRoundedIcon from '@mui/icons-material/LightModeRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
@@ -215,8 +216,12 @@ export default function SellerLayout() {
         >
           <Toolbar disableGutters sx={{ minHeight: `${HEADER_HEIGHT}px !important`, height: HEADER_HEIGHT, px: 3 }}>
             {isMobile && (
-              <IconButton onClick={() => setMobileOpen(true)} sx={{ mr: 1, color: 'text.primary' }}>
-                <MenuRoundedIcon />
+              <IconButton
+                onClick={() => setMobileOpen((prev) => !prev)}
+                sx={{ mr: 1, color: 'text.primary' }}
+                aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+              >
+                {mobileOpen ? <CloseRoundedIcon /> : <MenuRoundedIcon />}
               </IconButton>
             )}
 

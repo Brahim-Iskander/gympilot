@@ -51,6 +51,7 @@ export function CartProvider({ children }) {
 
   const openCartDrawer = useCallback(() => setCartDrawerOpen(true), []);
   const closeCartDrawer = useCallback(() => setCartDrawerOpen(false), []);
+  const toggleCartDrawer = useCallback(() => setCartDrawerOpen((prev) => !prev), []);
 
   const totals = useMemo(() => {
     return cartService.getTotals(pointsToUse, user?.points || 0);
@@ -70,9 +71,10 @@ export function CartProvider({ children }) {
       cartDrawerOpen,
       openCartDrawer,
       closeCartDrawer,
+      toggleCartDrawer,
       refreshCart,
     }),
-    [items, totals, pointsToUse, addToCart, updateQuantity, removeFromCart, clearCart, cartDrawerOpen, openCartDrawer, closeCartDrawer, refreshCart]
+    [items, totals, pointsToUse, addToCart, updateQuantity, removeFromCart, clearCart, cartDrawerOpen, openCartDrawer, closeCartDrawer, toggleCartDrawer, refreshCart]
   );
 
   return (

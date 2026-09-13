@@ -2,6 +2,7 @@ import { Box } from '@mui/material';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import HeroSection from './components/HeroSection';
+import AnnouncementsSection from './components/AnnouncementsSection';
 import WelcomeOfferBanner from './components/WelcomeOfferBanner';
 import SpecialOffersSection from './components/SpecialOffersSection';
 import FeaturesSection from './components/FeaturesSection';
@@ -32,6 +33,7 @@ export default function Home() {
         }}
       >
         <HeroSection />
+        <AnnouncementsSection />
         <WelcomeOfferBanner />
         <SpecialOffersSection />
         <FeaturesSection />

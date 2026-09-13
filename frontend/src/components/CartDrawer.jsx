@@ -49,6 +49,9 @@ export default function CartDrawer() {
       anchor="right"
       open={cartDrawerOpen}
       onClose={closeCartDrawer}
+      sx={{
+        zIndex: (theme) => theme.zIndex.modal + 100,
+      }}
       PaperProps={{
         sx: {
           width: { xs: '100%', sm: 420 },
@@ -62,7 +65,20 @@ export default function CartDrawer() {
       }}
     >
       {/* Header */}
-      <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Box
+        sx={{
+          p: { xs: 2, sm: 2.5 },
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          bgcolor: 'background.paper',
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+        }}
+      >
         <Stack direction="row" spacing={1.5} alignItems="center">
           <Badge badgeContent={totals.itemCount} color="primary">
             <ShoppingBagRoundedIcon sx={{ color: 'primary.main', fontSize: 26 }} />
@@ -71,8 +87,22 @@ export default function CartDrawer() {
             Shopping Cart
           </Typography>
         </Stack>
-        <IconButton onClick={closeCartDrawer} size="small" sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}>
-          <CloseRoundedIcon />
+        <IconButton
+          onClick={closeCartDrawer}
+          size="medium"
+          aria-label="Close shopping cart"
+          sx={{
+            color: 'text.secondary',
+            bgcolor: { xs: 'action.hover', sm: 'transparent' },
+            '&:hover': {
+              color: 'text.primary',
+              bgcolor: 'action.selected',
+            },
+            touchAction: 'manipulation',
+            p: 1,
+          }}
+        >
+          <CloseRoundedIcon sx={{ fontSize: 24 }} />
         </IconButton>
       </Box>
 
@@ -116,15 +146,24 @@ export default function CartDrawer() {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               Browse our premium supplements and gym equipment!
             </Typography>
-            <Button
-              component={RouterLink}
-              to="/shop"
-              variant="contained"
-              onClick={closeCartDrawer}
-              sx={{ fontWeight: 700, borderRadius: 2 }}
-            >
-              Explore Shop
-            </Button>
+            <Stack direction="row" spacing={1.5} justifyContent="center">
+              <Button
+                component={RouterLink}
+                to="/shop"
+                variant="contained"
+                onClick={closeCartDrawer}
+                sx={{ fontWeight: 700, borderRadius: 2 }}
+              >
+                Explore Shop
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={closeCartDrawer}
+                sx={{ fontWeight: 700, borderRadius: 2 }}
+              >
+                Close
+              </Button>
+            </Stack>
           </Box>
         ) : (
           <Stack spacing={2}>
@@ -263,6 +302,21 @@ export default function CartDrawer() {
                 View Full Cart &amp; Redeem Points
               </Button>
             </Tooltip>
+            <Button
+              variant="text"
+              fullWidth
+              size="small"
+              onClick={closeCartDrawer}
+              sx={{
+                color: 'text.secondary',
+                fontWeight: 600,
+                textTransform: 'none',
+                py: 0.5,
+                '&:hover': { color: 'text.primary' },
+              }}
+            >
+              Continue Shopping
+            </Button>
           </Stack>
         </Box>
       )}

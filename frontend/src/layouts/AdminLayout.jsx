@@ -27,6 +27,7 @@ import {
   PeopleRounded,
   HandshakeRounded,
   MenuRounded,
+  CloseRounded,
   LogoutRounded,
   ArrowBackRounded,
   SupportAgentRounded,
@@ -308,8 +309,12 @@ export default function AdminLayout() {
         >
           <Toolbar disableGutters sx={{ minHeight: `${HEADER_HEIGHT}px !important`, height: HEADER_HEIGHT, px: 3 }}>
             {isMobile && (
-              <IconButton onClick={() => setMobileOpen(true)} sx={{ mr: 1, color: 'text.primary' }}>
-                <MenuRounded />
+              <IconButton
+                onClick={() => setMobileOpen((prev) => !prev)}
+                sx={{ mr: 1, color: 'text.primary' }}
+                aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+              >
+                {mobileOpen ? <CloseRounded /> : <MenuRounded />}
               </IconButton>
             )}
 

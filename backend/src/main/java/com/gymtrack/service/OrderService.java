@@ -164,11 +164,37 @@ public class OrderService {
         Order saved = orderRepository.save(order);
         log.info("Created order {} for user {} with total {} TND (shipping: {} TND)", orderNumber, buyerEmail, finalTotal, shippingFee);
 
-        // Send order confirmation email asynchronously (failure should not break order)
+        // Send order confirmation email to buyer asynchronously (failure should not break order)
         try {
             mailService.sendOrderConfirmationEmail(saved);
         } catch (Exception ex) {
             log.error("Failed to send order confirmation email for order {}: {}", orderNumber, ex.getMessage());
+        }
+
+        // Send notification email to each seller involved in this order
+        try {
+            // Group items by sellerId
+            java.util.Map<String, List<OrderItem>> itemsBySeller = saved.getItems().stream()
+                    .filter(item -> item.getSellerId() != null && !item.getSellerId().isBlank())
+                    .collect(Collectors.groupingBy(OrderItem::getSellerId));
+
+            for (var entry : itemsBySeller.entrySet()) {
+                String sellerId = entry.getKey();
+                List<OrderItem> sellerItems = entry.getValue();
+
+                userRepository.findById(sellerId).ifPresentOrElse(
+                    seller -> {
+                        String sellerDisplayName = seller.getStoreName() != null && !seller.getStoreName().isBlank()
+                                ? seller.getStoreName()
+                                : (seller.getFirstName() + " " + (seller.getLastName() != null ? seller.getLastName() : "")).trim();
+                        mailService.sendNewOrderNotificationToSeller(saved, seller.getEmail(), sellerDisplayName, sellerItems);
+                        log.info("Queued seller notification email for order {} to seller {} ({})", orderNumber, sellerId, seller.getEmail());
+                    },
+                    () -> log.warn("Seller {} not found for order {} notification", sellerId, orderNumber)
+                );
+            }
+        } catch (Exception ex) {
+            log.error("Failed to send seller notification emails for order {}: {}", orderNumber, ex.getMessage());
         }
 
         return OrderResponse.from(saved);

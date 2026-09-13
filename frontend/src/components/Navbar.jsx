@@ -42,7 +42,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { isAuthenticated, user, isSeller, logout } = useAuth();
-  const { itemCount, openCartDrawer } = useCart();
+  const { itemCount, openCartDrawer, toggleCartDrawer, cartDrawerOpen } = useCart();
   const { mode, toggleTheme } = useThemeMode();
   const { t, isRtl } = useLanguage();
   const location = useLocation();
@@ -108,8 +108,18 @@ export default function Navbar() {
               ))}
 
               {/* Cart Drawer Trigger */}
-              <Tooltip title="Shopping Cart">
-                <IconButton onClick={openCartDrawer} size="small" sx={{ border: '1px solid', borderColor: 'divider', color: 'text.primary' }}>
+              <Tooltip title={cartDrawerOpen ? 'Close Shopping Cart' : 'Shopping Cart'}>
+                <IconButton
+                  onClick={toggleCartDrawer}
+                  size="small"
+                  sx={{
+                    border: '1px solid',
+                    borderColor: cartDrawerOpen ? 'primary.main' : 'divider',
+                    color: cartDrawerOpen ? 'primary.main' : 'text.primary',
+                    bgcolor: cartDrawerOpen ? 'action.selected' : 'transparent',
+                  }}
+                  aria-label={cartDrawerOpen ? 'Close cart' : 'Shopping cart'}
+                >
                   <Badge badgeContent={itemCount} color="primary">
                     <ShoppingBagRoundedIcon fontSize="small" />
                   </Badge>
@@ -173,14 +183,32 @@ export default function Navbar() {
               )}
             </Stack>
 
-            {/* Mobile menu trigger */}
-            <IconButton
-              onClick={() => setDrawerOpen(true)}
-              sx={{ ml: isRtl ? 0 : 'auto', mr: isRtl ? 'auto' : 0, display: { xs: 'inline-flex', md: 'none' }, color: 'text.primary' }}
-              aria-label="Open menu"
-            >
-              <MenuRoundedIcon />
-            </IconButton>
+            {/* Mobile Actions */}
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: isRtl ? 0 : 'auto', mr: isRtl ? 'auto' : 0, display: { xs: 'inline-flex', md: 'none' } }}>
+              <IconButton
+                onClick={toggleCartDrawer}
+                size="small"
+                sx={{
+                  border: '1px solid',
+                  borderColor: cartDrawerOpen ? 'primary.main' : 'divider',
+                  color: cartDrawerOpen ? 'primary.main' : 'text.primary',
+                  bgcolor: cartDrawerOpen ? 'action.selected' : 'transparent',
+                }}
+                aria-label={cartDrawerOpen ? 'Close cart' : 'Shopping cart'}
+              >
+                <Badge badgeContent={itemCount} color="primary">
+                  <ShoppingBagRoundedIcon fontSize="small" />
+                </Badge>
+              </IconButton>
+
+              <IconButton
+                onClick={() => setDrawerOpen((prev) => !prev)}
+                sx={{ color: 'text.primary' }}
+                aria-label={drawerOpen ? 'Close menu' : 'Open menu'}
+              >
+                {drawerOpen ? <CloseRoundedIcon /> : <MenuRoundedIcon />}
+              </IconButton>
+            </Stack>
           </Toolbar>
         </Container>
       </AppBar>
@@ -225,6 +253,20 @@ export default function Navbar() {
               </ListItemButton>
             </ListItem>
           ))}
+          <ListItem disablePadding sx={{ mb: 0.5 }}>
+            <ListItemButton
+              onClick={() => {
+                closeDrawer();
+                toggleCartDrawer();
+              }}
+              sx={{ borderRadius: 2 }}
+            >
+              <ListItemText
+                primary={`Shopping Cart (${itemCount})`}
+                primaryTypographyProps={{ fontWeight: 600, color: 'primary.main' }}
+              />
+            </ListItemButton>
+          </ListItem>
         </List>
 
         <Divider sx={{ my: 2.5 }} />
