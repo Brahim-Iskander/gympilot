@@ -1,0 +1,739 @@
+{
+  "name": "Instagram Story → GymPilot Auto-Import (Ghaith Nutrition)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 2
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "⏰ Check Every 2 Hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/apify~instagram-scraper/runs?token=apify_api_HbluonNj7LRvwaMtAaQwLjB2Cni9IU1i8zeY",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"directUrls\": [\"https://www.instagram.com/ghaith_nutrition10.10/\"],\n  \"resultsType\": \"stories\",\n  \"resultsLimit\": 10,\n  \"addParentData\": true\n}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "apify-run-actor",
+      "name": "🔍 Apify: Fetch IG Stories",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Wait 60 seconds for Apify to finish scraping\nawait new Promise(resolve => setTimeout(resolve, 60000));\nreturn $input.all();"
+      },
+      "id": "wait-for-apify",
+      "name": "⏸️ Wait 60s for Scrape",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.apify.com/v2/datasets/{{ $json.data?.defaultDatasetId || $('🔍 Apify: Fetch IG Stories').item?.json?.data?.defaultDatasetId || $json.data?.id }}/items?token=apify_api_HbluonNj7LRvwaMtAaQwLjB2Cni9IU1i8zeY",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "apify-get-results",
+      "name": "⏳ Get Apify Results",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 300],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "jsCode": "const stories = $input.all();\nconst results = [];\n\nfor (const item of stories) {\n  const story = item.json;\n  \n  const imageUrl = story.displayUrl || (story.images && story.images[0]) || story.imageUrl || '';\n  \n  if (!imageUrl) continue;\n  \n  const caption = story.caption || story.text || story.alt || '';\n  const timestamp = story.timestamp || story.takenAt || new Date().toISOString();\n  const storyId = story.id || story.shortCode || story.pk || 'story_' + Date.now();\n  \n  results.push({\n    json: {\n      storyId,\n      imageUrl,\n      caption,\n      timestamp,\n      username: story.ownerUsername || story.username || 'ghaith_nutrition10.10',\n      mediaType: story.type || story.productType || 'image',\n      hasImage: true\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "parse-stories",
+      "name": "📋 Parse Story Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "filter-has-image",
+              "leftValue": "={{ $json.hasImage }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "filter-valid-stories",
+      "name": "🔀 Filter Valid Stories",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [1140, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.imageUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "download-story-image",
+      "name": "📥 Download Story Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst stories = $('📋 Parse Story Data').all();\nconst results = [];\n\nfor (let i = 0; i < items.length; i++) {\n  const item = items[i];\n  const story = (stories[i] && stories[i].json) ? stories[i].json : {};\n  \n  let base64Image = null;\n  let mimeType = 'image/jpeg';\n  \n  if (item.binary && item.binary.data) {\n    try {\n      const buffer = await this.helpers.getBinaryDataBuffer(i, 'data');\n      if (buffer && buffer.length > 0) {\n        base64Image = buffer.toString('base64');\n      }\n    } catch (e) {\n      // Fallback if binary stored in memory\n      if (typeof item.binary.data.data === 'string' && !item.binary.data.data.startsWith('filesystem')) {\n        base64Image = item.binary.data.data;\n      }\n    }\n    mimeType = item.binary.data.mimeType || 'image/jpeg';\n  }\n  \n  const parts = [];\n  \n  // Add image if valid base64 (never send filesystem pointer to Gemini)\n  if (base64Image && base64Image !== 'filesystem-v2') {\n    parts.push({\n      inlineData: {\n        mimeType: mimeType,\n        data: base64Image\n      }\n    });\n  }\n  \n  const promptText = `You are an automated product extraction agent for GymPilot, an e-commerce fitness supplements marketplace in Tunisia.\\nAnalyze this Instagram story image and caption from seller Ghaith Nutrition.\\n\\nCRITICAL RULES:\\n1. Currency is Tunisian Dinar (TND).\\n2. Categories must be EXACTLY ONE of:\\n   - Whey Protein\\n   - Creatine\\n   - Mass Gainer\\n   - Vitamins & Supplements\\n   - Equipment & Tools\\n   - Packs & Stacks\\n3. Classification:\\n   - If 2 or more products are bundled together at a package price => type = \\\"pack\\\"\\n   - If single product => type = \\\"product\\\"\\n   - If just gym motivation, personal story, workout video, meme, or advertisement with no product and no price => type = \\\"skip\\\"\\n\\nCaption: ${story.caption || 'None'}\\n\\nRespond strictly with a single JSON object (no markdown, no backticks):\\n{\\n  \\\"type\\\": \\\"product\\\" | \\\"pack\\\" | \\\"skip\\\",\\n  \\\"name\\\": \\\"Name of product or pack in French\\\",\\n  \\\"description\\\": \\\"Clean description in French highlighting benefits and dosage\\\",\\n  \\\"category\\\": \\\"one of the exact categories above\\\",\\n  \\\"price\\\": 149.0,\\n  \\\"originalPrice\\\": null,\\n  \\\"tagline\\\": \\\"Short punchy tagline in French (only for packs)\\\",\\n  \\\"badge\\\": \\\"NEW or PROMO or FLASH SALE\\\",\\n  \\\"items\\\": [{\\\"name\\\": \\\"Product 1\\\", \\\"quantity\\\": 1}]\\n}`;\n  \n  parts.push({ text: promptText });\n  \n  results.push({\n    json: {\n      geminiPayload: {\n        contents: [{ parts }],\n        generationConfig: {\n          temperature: 0.1,\n          maxOutputTokens: 1000,\n          responseMimeType: 'application/json'\n        }\n      }\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "prepare-gemini-request",
+      "name": "⚙️ Prepare Gemini Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1540, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=AQ.Ab8RN6Ll8bi50mRYEBGIk-qr1AjNuonDAXaeFIG38vyGrjmFdw",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.geminiPayload) }}",
+        "options": {}
+      },
+      "id": "gemini-classify-story",
+      "name": "🤖 Gemini: Classify & Extract (FREE)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1740, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst stories = $('📋 Parse Story Data').all();\nconst results = [];\n\nfor (let i = 0; i < items.length; i++) {\n  const item = items[i];\n  try {\n    const rawContent = item.json.candidates?.[0]?.content?.parts?.[0]?.text || '{}';\n    const cleaned = rawContent.replace(/```json\\n?/gi, '').replace(/```\\n?/g, '').trim();\n    const parsed = JSON.parse(cleaned);\n    \n    const storyData = (stories[i] && stories[i].json) ? stories[i].json : {};\n    \n    results.push({\n      json: {\n        ...parsed,\n        storyId: storyData.storyId || 'story_' + Date.now(),\n        imageUrl: storyData.imageUrl || '',\n        caption: storyData.caption || ''\n      }\n    });\n  } catch (e) {\n    results.push({\n      json: {\n        type: 'skip',\n        error: 'Failed to parse Gemini response: ' + e.message\n      }\n    });\n  }\n}\n\nreturn results;"
+      },
+      "id": "parse-ai-response",
+      "name": "📝 Parse AI Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1940, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "filter-not-skip",
+              "leftValue": "={{ $json.type }}",
+              "rightValue": "skip",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "filter-actionable",
+      "name": "🔀 Skip Promos",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [1720, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.gympilot.tn/api/auth/login",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"email\": \"iskander.skan05@gmail.com\",\n  \"password\": \"Topadmin2005\"\n}",
+        "options": {}
+      },
+      "id": "gympilot-login",
+      "name": "🔐 GymPilot Login",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1900, 300]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('📝 Parse AI Response').item.json.type }}",
+                    "rightValue": "product",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputLabel": "Product"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('📝 Parse AI Response').item.json.type }}",
+                    "rightValue": "pack",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputLabel": "Pack"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "switch-product-or-pack",
+      "name": "🔀 Product or Pack?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [2100, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.gympilot.tn/api/products",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('🔐 GymPilot Login').item.json.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"name\": \"{{ $('📝 Parse AI Response').item.json.name }}\",\n  \"description\": \"{{ $('📝 Parse AI Response').item.json.description }}\",\n  \"categoryId\": \"{{ $('📝 Parse AI Response').item.json.category }}\",\n  \"price\": {{ $('📝 Parse AI Response').item.json.price || 0 }},\n  \"originalPrice\": {{ $('📝 Parse AI Response').item.json.originalPrice || 'null' }},\n  \"stockQuantity\": 50,\n  \"images\": [\"{{ $('📝 Parse AI Response').item.json.imageUrl }}\"],\n  \"specs\": {\n    \"Brand / Vendor\": \"Ghaith Nutrition\",\n    \"Category\": \"{{ $('📝 Parse AI Response').item.json.category }}\",\n    \"Origin\": \"100% Genuine & Certified\",\n    \"Source\": \"Auto-imported from Instagram Story\"\n  },\n  \"active\": true,\n  \"featured\": false\n}",
+        "options": {}
+      },
+      "id": "create-product",
+      "name": "📦 Create Product",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2340, 180]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.gympilot.tn/api/seller/packs",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('🔐 GymPilot Login').item.json.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"name\": \"{{ $('📝 Parse AI Response').item.json.name }}\",\n  \"tagline\": \"{{ $('📝 Parse AI Response').item.json.tagline || 'Offre speciale Ghaith Nutrition' }}\",\n  \"badge\": \"{{ $('📝 Parse AI Response').item.json.badge || 'NEW' }}\",\n  \"description\": \"{{ $('📝 Parse AI Response').item.json.description }}\",\n  \"originalPrice\": {{ $('📝 Parse AI Response').item.json.originalPrice || $('📝 Parse AI Response').item.json.price || 0 }},\n  \"price\": {{ $('📝 Parse AI Response').item.json.price || 0 }},\n  \"images\": [\"{{ $('📝 Parse AI Response').item.json.imageUrl }}\"],\n  \"items\": {{ JSON.stringify($('📝 Parse AI Response').item.json.items || [{\"name\": $('📝 Parse AI Response').item.json.name, \"quantity\": 1}]) }},\n  \"active\": true,\n  \"featured\": false,\n  \"stockQuantity\": 50\n}",
+        "options": {}
+      },
+      "id": "create-pack",
+      "name": "📦 Create Pack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2340, 420]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const data = item.json;\n  const name = data.name || data.id || 'Unknown';\n  \n  results.push({\n    json: {\n      success: true,\n      message: 'Successfully created in GymPilot for Ghaith Nutrition: ' + name,\n      productId: data.id || data._id || 'N/A',\n      timestamp: new Date().toISOString()\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "success-log",
+      "name": "✅ Log Success",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2580, 300]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "gympilot-instagram-import",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "manual-webhook",
+      "name": "🔗 Manual Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 720],
+      "webhookId": "gympilot-ig-import"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || $input.first().json;\n\nconst type = body.type || 'product';\nconst name = body.name;\nconst price = body.price || 0;\nconst originalPrice = body.originalPrice || null;\nconst description = body.description || name + ' - Produit officiel Ghaith Nutrition disponible sur GymPilot.';\nconst category = body.category || 'Whey Protein';\nconst imageUrl = body.imageUrl || body.image || '';\nconst tagline = body.tagline || 'Offre speciale Ghaith Nutrition';\nconst badge = body.badge || 'NEW';\nconst items = body.items || [{ name: name, quantity: 1 }];\n\nif (!name) {\n  throw new Error('Missing required field: name');\n}\n\nreturn [{\n  json: {\n    type,\n    name,\n    price,\n    originalPrice,\n    description,\n    category,\n    imageUrl,\n    tagline,\n    badge,\n    items\n  }\n}];"
+      },
+      "id": "validate-webhook-data",
+      "name": "✅ Validate Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 720]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.gympilot.tn/api/auth/login",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"email\": \"iskander.skan05@gmail.com\",\n  \"password\": \"Topadmin2005\"\n}",
+        "options": {}
+      },
+      "id": "manual-login",
+      "name": "🔐 Manual Login",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 720]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('✅ Validate Data').item.json.type }}",
+                    "rightValue": "product",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputLabel": "Product"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('✅ Validate Data').item.json.type }}",
+                    "rightValue": "pack",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputLabel": "Pack"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "manual-switch",
+      "name": "🔀 Type Switch",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [720, 720]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.gympilot.tn/api/products",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('🔐 Manual Login').item.json.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"name\": \"{{ $('✅ Validate Data').item.json.name }}\",\n  \"description\": \"{{ $('✅ Validate Data').item.json.description }}\",\n  \"categoryId\": \"{{ $('✅ Validate Data').item.json.category }}\",\n  \"price\": {{ $('✅ Validate Data').item.json.price || 0 }},\n  \"originalPrice\": {{ $('✅ Validate Data').item.json.originalPrice || 'null' }},\n  \"stockQuantity\": 50,\n  \"images\": [\"{{ $('✅ Validate Data').item.json.imageUrl }}\"],\n  \"specs\": {\n    \"Brand / Vendor\": \"Ghaith Nutrition\",\n    \"Category\": \"{{ $('✅ Validate Data').item.json.category }}\",\n    \"Origin\": \"100% Genuine & Certified\",\n    \"Source\": \"Manual import from Instagram Story\"\n  },\n  \"active\": true,\n  \"featured\": false\n}",
+        "options": {}
+      },
+      "id": "manual-create-product",
+      "name": "📦 Create Product (Manual)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [960, 600]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.gympilot.tn/api/seller/packs",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('🔐 Manual Login').item.json.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"name\": \"{{ $('✅ Validate Data').item.json.name }}\",\n  \"tagline\": \"{{ $('✅ Validate Data').item.json.tagline }}\",\n  \"badge\": \"{{ $('✅ Validate Data').item.json.badge }}\",\n  \"description\": \"{{ $('✅ Validate Data').item.json.description }}\",\n  \"originalPrice\": {{ $('✅ Validate Data').item.json.originalPrice || $('✅ Validate Data').item.json.price || 0 }},\n  \"price\": {{ $('✅ Validate Data').item.json.price || 0 }},\n  \"images\": [\"{{ $('✅ Validate Data').item.json.imageUrl }}\"],\n  \"items\": {{ JSON.stringify($('✅ Validate Data').item.json.items) }},\n  \"active\": true,\n  \"featured\": false,\n  \"stockQuantity\": 50\n}",
+        "options": {}
+      },
+      "id": "manual-create-pack",
+      "name": "📦 Create Pack (Manual)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [960, 840]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Created in GymPilot for Ghaith Nutrition\",\n  \"data\": {{ JSON.stringify($json) }}\n}",
+        "options": {}
+      },
+      "id": "webhook-response",
+      "name": "📤 Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1200, 720]
+    }
+  ],
+  "connections": {
+    "⏰ Check Every 2 Hours": {
+      "main": [
+        [
+          {
+            "node": "🔍 Apify: Fetch IG Stories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Apify: Fetch IG Stories": {
+      "main": [
+        [
+          {
+            "node": "⏸️ Wait 60s for Scrape",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⏸️ Wait 60s for Scrape": {
+      "main": [
+        [
+          {
+            "node": "⏳ Get Apify Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⏳ Get Apify Results": {
+      "main": [
+        [
+          {
+            "node": "📋 Parse Story Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Parse Story Data": {
+      "main": [
+        [
+          {
+            "node": "🔀 Filter Valid Stories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔀 Filter Valid Stories": {
+      "main": [
+        [
+          {
+            "node": "📥 Download Story Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📥 Download Story Image": {
+      "main": [
+        [
+          {
+            "node": "⚙️ Prepare Gemini Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚙️ Prepare Gemini Request": {
+      "main": [
+        [
+          {
+            "node": "🤖 Gemini: Classify & Extract (FREE)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🤖 Gemini: Classify & Extract (FREE)": {
+      "main": [
+        [
+          {
+            "node": "📝 Parse AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📝 Parse AI Response": {
+      "main": [
+        [
+          {
+            "node": "🔀 Skip Promos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔀 Skip Promos": {
+      "main": [
+        [
+          {
+            "node": "🔐 GymPilot Login",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔐 GymPilot Login": {
+      "main": [
+        [
+          {
+            "node": "🔀 Product or Pack?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔀 Product or Pack?": {
+      "main": [
+        [
+          {
+            "node": "📦 Create Product",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "📦 Create Pack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📦 Create Product": {
+      "main": [
+        [
+          {
+            "node": "✅ Log Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📦 Create Pack": {
+      "main": [
+        [
+          {
+            "node": "✅ Log Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔗 Manual Webhook": {
+      "main": [
+        [
+          {
+            "node": "✅ Validate Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "✅ Validate Data": {
+      "main": [
+        [
+          {
+            "node": "🔐 Manual Login",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔐 Manual Login": {
+      "main": [
+        [
+          {
+            "node": "🔀 Type Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔀 Type Switch": {
+      "main": [
+        [
+          {
+            "node": "📦 Create Product (Manual)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "📦 Create Pack (Manual)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📦 Create Product (Manual)": {
+      "main": [
+        [
+          {
+            "node": "📤 Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📦 Create Pack (Manual)": {
+      "main": [
+        [
+          {
+            "node": "📤 Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "GymPilot",
+      "id": "1"
+    },
+    {
+      "name": "Instagram",
+      "id": "2"
+    }
+  ],
+  "triggerCount": 2
+}

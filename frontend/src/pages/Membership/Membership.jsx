@@ -36,6 +36,7 @@ import {
   AutoAwesomeRounded,
   LockRounded,
   ArrowForwardRounded,
+  ArrowBackRounded,
   HelpOutlineRounded,
   VerifiedUserRounded,
   BoltRounded,
@@ -153,6 +154,47 @@ export default function MembershipPage() {
         description={t('membership.subtitle')}
         path="/membership"
       />
+
+      {/* Back to Dashboard / Home Navigation */}
+      <Box sx={{ mb: { xs: 2.5, md: 3 }, display: 'flex', alignItems: 'center' }}>
+        <Button
+          onClick={() => {
+            if (window.history?.length > 1) {
+              navigate(-1);
+            } else {
+              navigate(isAuthenticated ? '/dashboard' : '/');
+            }
+          }}
+          startIcon={<ArrowBackRounded />}
+          variant="outlined"
+          size="small"
+          sx={{
+            borderRadius: 2.5,
+            px: { xs: 1.75, sm: 2.25 },
+            py: { xs: 0.6, sm: 0.8 },
+            fontWeight: 700,
+            fontSize: { xs: '0.8rem', sm: '0.85rem' },
+            textTransform: 'none',
+            color: 'text.primary',
+            borderColor: (theme) =>
+              theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.14)' : 'rgba(0, 0, 0, 0.12)',
+            bgcolor: (theme) =>
+              theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+            backdropFilter: 'blur(8px)',
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              borderColor: 'primary.main',
+              color: 'primary.main',
+              bgcolor: (theme) =>
+                theme.palette.mode === 'dark' ? 'rgba(198, 255, 62, 0.08)' : 'rgba(198, 255, 62, 0.12)',
+              transform: 'translateX(-3px)',
+            },
+          }}
+        >
+          {isAuthenticated ? 'Back to Dashboard' : 'Back to Home'}
+        </Button>
+      </Box>
+
       {/* Header Section */}
       <Box sx={{ textAlign: 'center', mb: { xs: 4, md: 6 } }}>
         <Stack
@@ -204,94 +246,6 @@ export default function MembershipPage() {
         >
           {t('membership.subtitle')}
         </Typography>
-      </Box>
-
-      {/* Location & Dynamic Currency Switcher */}
-      <Box
-        sx={{
-          maxWidth: 620,
-          mx: 'auto',
-          mb: 4,
-          p: 1.5,
-          borderRadius: 3.5,
-          bgcolor: (theme) =>
-            theme.palette.mode === 'dark' ? 'rgba(18, 21, 27, 0.7)' : 'rgba(255, 255, 255, 0.8)',
-          border: '1px solid',
-          borderColor: (theme) =>
-            theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(15, 23, 42, 0.08)',
-          backdropFilter: 'blur(12px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: 1.5,
-        }}
-      >
-        <Stack direction="row" spacing={1} alignItems="center">
-          <Typography sx={{ fontSize: '1.2rem' }}>📍</Typography>
-          <Box>
-            <Stack direction="row" spacing={0.75} alignItems="center">
-              <Typography
-                variant="caption"
-                sx={{ fontWeight: 800, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 0.5 }}
-              >
-                {geo.isAutoDetected ? 'Auto-detected Location' : 'Selected Currency'}
-              </Typography>
-              {geo.isAutoDetected && (
-                <Chip
-                  label="Live"
-                  size="small"
-                  sx={{
-                    height: 18,
-                    fontSize: '0.62rem',
-                    fontWeight: 800,
-                    bgcolor: 'rgba(198, 255, 62, 0.15)',
-                    color: '#C6FF3E',
-                    border: '1px solid rgba(198, 255, 62, 0.3)',
-                  }}
-                />
-              )}
-            </Stack>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.78rem' }}>
-              Pricing displayed in <strong>{geo.config.label}</strong>
-            </Typography>
-          </Box>
-        </Stack>
-
-        <Stack direction="row" spacing={1}>
-          {geo.allCurrencies.map((curr) => {
-            const isSelected = geo.currency === curr.code;
-            return (
-              <Button
-                key={curr.code}
-                size="small"
-                onClick={() => geo.changeCurrency(curr.code)}
-                sx={{
-                  px: 1.5,
-                  py: 0.5,
-                  minWidth: 'auto',
-                  borderRadius: 2.5,
-                  fontSize: '0.8rem',
-                  fontWeight: isSelected ? 800 : 600,
-                  bgcolor: isSelected
-                    ? 'primary.main'
-                    : (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'),
-                  color: isSelected ? '#000' : 'text.primary',
-                  border: '1px solid',
-                  borderColor: isSelected ? 'primary.main' : 'transparent',
-                  transition: 'all 0.2s ease',
-                  '&:hover': {
-                    bgcolor: isSelected
-                      ? 'primary.main'
-                      : (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'),
-                  },
-                }}
-              >
-                <span style={{ marginRight: 4 }}>{curr.flag}</span> {curr.code}
-              </Button>
-            );
-          })}
-        </Stack>
       </Box>
 
       {/* Guest Welcome Banner */}
@@ -954,6 +908,35 @@ export default function MembershipPage() {
             </Typography>
           </Grid>
         </Grid>
+      </Box>
+
+      {/* Bottom Back Button */}
+      <Box sx={{ mt: 5, textAlign: 'center' }}>
+        <Button
+          onClick={() => {
+            if (window.history?.length > 1) {
+              navigate(-1);
+            } else {
+              navigate(isAuthenticated ? '/dashboard' : '/');
+            }
+          }}
+          startIcon={<ArrowBackRounded />}
+          variant="text"
+          sx={{
+            fontWeight: 700,
+            fontSize: { xs: '0.85rem', sm: '0.9rem' },
+            color: 'text.secondary',
+            textTransform: 'none',
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              color: 'primary.main',
+              bgcolor: 'transparent',
+              transform: 'translateX(-2px)',
+            },
+          }}
+        >
+          {isAuthenticated ? 'Back to Dashboard' : 'Back to Home'}
+        </Button>
       </Box>
     </Container>
   );
