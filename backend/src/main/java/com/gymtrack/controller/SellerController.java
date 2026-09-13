@@ -67,8 +67,9 @@ public class SellerController {
     public PagedResponse<ProductResponse> getSellerProducts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String keyword,
             Principal principal) {
-        return productService.getSellerProducts(principal.getName(), page, size);
+        return productService.getSellerProducts(principal.getName(), page, size, keyword);
     }
 
     /** PATCH /api/seller/orders/{id}/status - Update fulfillment status */

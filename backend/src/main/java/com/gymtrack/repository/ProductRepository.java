@@ -33,6 +33,13 @@ public interface ProductRepository extends MongoRepository<Product, String> {
 
     Page<Product> findBySellerId(String sellerId, Pageable pageable);
 
+    @Query("{ 'sellerId': ?0, '$or': [ " +
+            "{ 'name': { '$regex': ?1, '$options': 'i' } }, " +
+            "{ 'description': { '$regex': ?1, '$options': 'i' } }, " +
+            "{ 'categoryName': { '$regex': ?1, '$options': 'i' } } " +
+            "] }")
+    Page<Product> searchSellerProducts(String sellerId, String keyword, Pageable pageable);
+
     List<Product> findBySellerId(String sellerId);
 
     long countBySellerId(String sellerId);

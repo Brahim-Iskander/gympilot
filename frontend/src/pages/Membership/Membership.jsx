@@ -51,12 +51,14 @@ import SEO from '../../components/SEO';
 import { useLanguage } from '../../i18n';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
+import { useGeoCurrency } from '../../utils/geoCurrency';
 
 export default function MembershipPage() {
   const { t } = useLanguage();
   const theme = useTheme();
   const navigate = useNavigate();
   const { user, updateUser, isAuthenticated } = useAuth();
+  const geo = useGeoCurrency();
 
   const BASIC_POINTS_COST = 250;
   const PREMIUM_POINTS_COST = 500;
@@ -97,9 +99,9 @@ export default function MembershipPage() {
       setErrorMessage('');
       
       const ticket = await ticketService.createTicket({
-        subject: 'Basic subscription request',
+        subject: `Basic subscription request (${geo.config.basicPrice})`,
         topic: 'MEMBERSHIP',
-        message: 'User requested to subscribe to the Basic plan.',
+        message: `User requested to subscribe to the Basic plan for ${geo.config.basicPrice} / month (${geo.config.billingNote}).`,
       });
 
       setSuccessTicket(ticket);
@@ -202,6 +204,94 @@ export default function MembershipPage() {
         >
           {t('membership.subtitle')}
         </Typography>
+      </Box>
+
+      {/* Location & Dynamic Currency Switcher */}
+      <Box
+        sx={{
+          maxWidth: 620,
+          mx: 'auto',
+          mb: 4,
+          p: 1.5,
+          borderRadius: 3.5,
+          bgcolor: (theme) =>
+            theme.palette.mode === 'dark' ? 'rgba(18, 21, 27, 0.7)' : 'rgba(255, 255, 255, 0.8)',
+          border: '1px solid',
+          borderColor: (theme) =>
+            theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(15, 23, 42, 0.08)',
+          backdropFilter: 'blur(12px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 1.5,
+        }}
+      >
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Typography sx={{ fontSize: '1.2rem' }}>📍</Typography>
+          <Box>
+            <Stack direction="row" spacing={0.75} alignItems="center">
+              <Typography
+                variant="caption"
+                sx={{ fontWeight: 800, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 0.5 }}
+              >
+                {geo.isAutoDetected ? 'Auto-detected Location' : 'Selected Currency'}
+              </Typography>
+              {geo.isAutoDetected && (
+                <Chip
+                  label="Live"
+                  size="small"
+                  sx={{
+                    height: 18,
+                    fontSize: '0.62rem',
+                    fontWeight: 800,
+                    bgcolor: 'rgba(198, 255, 62, 0.15)',
+                    color: '#C6FF3E',
+                    border: '1px solid rgba(198, 255, 62, 0.3)',
+                  }}
+                />
+              )}
+            </Stack>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.78rem' }}>
+              Pricing displayed in <strong>{geo.config.label}</strong>
+            </Typography>
+          </Box>
+        </Stack>
+
+        <Stack direction="row" spacing={1}>
+          {geo.allCurrencies.map((curr) => {
+            const isSelected = geo.currency === curr.code;
+            return (
+              <Button
+                key={curr.code}
+                size="small"
+                onClick={() => geo.changeCurrency(curr.code)}
+                sx={{
+                  px: 1.5,
+                  py: 0.5,
+                  minWidth: 'auto',
+                  borderRadius: 2.5,
+                  fontSize: '0.8rem',
+                  fontWeight: isSelected ? 800 : 600,
+                  bgcolor: isSelected
+                    ? 'primary.main'
+                    : (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'),
+                  color: isSelected ? '#000' : 'text.primary',
+                  border: '1px solid',
+                  borderColor: isSelected ? 'primary.main' : 'transparent',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    bgcolor: isSelected
+                      ? 'primary.main'
+                      : (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'),
+                  },
+                }}
+              >
+                <span style={{ marginRight: 4 }}>{curr.flag}</span> {curr.code}
+              </Button>
+            );
+          })}
+        </Stack>
       </Box>
 
       {/* Guest Welcome Banner */}
@@ -409,14 +499,14 @@ export default function MembershipPage() {
                     fontWeight={900}
                     sx={{ fontFamily: "'Sora', sans-serif", color: 'text.primary' }}
                   >
-                    49 TND
+                    {geo.config.basicPrice}
                   </Typography>
                   <Typography variant="subtitle1" color="text.secondary" fontWeight={600}>
-                    / month
+                    {geo.config.period}
                   </Typography>
                 </Stack>
                 <Typography variant="caption" color="text.secondary">
-                  Billed monthly • Includes 14-day free trial on signup
+                  {geo.config.billingNote} • Includes 14-day free trial on signup
                 </Typography>
               </Box>
 
@@ -635,14 +725,14 @@ export default function MembershipPage() {
                     fontWeight={900}
                     sx={{ fontFamily: "'Sora', sans-serif", color: 'text.primary' }}
                   >
-                    99 TND
+                    {geo.config.premiumPrice}
                   </Typography>
                   <Typography variant="subtitle1" color="text.secondary" fontWeight={600}>
-                    / month
+                    {geo.config.period}
                   </Typography>
                 </Stack>
                 <Typography variant="caption" color="text.secondary">
-                  Launching soon with high-performance coaching
+                  {geo.config.billingNote} • Launching soon with high-performance coaching
                 </Typography>
               </Box>
 

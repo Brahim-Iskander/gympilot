@@ -29,12 +29,15 @@ import {
   CircularProgress,
   Alert,
   Tooltip,
+  InputAdornment,
 } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
 import RemoveCircleOutlineRoundedIcon from '@mui/icons-material/RemoveCircleOutlineRounded';
+import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 
 import SEO from '../../components/SEO';
 import SellerNavTabs from './components/SellerNavTabs';
@@ -50,6 +53,21 @@ export default function SellerProducts() {
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  // Search and filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('ALL');
+  const [totalProductsCount, setTotalProductsCount] = useState(0);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+      setPage(0);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -76,15 +94,24 @@ export default function SellerProducts() {
   const fetchProducts = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await sellerService.getMyProducts({ page, size: 10 });
-      setProducts(res.content || []);
+      const params = { page, size: 10 };
+      if (debouncedQuery.trim()) {
+        params.keyword = debouncedQuery.trim();
+      }
+      const res = await sellerService.getMyProducts(params);
+      let list = res.content || [];
+      if (selectedCategory !== 'ALL') {
+        list = list.filter((p) => p.categoryId === selectedCategory);
+      }
+      setProducts(list);
       setTotalPages(res.totalPages || 1);
+      setTotalProductsCount(res.totalElements || list.length);
     } catch (err) {
       console.error('Failed to load seller products:', err);
     } finally {
       setLoading(false);
     }
-  }, [page]);
+  }, [page, debouncedQuery, selectedCategory]);
 
   useEffect(() => {
     categoryService.getAll().then((data) => {
@@ -265,6 +292,104 @@ export default function SellerProducts() {
           </Button>
         </Stack>
 
+        {/* Search & Category Filter Toolbar */}
+        <Card
+          elevation={0}
+          sx={{
+            p: 2,
+            mb: 3,
+            borderRadius: 3,
+            border: '1px solid',
+            borderColor: 'divider',
+            bgcolor: 'background.paper',
+          }}
+        >
+          <Grid container spacing={2} alignItems="center">
+            {/* Search Input */}
+            <Grid item xs={12} md={7}>
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="Rechercher un produit (nom, description, marque, mot-clé)..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchRoundedIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: searchQuery ? (
+                    <InputAdornment position="end">
+                      <IconButton size="small" onClick={() => setSearchQuery('')}>
+                        <CloseRoundedIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    </InputAdornment>
+                  ) : null,
+                  sx: {
+                    borderRadius: 2.5,
+                    bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'),
+                  },
+                }}
+              />
+            </Grid>
+
+            {/* Category Select */}
+            <Grid item xs={12} sm={6} md={3}>
+              <TextField
+                select
+                fullWidth
+                size="small"
+                value={selectedCategory}
+                onChange={(e) => {
+                  setSelectedCategory(e.target.value);
+                  setPage(0);
+                }}
+                InputProps={{
+                  sx: { borderRadius: 2.5 },
+                }}
+              >
+                <MenuItem value="ALL">Toutes les catégories</MenuItem>
+                {categories.map((c) => (
+                  <MenuItem key={c.id} value={c.id}>
+                    {c.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+
+            {/* Results Count & Clear Button */}
+            <Grid
+              item
+              xs={12}
+              sm={6}
+              md={2}
+              sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' }, alignItems: 'center' }}
+            >
+              {searchQuery || selectedCategory !== 'ALL' ? (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSelectedCategory('ALL');
+                    setPage(0);
+                  }}
+                  sx={{ borderRadius: 2, fontSize: '0.78rem', textTransform: 'none' }}
+                >
+                  Effacer filtres
+                </Button>
+              ) : (
+                <Chip
+                  label={`${totalProductsCount} produit${totalProductsCount > 1 ? 's' : ''}`}
+                  size="small"
+                  sx={{ fontWeight: 700, bgcolor: 'background.default' }}
+                />
+              )}
+            </Grid>
+          </Grid>
+        </Card>
+
         <Card elevation={0} sx={{ p: 0, borderRadius: 3.5, border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', overflow: 'hidden' }}>
           <TableContainer>
             <Table>
@@ -289,9 +414,25 @@ export default function SellerProducts() {
                 ) : products.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        No products added yet. Click "Add New Product" to list your first supplement or equipment.
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: searchQuery || selectedCategory !== 'ALL' ? 1.5 : 0 }}>
+                        {searchQuery || selectedCategory !== 'ALL'
+                          ? `Aucun produit ne correspond à votre recherche "${searchQuery || selectedCategory}".`
+                          : 'No products added yet. Click "Add New Product" to list your first supplement or equipment.'}
                       </Typography>
+                      {(searchQuery || selectedCategory !== 'ALL') && (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => {
+                            setSearchQuery('');
+                            setSelectedCategory('ALL');
+                            setPage(0);
+                          }}
+                          sx={{ borderRadius: 2 }}
+                        >
+                          Réinitialiser la recherche
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ) : (

@@ -247,11 +247,20 @@ public class ProductService {
     }
 
     public PagedResponse<ProductResponse> getSellerProducts(String sellerEmail, int page, int size) {
+        return getSellerProducts(sellerEmail, page, size, null);
+    }
+
+    public PagedResponse<ProductResponse> getSellerProducts(String sellerEmail, int page, int size, String keyword) {
         User seller = userRepository.findByEmail(sellerEmail)
                 .orElseThrow(() -> new InvalidCredentialsException("User not found"));
 
         PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<Product> productPage = productRepository.findBySellerId(seller.getId(), pageRequest);
+        Page<Product> productPage;
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            productPage = productRepository.searchSellerProducts(seller.getId(), keyword.trim(), pageRequest);
+        } else {
+            productPage = productRepository.findBySellerId(seller.getId(), pageRequest);
+        }
 
         List<ProductResponse> content = productPage.getContent().stream()
                 .map(this::mapToProductResponse)

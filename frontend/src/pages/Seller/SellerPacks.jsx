@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Box,
   Container,
@@ -22,6 +22,7 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  MenuItem,
   Grid,
   CircularProgress,
   Alert,
@@ -42,6 +43,7 @@ import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
 import CloudUploadRoundedIcon from '@mui/icons-material/CloudUploadRounded';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import SavingsRoundedIcon from '@mui/icons-material/SavingsRounded';
+import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 
 import SEO from '../../components/SEO';
 import SellerNavTabs from './components/SellerNavTabs';
@@ -55,6 +57,29 @@ export default function SellerPacks() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // Search & filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+
+  const filteredPacks = useMemo(() => {
+    let list = packs;
+    if (statusFilter === 'ACTIVE') {
+      list = list.filter((p) => p.active && !p.isExpired);
+    } else if (statusFilter === 'INACTIVE') {
+      list = list.filter((p) => !p.active || p.isExpired);
+    }
+    if (!searchQuery.trim()) return list;
+    const q = searchQuery.toLowerCase().trim();
+    return list.filter(
+      (p) =>
+        (p.name && p.name.toLowerCase().includes(q)) ||
+        (p.tagline && p.tagline.toLowerCase().includes(q)) ||
+        (p.badge && p.badge.toLowerCase().includes(q)) ||
+        (p.description && p.description.toLowerCase().includes(q)) ||
+        (p.items && p.items.some((it) => it.name && it.name.toLowerCase().includes(q)))
+    );
+  }, [packs, searchQuery, statusFilter]);
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -500,6 +525,97 @@ export default function SellerPacks() {
           </Grid>
         </Grid>
 
+        {/* Search & Filter Toolbar */}
+        <Card
+          elevation={0}
+          sx={{
+            p: 2,
+            mb: 3,
+            borderRadius: 3,
+            border: '1px solid',
+            borderColor: 'divider',
+            bgcolor: 'background.paper',
+          }}
+        >
+          <Grid container spacing={2} alignItems="center">
+            {/* Search Input */}
+            <Grid item xs={12} md={7}>
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="Rechercher un pack ou un produit inclus (ex: Créatine, Gainer, 10/10)..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchRoundedIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: searchQuery ? (
+                    <InputAdornment position="end">
+                      <IconButton size="small" onClick={() => setSearchQuery('')}>
+                        <CloseRoundedIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    </InputAdornment>
+                  ) : null,
+                  sx: {
+                    borderRadius: 2.5,
+                    bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'),
+                  },
+                }}
+              />
+            </Grid>
+
+            {/* Filter by Status */}
+            <Grid item xs={12} sm={6} md={3}>
+              <TextField
+                select
+                fullWidth
+                size="small"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                InputProps={{
+                  sx: { borderRadius: 2.5 },
+                }}
+              >
+                <MenuItem value="ALL">Tous les statuts ({packs.length})</MenuItem>
+                <MenuItem value="ACTIVE">Actifs uniquement ({activeOffers})</MenuItem>
+                <MenuItem value="INACTIVE">Inactifs uniquement ({packs.length - activeOffers})</MenuItem>
+              </TextField>
+            </Grid>
+
+            {/* Results Count & Clear Button */}
+            <Grid
+              item
+              xs={12}
+              sm={6}
+              md={2}
+              sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' }, alignItems: 'center' }}
+            >
+              {searchQuery || statusFilter !== 'ALL' ? (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setStatusFilter('ALL');
+                  }}
+                  sx={{ borderRadius: 2, fontSize: '0.78rem', textTransform: 'none' }}
+                >
+                  Effacer filtres
+                </Button>
+              ) : (
+                <Chip
+                  label={`${packs.length} pack${packs.length > 1 ? 's' : ''}`}
+                  size="small"
+                  sx={{ fontWeight: 700, bgcolor: 'background.default' }}
+                />
+              )}
+            </Grid>
+          </Grid>
+        </Card>
+
         {/* Table of Packs */}
         <Card
           elevation={0}
@@ -566,7 +682,27 @@ export default function SellerPacks() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {packs.map((pack) => {
+                  {filteredPacks.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                          Aucun pack ne correspond à votre recherche "{searchQuery}".
+                        </Typography>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => {
+                            setSearchQuery('');
+                            setStatusFilter('ALL');
+                          }}
+                          sx={{ borderRadius: 2 }}
+                        >
+                          Réinitialiser la recherche
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredPacks.map((pack) => {
                     const savings = (pack.originalPrice || pack.price) - pack.price;
                     const pct =
                       pack.originalPrice > pack.price
@@ -724,7 +860,8 @@ export default function SellerPacks() {
                         </TableCell>
                       </TableRow>
                     );
-                  })}
+                  })
+                )}
                 </TableBody>
               </Table>
             </TableContainer>

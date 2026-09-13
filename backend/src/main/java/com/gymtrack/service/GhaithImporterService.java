@@ -122,12 +122,22 @@ public class GhaithImporterService {
             user.setCreatedAt(Instant.now());
         }
 
-        user.setStoreName("Ghaith Nutrition");
-        user.setStoreBio("Boutique officielle Ghaith Nutrition sur GymPilot — N°1 des compléments alimentaires, protéines et vitamines authentiques en Tunisie avec livraison rapide 24/48h.");
-        user.setStoreLogo("https://ghaithnutrition.com/cdn/shop/files/WhatsApp_Image_2025-10-20_a_16.37.07_05fcc5e5-removebg-preview.png");
+        if (user.getStoreName() == null || user.getStoreName().isBlank()) {
+            user.setStoreName("Ghaith Nutrition");
+        }
+        if (user.getStoreBio() == null || user.getStoreBio().isBlank()) {
+            user.setStoreBio("Boutique officielle Ghaith Nutrition sur GymPilot — N°1 des compléments alimentaires, protéines et vitamines authentiques en Tunisie avec livraison rapide 24/48h.");
+        }
+        if (user.getStoreLogo() == null || user.getStoreLogo().isBlank()) {
+            user.setStoreLogo("https://ghaithnutrition.com/cdn/shop/files/WhatsApp_Image_2025-10-20_a_16.37.07_05fcc5e5-removebg-preview.png");
+        }
         user.setVerified(true);
-        user.setMembershipTier("PREMIUM");
-        user.setMembershipStatus("ACTIVE");
+        if (user.getMembershipTier() == null) {
+            user.setMembershipTier("PREMIUM");
+        }
+        if (user.getMembershipStatus() == null) {
+            user.setMembershipStatus("ACTIVE");
+        }
 
         return userRepository.save(user);
     }

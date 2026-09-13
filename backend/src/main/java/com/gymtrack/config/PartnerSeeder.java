@@ -28,6 +28,7 @@ public class PartnerSeeder implements CommandLineRunner {
     public void run(String... args) {
         if (partnerRepository.count() == 0) {
             List<Partner> defaultPartners = List.of(
+                    new Partner("Ghaith Nutrition", "https://res.cloudinary.com/dvfrd0ehf/image/upload/v1789311910/gympilot/packs/ge3razfsgoqfn8fynsnv.jpg", "Boutique Officielle N°1 des Compléments Alimentaires & Nutrition Sportive en Tunisie", "https://ghaithnutrition.com"),
                     new Partner("Gymshark", "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=300&q=80", "Official Apparel & Fitness Gear", "https://www.gymshark.com"),
                     new Partner("Rogue Fitness", "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=300&q=80", "Strength & Conditioning Equipment", "https://www.roguefitness.com"),
                     new Partner("Optimum Nutrition", "https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?auto=format&fit=crop&w=300&q=80", "Premium Protein & Supplements", "https://www.optimumnutrition.com"),
