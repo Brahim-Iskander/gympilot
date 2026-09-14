@@ -242,8 +242,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2500,
-        280
+        80,
+        100
       ]
     },
     {
@@ -253,13 +253,13 @@
             {
               "conditions": {
                 "options": {
-                  "caseSensitive": true,
+                  "caseSensitive": false,
                   "leftValue": "",
-                  "typeValidation": "strict"
+                  "typeValidation": "loose"
                 },
                 "conditions": [
                   {
-                    "leftValue": "={{ $('📝 Parse AI Response').item.json.type }}",
+                    "leftValue": "={{ ($json.type || '').toLowerCase() }}",
                     "rightValue": "product",
                     "operator": {
                       "type": "string",
@@ -275,13 +275,13 @@
             {
               "conditions": {
                 "options": {
-                  "caseSensitive": true,
+                  "caseSensitive": false,
                   "leftValue": "",
-                  "typeValidation": "strict"
+                  "typeValidation": "loose"
                 },
                 "conditions": [
                   {
-                    "leftValue": "={{ $('📝 Parse AI Response').item.json.type }}",
+                    "leftValue": "={{ ($json.type || '').toLowerCase() }}",
                     "rightValue": "pack",
                     "operator": {
                       "type": "string",
@@ -296,14 +296,16 @@
             }
           ]
         },
-        "options": {}
+        "options": {
+          "fallbackOutput": 0
+        }
       },
       "id": "switch-product-or-pack",
       "name": "🔀 Product or Pack?",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
       "position": [
-        2940,
+        2720,
         280
       ]
     },
@@ -316,13 +318,13 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "=Bearer {{ $('🔐 GymPilot Login').first().json.token }}"
+              "value": "=Bearer {{ $json.token || $('🔐 GymPilot Login').first()?.json?.token }}"
             }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"name\": \"{{ $json.name }}\",\n  \"description\": \"{{ $json.description }}\",\n  \"categoryId\": \"{{ $json.categoryId || $json.category || '6a985c4550777d3e0a93e603' }}\",\n  \"price\": {{ $json.price || 0 }},\n  \"originalPrice\": {{ $json.originalPrice || 'null' }},\n  \"stockQuantity\": 50,\n  \"images\": {{ JSON.stringify($json.images || [$json.imageUrl]) }},\n  \"specs\": {\n    \"Brand / Vendor\": \"Ghaith Nutrition\",\n    \"Category\": \"{{ $json.category }}\",\n    \"Origin\": \"100% Genuine & Certified\",\n    \"Source\": \"Auto-imported from Instagram Story with AI Studio Visual\"\n  },\n  \"active\": true,\n  \"featured\": false\n}",
+        "jsonBody": "={{\n  JSON.stringify({\n    name: $json.name || 'Produit Nutrition',\n    description: $json.description || $json.name || '',\n    categoryId: $json.categoryId || $json.category || '6a985c4550777d3e0a93e603',\n    price: Number($json.price) || 0,\n    originalPrice: $json.originalPrice ? Number($json.originalPrice) : null,\n    stockQuantity: 50,\n    images: ($json.images && $json.images.length > 0) ? $json.images : ($json.imageUrl ? [$json.imageUrl] : []),\n    specs: {\n      'Brand / Vendor': 'Ghaith Nutrition',\n      'Category': $json.category || 'Supplements',\n      'Origin': '100% Genuine & Certified',\n      'Source': 'Auto-imported from Instagram Story with AI Studio Visual'\n    },\n    active: true,\n    featured: false\n  })\n}}",
         "options": {}
       },
       "id": "create-product",
@@ -330,7 +332,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3180,
+        2960,
         120
       ]
     },
@@ -343,13 +345,13 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "=Bearer {{ $('🔐 GymPilot Login').first().json.token }}"
+              "value": "=Bearer {{ $json.token || $('🔐 GymPilot Login').first()?.json?.token }}"
             }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"name\": \"{{ $json.name }}\",\n  \"tagline\": \"{{ $json.tagline || 'Offre speciale Ghaith Nutrition' }}\",\n  \"badge\": \"{{ $json.badge || 'NEW' }}\",\n  \"description\": \"{{ $json.description }}\",\n  \"originalPrice\": {{ $json.originalPrice || $json.price || 0 }},\n  \"price\": {{ $json.price || 0 }},\n  \"images\": {{ JSON.stringify($json.images || [$json.imageUrl]) }},\n  \"items\": {{ JSON.stringify($json.items || [{\"name\": $json.name, \"quantity\": 1}]) }},\n  \"active\": true,\n  \"featured\": false,\n  \"stockQuantity\": 50\n}",
+        "jsonBody": "={{\n  JSON.stringify({\n    name: $json.name || 'Pack Spécial Ghaith Nutrition',\n    tagline: $json.tagline || 'Offre spéciale Ghaith Nutrition',\n    badge: $json.badge || 'PROMO',\n    description: $json.description || $json.name || '',\n    originalPrice: $json.originalPrice ? Number($json.originalPrice) : (Number($json.price) || 0),\n    price: Number($json.price) || 0,\n    images: ($json.images && $json.images.length > 0) ? $json.images : ($json.imageUrl ? [$json.imageUrl] : []),\n    items: ($json.items && Array.isArray($json.items)) ? $json.items : [{ name: $json.name, quantity: 1 }],\n    active: true,\n    featured: false,\n    stockQuantity: 50\n  })\n}}",
         "options": {}
       },
       "id": "create-pack",
@@ -357,7 +359,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3180,
+        2960,
         440
       ]
     },
@@ -370,7 +372,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        4520,
+        4400,
         280
       ]
     },
@@ -554,14 +556,14 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const data = item.json;\n  const isPack = data.type === 'pack';\n  \n  const name = data.name || 'Complément Alimentaire';\n  const category = data.category || 'Supplements';\n  \n  let prompt = '';\n  if (isPack) {\n    const itemsList = (data.items && Array.isArray(data.items))\n      ? data.items.map(i => i.name).filter(Boolean).join(', ')\n      : name;\n    prompt = `Commercial 3D e-commerce studio photography of a fitness supplement bundle pack: ${itemsList || name}. Premium matte black and neon lime supplement tubs and jars, sleek shaker bottle, displayed on a clean dark reflective carbon surface, soft gym background bokeh, dynamic neon edge lighting, ultra-realistic, 8k resolution, crisp photorealistic mockup`;\n  } else {\n    prompt = `Commercial 3D e-commerce studio product photography of ${name}, category ${category}. Premium fitness supplement tub on clean dark reflective gym surface, neon green and purple rim lighting, ultra-sharp focus, photorealistic packaging, 8k resolution, advertising quality`;\n  }\n  \n  const encodedPrompt = encodeURIComponent(prompt.trim());\n  const hash = Math.abs(name.split('').reduce((acc, char) => (acc << 5) - acc + char.charCodeAt(0), 0)) % 1000000;\n  \n  // Free high-speed AI image generator using Flux\n  const aiImageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&model=flux&seed=${hash}&nologo=true`;\n  \n  // AI visual is primary image, original IG story image is secondary fallback\n  const images = [aiImageUrl];\n  if (data.imageUrl && data.imageUrl.startsWith('http')) {\n    images.push(data.imageUrl);\n  }\n  \n  results.push({\n    json: {\n      ...data,\n      aiImageUrl,\n      generatedPrompt: prompt,\n      images\n    }\n  });\n}\n\nreturn results;"
+        "jsCode": "const items = $input.all();\nconst results = [];\n\n// Ensure we have a valid token for GymPilot API\nlet token = '';\ntry {\n  token = $('🔐 GymPilot Login').first()?.json?.token;\n} catch (e) {}\n\nif (!token) {\n  try {\n    const res = await fetch('https://api.gympilot.tn/api/auth/login', {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({\n        email: 'iskander.skan05@gmail.com',\n        password: 'Topadmin2005'\n      })\n    });\n    const data = await res.json();\n    token = data.token;\n  } catch (e) {\n    console.error('GymPilot login fallback error:', e);\n  }\n}\n\nfor (const item of items) {\n  const data = item.json;\n  const isPack = (data.type || '').toLowerCase() === 'pack';\n  \n  const name = data.name || 'Complément Alimentaire';\n  const category = data.category || 'Supplements';\n  \n  let prompt = '';\n  if (isPack) {\n    const itemsList = (data.items && Array.isArray(data.items))\n      ? data.items.map(i => i.name).filter(Boolean).join(', ')\n      : name;\n    prompt = `Commercial 3D e-commerce studio photography of a fitness supplement bundle pack: ${itemsList || name}. Premium matte black and neon lime supplement tubs and jars, sleek shaker bottle, displayed on a clean dark reflective carbon surface, soft gym background bokeh, dynamic neon edge lighting, ultra-realistic, 8k resolution, crisp photorealistic mockup`;\n  } else {\n    prompt = `Commercial 3D e-commerce studio product photography of ${name}, category ${category}. Premium fitness supplement tub on clean dark reflective gym surface, neon green and purple rim lighting, ultra-sharp focus, photorealistic packaging, 8k resolution, advertising quality`;\n  }\n  \n  const encodedPrompt = encodeURIComponent(prompt.trim());\n  const hash = Math.abs(name.split('').reduce((acc, char) => (acc << 5) - acc + char.charCodeAt(0), 0)) % 1000000;\n  \n  // Free high-speed AI image generator using Flux\n  const aiImageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&model=flux&seed=${hash}&nologo=true`;\n  \n  // AI visual is primary image, original IG story image is secondary fallback\n  const images = [aiImageUrl];\n  if (data.imageUrl && data.imageUrl.startsWith('http')) {\n    images.push(data.imageUrl);\n  }\n  \n  results.push({\n    json: {\n      ...data,\n      token: token || data.token,\n      aiImageUrl,\n      generatedPrompt: prompt,\n      images\n    }\n  });\n}\n\nreturn results;"
       },
       "id": "generate-ai-visual",
       "name": "🎨 AI: Generate Product/Pack Visual",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2720,
+        2500,
         280
       ]
     },
@@ -574,7 +576,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3400,
+        3200,
         440
       ]
     },
@@ -584,7 +586,7 @@
         "url": "=https://graph.facebook.com/v21.0/{{ $env.INSTAGRAM_ACCOUNT_ID || 'YOUR_INSTAGRAM_ACCOUNT_ID' }}/media",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"image_url\": \"{{ $json.imageUrl }}\",\n  \"caption\": {{ JSON.stringify($json.caption) }},\n  \"access_token\": \"{{ $env.INSTAGRAM_ACCESS_TOKEN || 'YOUR_INSTAGRAM_ACCESS_TOKEN' }}\"\n}",
+        "jsonBody": "={{\n  JSON.stringify({\n    image_url: $json.imageUrl,\n    caption: $json.caption,\n    access_token: $env.INSTAGRAM_ACCESS_TOKEN || 'YOUR_INSTAGRAM_ACCESS_TOKEN'\n  })\n}}",
         "options": {}
       },
       "id": "instagram-create-container",
@@ -592,7 +594,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3620,
+        3440,
         440
       ],
       "continueOnFail": true
@@ -607,7 +609,7 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        3840,
+        3680,
         440
       ],
       "webhookId": "ig-wait-media"
@@ -618,7 +620,7 @@
         "url": "=https://graph.facebook.com/v21.0/{{ $env.INSTAGRAM_ACCOUNT_ID || 'YOUR_INSTAGRAM_ACCOUNT_ID' }}/media_publish",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"creation_id\": \"{{ $('📸 Instagram: Create Media Container').item.json.id }}\",\n  \"access_token\": \"{{ $env.INSTAGRAM_ACCESS_TOKEN || 'YOUR_INSTAGRAM_ACCESS_TOKEN' }}\"\n}",
+        "jsonBody": "={{\n  JSON.stringify({\n    creation_id: $('📸 Instagram: Create Media Container').item?.json?.id || '',\n    access_token: $env.INSTAGRAM_ACCESS_TOKEN || 'YOUR_INSTAGRAM_ACCESS_TOKEN'\n  })\n}}",
         "options": {}
       },
       "id": "instagram-publish-post",
@@ -626,7 +628,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        4060,
+        3920,
         440
       ],
       "continueOnFail": true
@@ -640,7 +642,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        4280,
+        4160,
         440
       ]
     }
@@ -651,6 +653,11 @@
         [
           {
             "node": "🔍 Apify: Fetch IG Stories",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "🔐 GymPilot Login",
             "type": "main",
             "index": 0
           }
@@ -757,17 +764,6 @@
       ]
     },
     "🔀 Skip Promos": {
-      "main": [
-        [
-          {
-            "node": "🔐 GymPilot Login",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "🔐 GymPilot Login": {
       "main": [
         [
           {
