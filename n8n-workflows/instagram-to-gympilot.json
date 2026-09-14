@@ -143,7 +143,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\nconst stories = $('📋 Parse Story Data').all();\nconst results = [];\n\nfor (let i = 0; i < items.length; i++) {\n  const item = items[i];\n  const story = (stories[i] && stories[i].json) ? stories[i].json : {};\n  \n  let base64Image = null;\n  let mimeType = 'image/jpeg';\n  \n  if (item.binary && item.binary.data) {\n    try {\n      const buffer = await this.helpers.getBinaryDataBuffer(i, 'data');\n      if (buffer && buffer.length > 0) {\n        base64Image = buffer.toString('base64');\n      }\n    } catch (e) {\n      // Fallback if binary stored in memory\n      if (typeof item.binary.data.data === 'string' && !item.binary.data.data.startsWith('filesystem')) {\n        base64Image = item.binary.data.data;\n      }\n    }\n    mimeType = item.binary.data.mimeType || 'image/jpeg';\n  }\n  \n  const parts = [];\n  \n  // Add image if valid base64 (never send filesystem pointer to Gemini)\n  if (base64Image && base64Image !== 'filesystem-v2') {\n    parts.push({\n      inlineData: {\n        mimeType: mimeType,\n        data: base64Image\n      }\n    });\n  }\n  \n  const promptText = `You are an automated product extraction agent for GymPilot, an e-commerce fitness supplements marketplace in Tunisia.\\nAnalyze this Instagram story image and caption from seller Ghaith Nutrition.\\n\\nCRITICAL RULES:\\n1. Currency is Tunisian Dinar (TND).\\n2. Categories must be EXACTLY ONE of:\\n   - Whey Protein\\n   - Creatine\\n   - Mass Gainer\\n   - Vitamins & Supplements\\n   - Equipment & Tools\\n   - Packs & Stacks\\n3. Classification:\\n   - If 2 or more products are bundled together at a package price => type = \\\"pack\\\"\\n   - If single product => type = \\\"product\\\"\\n   - If just gym motivation, personal story, workout video, meme, or advertisement with no product and no price => type = \\\"skip\\\"\\n\\nCaption: ${story.caption || 'None'}\\n\\nRespond strictly with a single JSON object (no markdown, no backticks):\\n{\\n  \\\"type\\\": \\\"product\\\" | \\\"pack\\\" | \\\"skip\\\",\\n  \\\"name\\\": \\\"Name of product or pack in French\\\",\\n  \\\"description\\\": \\\"Clean description in French highlighting benefits and dosage\\\",\\n  \\\"category\\\": \\\"one of the exact categories above\\\",\\n  \\\"price\\\": 149.0,\\n  \\\"originalPrice\\\": null,\\n  \\\"tagline\\\": \\\"Short punchy tagline in French (only for packs)\\\",\\n  \\\"badge\\\": \\\"NEW or PROMO or FLASH SALE\\\",\\n  \\\"items\\\": [{\\\"name\\\": \\\"Product 1\\\", \\\"quantity\\\": 1}]\\n}`;\n  \n  parts.push({ text: promptText });\n  \n  results.push({\n    json: {\n      geminiPayload: {\n        contents: [{ parts }],\n        generationConfig: {\n          temperature: 0.1,\n          maxOutputTokens: 1000,\n          responseMimeType: 'application/json'\n        }\n      }\n    }\n  });\n}\n\nreturn results;"
+        "jsCode": "const items = $input.all();\nconst stories = $('📋 Parse Story Data').all();\nconst results = [];\n\nfor (let i = 0; i < items.length; i++) {\n  const item = items[i];\n  const story = (stories[i] && stories[i].json) ? stories[i].json : {};\n  \n  let base64Image = null;\n  let mimeType = 'image/jpeg';\n  \n  if (item.binary && item.binary.data) {\n    try {\n      const buffer = await this.helpers.getBinaryDataBuffer(i, 'data');\n      if (buffer && buffer.length > 0) {\n        base64Image = buffer.toString('base64');\n      }\n    } catch (e) {\n      if (typeof item.binary.data.data === 'string' && !item.binary.data.data.startsWith('filesystem')) {\n        base64Image = item.binary.data.data;\n      }\n    }\n    mimeType = item.binary.data.mimeType || 'image/jpeg';\n  }\n  \n  const parts = [];\n  \n  if (base64Image && base64Image !== 'filesystem-v2') {\n    parts.push({\n      inlineData: {\n        mimeType: mimeType,\n        data: base64Image\n      }\n    });\n  }\n  \n  const promptText = `You are an automated product extraction agent for GymPilot, an e-commerce fitness marketplace in Tunisia.\nAnalyze this Instagram story image and caption from seller Ghaith Nutrition.\n\nCRITICAL INSTRUCTION - ALL OFFERS ARE PACKS PROMO:\nIn GymPilot, all promotional offers, bundle packs, discounted supplements, and special deals posted by Ghaith Nutrition on Instagram are PACKS PROMO (type: \"pack\").\nWhether it contains 1 supplement with a discount or 2+ bundled supplements, classify it as type = \"pack\".\n\nRULES:\n1. Currency is Tunisian Dinar (TND).\n2. Type:\n   - If story shows any supplement, offer, promo, combo, or product with a price => type = \"pack\"\n   - If story is pure non-commercial content with NO product and NO price (e.g. gym workout video, meme, quote) => type = \"skip\"\n3. Category:\n   - Must be \"Packs & Stacks\" for all promotional packs/offers.\n4. Badge:\n   - \"PACK PROMO\", \"FLASH SALE\", or \"OFFRE LIMITEE\"\n5. Tagline:\n   - Catchy French or Tunisian slogan (e.g. \"Pack Force & Masse Musculaire | Stock Limite\")\n\nCaption: ${story.caption || 'None'}\n\nRespond strictly with a single JSON object (no markdown, no backticks):\n{\n  \"type\": \"pack\" | \"skip\",\n  \"name\": \"Pack Promo name in French (e.g. Pack Real Mass 3kg + Shaker)\",\n  \"tagline\": \"Short punchy slogan in French\",\n  \"badge\": \"PACK PROMO\",\n  \"description\": \"Engaging description in French highlighting components, benefits and dosage\",\n  \"category\": \"Packs & Stacks\",\n  \"price\": 149.0,\n  \"originalPrice\": 189.0,\n  \"items\": [\n    { \"name\": \"Main Supplement Name\", \"quantity\": 1, \"description\": \"High quality protein\", \"dosage\": \"1 scoop/day\" }\n  ]\n}`;\n  \n  parts.push({ text: promptText });\n  \n  results.push({\n    json: {\n      geminiPayload: {\n        contents: [{ parts }],\n        generationConfig: {\n          temperature: 0.1,\n          maxOutputTokens: 1000,\n          responseMimeType: 'application/json'\n        }\n      }\n    }\n  });\n}\n\nreturn results;"
       },
       "id": "prepare-gemini-request",
       "name": "⚙️ Prepare Gemini Request",
@@ -185,7 +185,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\nconst stories = $('📋 Parse Story Data').all();\nconst results = [];\n\nconst CATEGORY_MAP = {\n  'whey protein': '6a985c4550777d3e0a93e601',\n  'creatine': '6a985c4550777d3e0a93e602',\n  'mass gainer': '6a985c4550777d3e0a93e603',\n  'vitamins & supplements': '6a985c4550777d3e0a93e604',\n  'vitamins': '6a985c4550777d3e0a93e604',\n  'supplements': '6a985c4550777d3e0a93e604',\n  'equipment & tools': '6a985c4550777d3e0a93e605',\n  'equipment': '6a985c4550777d3e0a93e605',\n  'packs & stacks': '6aa3cf01ae84ed74b697583f',\n  'pack': '6aa3cf01ae84ed74b697583f'\n};\n\nfor (let i = 0; i < items.length; i++) {\n  const item = items[i];\n  try {\n    const rawContent = item.json.candidates?.[0]?.content?.parts?.[0]?.text || '{}';\n    const cleaned = rawContent.replace(/```json\\n?/gi, '').replace(/```\\n?/g, '').trim();\n    const parsed = JSON.parse(cleaned);\n    \n    const storyData = (stories[i] && stories[i].json) ? stories[i].json : {};\n    const catKey = (parsed.category || '').toLowerCase().trim();\n    const resolvedCatId = CATEGORY_MAP[catKey] || '6a985c4550777d3e0a93e603';\n    \n    results.push({\n      json: {\n        ...parsed,\n        categoryId: resolvedCatId,\n        storyId: storyData.storyId || 'story_' + Date.now(),\n        imageUrl: storyData.imageUrl || '',\n        caption: storyData.caption || ''\n      }\n    });\n  } catch (e) {\n    results.push({\n      json: {\n        type: 'skip',\n        error: 'Failed to parse Gemini response: ' + e.message\n      }\n    });\n  }\n}\n\nreturn results;"
+        "jsCode": "const items = $input.all();\nconst stories = $('📋 Parse Story Data').all();\nconst results = [];\n\nconst CATEGORY_MAP = {\n  'packs & stacks': '6aa3cf01ae84ed74b697583f',\n  'pack': '6aa3cf01ae84ed74b697583f',\n  'whey protein': '6a985c4550777d3e0a93e601',\n  'creatine': '6a985c4550777d3e0a93e602',\n  'mass gainer': '6a985c4550777d3e0a93e603',\n  'vitamins & supplements': '6a985c4550777d3e0a93e604'\n};\n\nfor (let i = 0; i < items.length; i++) {\n  const item = items[i];\n  try {\n    const rawContent = item.json.candidates?.[0]?.content?.parts?.[0]?.text || '{}';\n    const cleaned = rawContent.replace(/```json\\n?/gi, '').replace(/```\\n?/g, '').trim();\n    const parsed = JSON.parse(cleaned);\n    \n    const storyData = (stories[i] && stories[i].json) ? stories[i].json : {};\n    \n    // Check if it's pure non-commercial skip\n    const isSkip = parsed.type === 'skip' && !parsed.price && !storyData.caption?.match(/\\d+\\s*(dt|tnd)/i);\n    \n    if (isSkip) {\n      results.push({ json: { type: 'skip', reason: 'Non-commercial story' } });\n      continue;\n    }\n    \n    // All valid offers from Ghaith Nutrition Instagram stories are PACKS PROMO!\n    const name = parsed.name || 'Pack Promo Ghaith Nutrition';\n    const price = Number(parsed.price) || 0;\n    const originalPrice = parsed.originalPrice ? Number(parsed.originalPrice) : (price > 0 ? Math.round(price * 1.25) : 0);\n    const badge = parsed.badge || 'PACK PROMO';\n    const tagline = parsed.tagline || 'Offre exclusive Ghaith Nutrition - Stock Limité';\n    \n    let packItems = (parsed.items && Array.isArray(parsed.items) && parsed.items.length > 0)\n      ? parsed.items\n      : [{ name: name, quantity: 1, description: parsed.description || 'Produit 100% authentique', dosage: '1 dose/jour' }];\n      \n    results.push({\n      json: {\n        ...parsed,\n        type: 'pack', // Enforce type = pack so it goes directly to Pack Promo\n        name: name,\n        tagline: tagline,\n        badge: badge,\n        price: price,\n        originalPrice: originalPrice,\n        items: packItems,\n        category: 'Packs & Stacks',\n        categoryId: '6aa3cf01ae84ed74b697583f',\n        storyId: storyData.storyId || 'story_' + Date.now(),\n        imageUrl: storyData.imageUrl || '',\n        caption: storyData.caption || ''\n      }\n    });\n  } catch (e) {\n    results.push({\n      json: {\n        type: 'skip',\n        error: 'Failed to parse Gemini response: ' + e.message\n      }\n    });\n  }\n}\n\nreturn results;"
       },
       "id": "parse-ai-response",
       "name": "📝 Parse AI Response",
@@ -220,7 +220,7 @@
         "options": {}
       },
       "id": "filter-actionable",
-      "name": "🔀 Skip Promos",
+      "name": "🔀 Filter Valid Offers",
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2,
       "position": [
@@ -259,6 +259,28 @@
                 },
                 "conditions": [
                   {
+                    "leftValue": "={{ ($json.type || 'pack').toLowerCase() }}",
+                    "rightValue": "pack",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputLabel": "Pack Promo"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
                     "leftValue": "={{ ($json.type || '').toLowerCase() }}",
                     "rightValue": "product",
                     "operator": {
@@ -271,28 +293,6 @@
               },
               "renameOutput": true,
               "outputLabel": "Product"
-            },
-            {
-              "conditions": {
-                "options": {
-                  "caseSensitive": false,
-                  "leftValue": "",
-                  "typeValidation": "loose"
-                },
-                "conditions": [
-                  {
-                    "leftValue": "={{ ($json.type || '').toLowerCase() }}",
-                    "rightValue": "pack",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
-                  }
-                ],
-                "combinator": "and"
-              },
-              "renameOutput": true,
-              "outputLabel": "Pack"
             }
           ]
         },
@@ -301,7 +301,7 @@
         }
       },
       "id": "switch-product-or-pack",
-      "name": "🔀 Product or Pack?",
+      "name": "🔀 Pack Promo or Product?",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
       "position": [
@@ -333,7 +333,7 @@
       "typeVersion": 4.2,
       "position": [
         2960,
-        120
+        100
       ]
     },
     {
@@ -351,16 +351,16 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{\n  JSON.stringify({\n    name: $json.name || 'Pack Spécial Ghaith Nutrition',\n    tagline: $json.tagline || 'Offre spéciale Ghaith Nutrition',\n    badge: $json.badge || 'PROMO',\n    description: $json.description || $json.name || '',\n    originalPrice: $json.originalPrice ? Number($json.originalPrice) : (Number($json.price) || 0),\n    price: Number($json.price) || 0,\n    images: ($json.images && $json.images.length > 0) ? $json.images : ($json.imageUrl ? [$json.imageUrl] : []),\n    items: ($json.items && Array.isArray($json.items)) ? $json.items : [{ name: $json.name, quantity: 1 }],\n    active: true,\n    featured: false,\n    stockQuantity: 50\n  })\n}}",
+        "jsonBody": "={{\n  JSON.stringify({\n    name: $json.name || 'Pack Promo Ghaith Nutrition',\n    tagline: $json.tagline || 'Offre exclusive Ghaith Nutrition',\n    badge: $json.badge || 'PACK PROMO',\n    description: $json.description || $json.name || '',\n    originalPrice: $json.originalPrice ? Number($json.originalPrice) : (Number($json.price) ? Math.round(Number($json.price) * 1.25) : 0),\n    price: Number($json.price) || 0,\n    images: ($json.images && $json.images.length > 0) ? $json.images : ($json.imageUrl ? [$json.imageUrl] : []),\n    items: ($json.items && Array.isArray($json.items) && $json.items.length > 0)\n      ? $json.items\n      : [{ name: $json.name || 'Pack Promo', quantity: 1, description: 'Produit 100% authentique', dosage: '1 dose/jour' }],\n    active: true,\n    featured: false,\n    stockQuantity: 50\n  })\n}}",
         "options": {}
       },
       "id": "create-pack",
-      "name": "📦 Create Pack",
+      "name": "📦 Create Pack (Pack Promo)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
         2960,
-        440
+        280
       ]
     },
     {
@@ -577,7 +577,7 @@
       "typeVersion": 2,
       "position": [
         3200,
-        440
+        280
       ]
     },
     {
@@ -595,7 +595,7 @@
       "typeVersion": 4.2,
       "position": [
         3440,
-        440
+        280
       ],
       "continueOnFail": true
     },
@@ -610,7 +610,7 @@
       "typeVersion": 1.1,
       "position": [
         3680,
-        440
+        280
       ],
       "webhookId": "ig-wait-media"
     },
@@ -629,7 +629,7 @@
       "typeVersion": 4.2,
       "position": [
         3920,
-        440
+        280
       ],
       "continueOnFail": true
     },
@@ -643,7 +643,7 @@
       "typeVersion": 2,
       "position": [
         4160,
-        440
+        280
       ]
     }
   ],
@@ -756,36 +756,7 @@
       "main": [
         [
           {
-            "node": "🔀 Skip Promos",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "🔀 Skip Promos": {
-      "main": [
-        [
-          {
-            "node": "🎨 AI: Generate Product/Pack Visual",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "🔀 Product or Pack?": {
-      "main": [
-        [
-          {
-            "node": "📦 Create Product",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "📦 Create Pack",
+            "node": "🔀 Filter Valid Offers",
             "type": "main",
             "index": 0
           }
@@ -797,17 +768,6 @@
         [
           {
             "node": "✅ Log Success",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "📦 Create Pack": {
-      "main": [
-        [
-          {
-            "node": "📝 Format Instagram Post",
             "type": "main",
             "index": 0
           }
@@ -891,7 +851,7 @@
       "main": [
         [
           {
-            "node": "🔀 Product or Pack?",
+            "node": "🔀 Pack Promo or Product?",
             "type": "main",
             "index": 0
           }
@@ -947,6 +907,46 @@
         [
           {
             "node": "✅ Log Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔀 Filter Valid Offers": {
+      "main": [
+        [
+          {
+            "node": "🎨 AI: Generate Product/Pack Visual",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📦 Create Pack (Pack Promo)": {
+      "main": [
+        [
+          {
+            "node": "📝 Format Instagram Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔀 Pack Promo or Product?": {
+      "main": [
+        [
+          {
+            "node": "📦 Create Pack (Pack Promo)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "📦 Create Product",
             "type": "main",
             "index": 0
           }
