@@ -29,6 +29,11 @@ export default function SEO({
   const fullTitle = title
     ? `${title} | GymPilot`
     : 'GymPilot — Track Your Strength. Build Your Best Self.';
+  const formattedOgImage = ogImage
+    ? (ogImage.startsWith('http://') || ogImage.startsWith('https://')
+        ? ogImage
+        : `${SITE_URL}${ogImage.startsWith('/') ? ogImage : `/${ogImage}`}`)
+    : DEFAULT_OG_IMAGE;
   const canonicalUrl = `${SITE_URL}${path}`;
 
   return (
@@ -51,14 +56,16 @@ export default function SEO({
       <meta property="og:site_name" content="GymPilot" />
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={description} />
-      <meta property="og:image" content={ogImage} />
+      <meta property="og:image" content={formattedOgImage} />
+      <meta property="og:image:secure_url" content={formattedOgImage} />
+      <meta property="og:image:alt" content={fullTitle} />
       <meta property="og:url" content={canonicalUrl} />
 
       {/* Twitter Card */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={ogImage} />
+      <meta name="twitter:image" content={formattedOgImage} />
 
       {/* Dynamic JSON-LD Structured Data if provided */}
       {structuredData && (

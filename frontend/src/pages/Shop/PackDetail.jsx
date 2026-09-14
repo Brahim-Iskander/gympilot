@@ -271,6 +271,21 @@ export default function PackDetail() {
         title={`${pack.name} — Offre Spéciale GymPilot`}
         description={pack.description || pack.tagline || `Économisez sur le pack ${pack.name} avec livraison express en Tunisie.`}
         path={`/shop/pack/${pack.slug || pack.id}`}
+        ogImage={currentImage}
+        ogType="product"
+        structuredData={{
+          '@context': 'https://schema.org',
+          '@type': 'Product',
+          name: pack.name,
+          image: images,
+          description: pack.description || pack.tagline || `Offre spéciale ${pack.name} sur GymPilot Shop.`,
+          offers: {
+            '@type': 'Offer',
+            price: pack.price,
+            priceCurrency: 'TND',
+            availability: pack.stockQuantity > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+          },
+        }}
       />
 
       <CartDrawer />

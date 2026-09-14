@@ -64,6 +64,7 @@ import { categoryService } from '../../services/categoryService';
 import { productPackService } from '../../services/productPackService';
 import { useCart } from '../../context/CartContext';
 import CartDrawer from '../../components/CartDrawer';
+import ShopAnnouncementBanner from './components/ShopAnnouncementBanner';
 import { useLanguage } from '../../i18n';
 import { getPackDurationStatus } from '../../utils/durationHelper';
 
@@ -341,6 +342,9 @@ export default function Shop() {
             {t('shop.cart.title')} ({itemCount})
           </Button>
         </Stack>
+
+        {/* ── Admin Active Announcement Banner (Public, No Login Required) ── */}
+        <ShopAnnouncementBanner />
 
         {/* ===================== HERO STORE BANNER ===================== */}
         <Card

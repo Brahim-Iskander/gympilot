@@ -137,8 +137,19 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($json.geminiPayload) }}",
-        "options": {}
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 13000
+            }
+          }
+        }
       },
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 20000,
+      "continueOnFail": true,
       "id": "gemini-classify-story",
       "name": "🤖 Gemini: Classify & Extract (FREE)",
       "type": "n8n-nodes-base.httpRequest",
@@ -147,7 +158,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\nconst stories = $('📋 Parse Story Data').all();\nconst results = [];\n\nfor (let i = 0; i < items.length; i++) {\n  const item = items[i];\n  try {\n    const rawContent = item.json.candidates?.[0]?.content?.parts?.[0]?.text || '{}';\n    const cleaned = rawContent.replace(/```json\\n?/gi, '').replace(/```\\n?/g, '').trim();\n    const parsed = JSON.parse(cleaned);\n    \n    const storyData = (stories[i] && stories[i].json) ? stories[i].json : {};\n    \n    results.push({\n      json: {\n        ...parsed,\n        storyId: storyData.storyId || 'story_' + Date.now(),\n        imageUrl: storyData.imageUrl || '',\n        caption: storyData.caption || ''\n      }\n    });\n  } catch (e) {\n    results.push({\n      json: {\n        type: 'skip',\n        error: 'Failed to parse Gemini response: ' + e.message\n      }\n    });\n  }\n}\n\nreturn results;"
+        "jsCode": "const items = $input.all();\nconst stories = $('📋 Parse Story Data').all();\nconst results = [];\n\nconst CATEGORY_MAP = {\n  'whey protein': '6a985c4550777d3e0a93e601',\n  'creatine': '6a985c4550777d3e0a93e602',\n  'mass gainer': '6a985c4550777d3e0a93e603',\n  'vitamins & supplements': '6a985c4550777d3e0a93e604',\n  'vitamins': '6a985c4550777d3e0a93e604',\n  'supplements': '6a985c4550777d3e0a93e604',\n  'equipment & tools': '6a985c4550777d3e0a93e605',\n  'equipment': '6a985c4550777d3e0a93e605',\n  'packs & stacks': '6aa3cf01ae84ed74b697583f',\n  'pack': '6aa3cf01ae84ed74b697583f'\n};\n\nfor (let i = 0; i < items.length; i++) {\n  const item = items[i];\n  try {\n    const rawContent = item.json.candidates?.[0]?.content?.parts?.[0]?.text || '{}';\n    const cleaned = rawContent.replace(/```json\\n?/gi, '').replace(/```\\n?/g, '').trim();\n    const parsed = JSON.parse(cleaned);\n    \n    const storyData = (stories[i] && stories[i].json) ? stories[i].json : {};\n    const catKey = (parsed.category || '').toLowerCase().trim();\n    const resolvedCatId = CATEGORY_MAP[catKey] || '6a985c4550777d3e0a93e603';\n    \n    results.push({\n      json: {\n        ...parsed,\n        categoryId: resolvedCatId,\n        storyId: storyData.storyId || 'story_' + Date.now(),\n        imageUrl: storyData.imageUrl || '',\n        caption: storyData.caption || ''\n      }\n    });\n  } catch (e) {\n    results.push({\n      json: {\n        type: 'skip',\n        error: 'Failed to parse Gemini response: ' + e.message\n      }\n    });\n  }\n}\n\nreturn results;"
       },
       "id": "parse-ai-response",
       "name": "📝 Parse AI Response",
@@ -266,13 +277,13 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "=Bearer {{ $('🔐 GymPilot Login').item.json.token }}"
+              "value": "=Bearer {{ $('🔐 GymPilot Login').first().json.token }}"
             }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"name\": \"{{ $('📝 Parse AI Response').item.json.name }}\",\n  \"description\": \"{{ $('📝 Parse AI Response').item.json.description }}\",\n  \"categoryId\": \"{{ $('📝 Parse AI Response').item.json.category }}\",\n  \"price\": {{ $('📝 Parse AI Response').item.json.price || 0 }},\n  \"originalPrice\": {{ $('📝 Parse AI Response').item.json.originalPrice || 'null' }},\n  \"stockQuantity\": 50,\n  \"images\": [\"{{ $('📝 Parse AI Response').item.json.imageUrl }}\"],\n  \"specs\": {\n    \"Brand / Vendor\": \"Ghaith Nutrition\",\n    \"Category\": \"{{ $('📝 Parse AI Response').item.json.category }}\",\n    \"Origin\": \"100% Genuine & Certified\",\n    \"Source\": \"Auto-imported from Instagram Story\"\n  },\n  \"active\": true,\n  \"featured\": false\n}",
+        "jsonBody": "={\n  \"name\": \"{{ $('📝 Parse AI Response').item.json.name }}\",\n  \"description\": \"{{ $('📝 Parse AI Response').item.json.description }}\",\n  \"categoryId\": \"{{ $('📝 Parse AI Response').item.json.categoryId || $('📝 Parse AI Response').item.json.category || '6a985c4550777d3e0a93e603' }}\",\n  \"price\": {{ $('📝 Parse AI Response').item.json.price || 0 }},\n  \"originalPrice\": {{ $('📝 Parse AI Response').item.json.originalPrice || 'null' }},\n  \"stockQuantity\": 50,\n  \"images\": [\"{{ $('📝 Parse AI Response').item.json.imageUrl }}\"],\n  \"specs\": {\n    \"Brand / Vendor\": \"Ghaith Nutrition\",\n    \"Category\": \"{{ $('📝 Parse AI Response').item.json.category }}\",\n    \"Origin\": \"100% Genuine & Certified\",\n    \"Source\": \"Auto-imported from Instagram Story\"\n  },\n  \"active\": true,\n  \"featured\": false\n}",
         "options": {}
       },
       "id": "create-product",
@@ -290,7 +301,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "=Bearer {{ $('🔐 GymPilot Login').item.json.token }}"
+              "value": "=Bearer {{ $('🔐 GymPilot Login').first().json.token }}"
             }
           ]
         },
@@ -331,7 +342,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $input.first().json.body || $input.first().json;\n\nconst type = body.type || 'product';\nconst name = body.name;\nconst price = body.price || 0;\nconst originalPrice = body.originalPrice || null;\nconst description = body.description || name + ' - Produit officiel Ghaith Nutrition disponible sur GymPilot.';\nconst category = body.category || 'Whey Protein';\nconst imageUrl = body.imageUrl || body.image || '';\nconst tagline = body.tagline || 'Offre speciale Ghaith Nutrition';\nconst badge = body.badge || 'NEW';\nconst items = body.items || [{ name: name, quantity: 1 }];\n\nif (!name) {\n  throw new Error('Missing required field: name');\n}\n\nreturn [{\n  json: {\n    type,\n    name,\n    price,\n    originalPrice,\n    description,\n    category,\n    imageUrl,\n    tagline,\n    badge,\n    items\n  }\n}];"
+        "jsCode": "const body = $input.first().json.body || $input.first().json;\n\nconst CATEGORY_MAP = {\n  'whey protein': '6a985c4550777d3e0a93e601',\n  'creatine': '6a985c4550777d3e0a93e602',\n  'mass gainer': '6a985c4550777d3e0a93e603',\n  'vitamins & supplements': '6a985c4550777d3e0a93e604',\n  'vitamins': '6a985c4550777d3e0a93e604',\n  'supplements': '6a985c4550777d3e0a93e604',\n  'equipment & tools': '6a985c4550777d3e0a93e605',\n  'equipment': '6a985c4550777d3e0a93e605',\n  'packs & stacks': '6aa3cf01ae84ed74b697583f',\n  'pack': '6aa3cf01ae84ed74b697583f'\n};\n\nconst type = body.type || 'product';\nconst name = body.name;\nconst price = body.price || 0;\nconst originalPrice = body.originalPrice || null;\nconst description = body.description || name + ' - Produit officiel Ghaith Nutrition disponible sur GymPilot.';\nconst category = body.category || 'Whey Protein';\nconst categoryId = CATEGORY_MAP[(category || '').toLowerCase().trim()] || '6a985c4550777d3e0a93e603';\nconst imageUrl = body.imageUrl || body.image || '';\nconst tagline = body.tagline || 'Offre speciale Ghaith Nutrition';\nconst badge = body.badge || 'NEW';\nconst items = body.items || [{ name: name, quantity: 1 }];\n\nif (!name) {\n  throw new Error('Missing required field: name');\n}\n\nreturn [{\n  json: {\n    type,\n    name,\n    price,\n    originalPrice,\n    description,\n    category,\n    categoryId,\n    imageUrl,\n    tagline,\n    badge,\n    items\n  }\n}];"
       },
       "id": "validate-webhook-data",
       "name": "✅ Validate Data",
@@ -421,13 +432,13 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "=Bearer {{ $('🔐 Manual Login').item.json.token }}"
+              "value": "=Bearer {{ $('🔐 Manual Login').first().json.token }}"
             }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"name\": \"{{ $('✅ Validate Data').item.json.name }}\",\n  \"description\": \"{{ $('✅ Validate Data').item.json.description }}\",\n  \"categoryId\": \"{{ $('✅ Validate Data').item.json.category }}\",\n  \"price\": {{ $('✅ Validate Data').item.json.price || 0 }},\n  \"originalPrice\": {{ $('✅ Validate Data').item.json.originalPrice || 'null' }},\n  \"stockQuantity\": 50,\n  \"images\": [\"{{ $('✅ Validate Data').item.json.imageUrl }}\"],\n  \"specs\": {\n    \"Brand / Vendor\": \"Ghaith Nutrition\",\n    \"Category\": \"{{ $('✅ Validate Data').item.json.category }}\",\n    \"Origin\": \"100% Genuine & Certified\",\n    \"Source\": \"Manual import from Instagram Story\"\n  },\n  \"active\": true,\n  \"featured\": false\n}",
+        "jsonBody": "={\n  \"name\": \"{{ $('✅ Validate Data').item.json.name }}\",\n  \"description\": \"{{ $('✅ Validate Data').item.json.description }}\",\n  \"categoryId\": \"{{ $('✅ Validate Data').item.json.categoryId || $('✅ Validate Data').item.json.category || '6a985c4550777d3e0a93e603' }}\",\n  \"price\": {{ $('✅ Validate Data').item.json.price || 0 }},\n  \"originalPrice\": {{ $('✅ Validate Data').item.json.originalPrice || 'null' }},\n  \"stockQuantity\": 50,\n  \"images\": [\"{{ $('✅ Validate Data').item.json.imageUrl }}\"],\n  \"specs\": {\n    \"Brand / Vendor\": \"Ghaith Nutrition\",\n    \"Category\": \"{{ $('✅ Validate Data').item.json.category }}\",\n    \"Origin\": \"100% Genuine & Certified\",\n    \"Source\": \"Manual import from Instagram Story\"\n  },\n  \"active\": true,\n  \"featured\": false\n}",
         "options": {}
       },
       "id": "manual-create-product",
@@ -445,7 +456,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "=Bearer {{ $('🔐 Manual Login').item.json.token }}"
+              "value": "=Bearer {{ $('🔐 Manual Login').first().json.token }}"
             }
           ]
         },

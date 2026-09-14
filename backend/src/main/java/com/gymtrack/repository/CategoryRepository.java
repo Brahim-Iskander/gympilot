@@ -9,6 +9,8 @@ import com.gymtrack.model.Category;
 
 public interface CategoryRepository extends MongoRepository<Category, String> {
     Optional<Category> findBySlug(String slug);
+    Optional<Category> findByNameIgnoreCase(String name);
+    Optional<Category> findBySlugIgnoreCase(String slug);
     List<Category> findAllByOrderByDisplayOrderAsc();
     boolean existsBySlug(String slug);
 }

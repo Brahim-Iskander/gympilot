@@ -146,6 +146,21 @@ export default function ProductDetail() {
         title={`${product.name} — GymPilot Shop`}
         description={product.description || `Buy ${product.name} with certified quality and fast delivery.`}
         path={`/shop/${product.id}`}
+        ogImage={images[0]}
+        ogType="product"
+        structuredData={{
+          '@context': 'https://schema.org',
+          '@type': 'Product',
+          name: product.name,
+          image: images,
+          description: product.description || `Buy ${product.name} on GymPilot Shop.`,
+          offers: {
+            '@type': 'Offer',
+            price: product.price,
+            priceCurrency: 'TND',
+            availability: product.stockQuantity > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+          },
+        }}
       />
 
       <CartDrawer />

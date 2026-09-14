@@ -15,6 +15,7 @@ import com.gymtrack.dto.PagedResponse;
 import com.gymtrack.dto.ProductResponse;
 import com.gymtrack.dto.UpdateProductRequest;
 import com.gymtrack.exception.InvalidCredentialsException;
+import com.gymtrack.exception.ResourceNotFoundException;
 import com.gymtrack.model.Category;
 import com.gymtrack.model.Product;
 import com.gymtrack.model.User;
@@ -116,8 +117,10 @@ public class ProductService {
         User seller = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new InvalidCredentialsException("Seller not found: " + userEmail));
 
-        Category category = categoryRepository.findById(request.categoryId())
-                .orElseThrow(() -> new InvalidCredentialsException("Category not found: " + request.categoryId()));
+        Category category = categoryRepository.findById(request.categoryId().trim())
+                .or(() -> categoryRepository.findByNameIgnoreCase(request.categoryId().trim()))
+                .or(() -> categoryRepository.findBySlugIgnoreCase(request.categoryId().trim()))
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + request.categoryId()));
 
         String slug = generateSlug(request.name());
 
@@ -183,8 +186,10 @@ public class ProductService {
             product.setDescription(request.description());
         }
         if (request.categoryId() != null && !request.categoryId().isBlank()) {
-            Category category = categoryRepository.findById(request.categoryId())
-                    .orElseThrow(() -> new InvalidCredentialsException("Category not found: " + request.categoryId()));
+            Category category = categoryRepository.findById(request.categoryId().trim())
+                    .or(() -> categoryRepository.findByNameIgnoreCase(request.categoryId().trim()))
+                    .or(() -> categoryRepository.findBySlugIgnoreCase(request.categoryId().trim()))
+                    .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + request.categoryId()));
             product.setCategoryId(category.getId());
             product.setCategoryName(category.getName());
         }

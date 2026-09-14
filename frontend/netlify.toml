@@ -2,6 +2,10 @@
   command = "npm run build"
   publish = "dist"
 
+[[edge_functions]]
+  path = "/shop/*"
+  function = "product-og"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
