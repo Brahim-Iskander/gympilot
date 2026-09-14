@@ -556,7 +556,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\nconst results = [];\n\n// Ensure we have a valid token for GymPilot API\nlet token = '';\ntry {\n  token = $('🔐 GymPilot Login').first()?.json?.token;\n} catch (e) {}\n\nif (!token) {\n  try {\n    const res = await fetch('https://api.gympilot.tn/api/auth/login', {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({\n        email: 'iskander.skan05@gmail.com',\n        password: 'Topadmin2005'\n      })\n    });\n    const data = await res.json();\n    token = data.token;\n  } catch (e) {\n    console.error('GymPilot login fallback error:', e);\n  }\n}\n\nfor (const item of items) {\n  const data = item.json;\n  const isPack = (data.type || '').toLowerCase() === 'pack';\n  \n  const name = data.name || 'Complément Alimentaire';\n  const category = data.category || 'Supplements';\n  \n  let prompt = '';\n  if (isPack) {\n    const itemsList = (data.items && Array.isArray(data.items))\n      ? data.items.map(i => i.name).filter(Boolean).join(', ')\n      : name;\n    prompt = `Commercial 3D e-commerce studio photography of a fitness supplement bundle pack: ${itemsList || name}. Premium matte black and neon lime supplement tubs and jars, sleek shaker bottle, displayed on a clean dark reflective carbon surface, soft gym background bokeh, dynamic neon edge lighting, ultra-realistic, 8k resolution, crisp photorealistic mockup`;\n  } else {\n    prompt = `Commercial 3D e-commerce studio product photography of ${name}, category ${category}. Premium fitness supplement tub on clean dark reflective gym surface, neon green and purple rim lighting, ultra-sharp focus, photorealistic packaging, 8k resolution, advertising quality`;\n  }\n  \n  const encodedPrompt = encodeURIComponent(prompt.trim());\n  const hash = Math.abs(name.split('').reduce((acc, char) => (acc << 5) - acc + char.charCodeAt(0), 0)) % 1000000;\n  \n  // Free high-speed AI image generator using Flux\n  const aiImageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&model=flux&seed=${hash}&nologo=true`;\n  \n  // AI visual is primary image, original IG story image is secondary fallback\n  const images = [aiImageUrl];\n  if (data.imageUrl && data.imageUrl.startsWith('http')) {\n    images.push(data.imageUrl);\n  }\n  \n  results.push({\n    json: {\n      ...data,\n      token: token || data.token,\n      aiImageUrl,\n      generatedPrompt: prompt,\n      images\n    }\n  });\n}\n\nreturn results;"
+        "jsCode": "const items = $input.all();\nconst results = [];\n\n// Ensure we have a valid token for GymPilot API\nlet token = '';\ntry {\n  token = $('🔐 GymPilot Login').first()?.json?.token;\n} catch (e) {}\n\nif (!token) {\n  try {\n    const res = await fetch('https://api.gympilot.tn/api/auth/login', {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({\n        email: 'iskander.skan05@gmail.com',\n        password: 'Topadmin2005'\n      })\n    });\n    const data = await res.json();\n    token = data.token;\n  } catch (e) {\n    console.error('GymPilot login fallback error:', e);\n  }\n}\n\nfor (const item of items) {\n  const data = item.json;\n  const name = data.name || 'Pack Promo Ghaith Nutrition';\n  const category = data.category || 'Packs & Stacks';\n  \n  const itemsList = (data.items && Array.isArray(data.items))\n    ? data.items.map(i => i.name).filter(Boolean).join(', ')\n    : name;\n    \n  const prompt = `Commercial 3D e-commerce studio photography of a premium fitness supplement bundle pack: ${itemsList || name}. Premium matte black and neon lime supplement tubs, shaker bottle, displayed on a clean dark reflective carbon surface, soft gym background bokeh, dynamic neon edge lighting, ultra-realistic, 8k resolution, crisp photorealistic mockup`;\n  \n  const encodedPrompt = encodeURIComponent(prompt.trim());\n  const hash = Math.abs(name.split('').reduce((acc, char) => (acc << 5) - acc + char.charCodeAt(0), 0)) % 1000000;\n  \n  // 1. Square image (1024x1024) for Boutique e-commerce cards\n  const shopImageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&model=flux&seed=${hash}&nologo=true`;\n  \n  // 2. Vertical 9:16 image (1080x1920) specifically optimized for Instagram Stories\n  const storyImageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1080&height=1920&model=flux&seed=${hash}&nologo=true`;\n  \n  const images = [shopImageUrl];\n  if (storyImageUrl) images.push(storyImageUrl);\n  if (data.imageUrl && data.imageUrl.startsWith('http')) {\n    images.push(data.imageUrl);\n  }\n  \n  results.push({\n    json: {\n      ...data,\n      token: token || data.token,\n      aiImageUrl: shopImageUrl,\n      storyImageUrl: storyImageUrl, // 9:16 vertical visual for Instagram Story\n      generatedPrompt: prompt,\n      images\n    }\n  });\n}\n\nreturn results;"
       },
       "id": "generate-ai-visual",
       "name": "🎨 AI: Generate Product/Pack Visual",
@@ -569,10 +569,10 @@
     },
     {
       "parameters": {
-        "jsCode": "const pack = $json;\nconst name = pack.name || 'Pack Spécial Ghaith Nutrition';\nconst price = pack.price ? `${pack.price} DT` : '';\nconst originalPrice = pack.originalPrice ? `${pack.originalPrice} DT` : '';\nconst discount = (pack.originalPrice && pack.price && pack.originalPrice > pack.price)\n  ? ` (Économisez ${Math.round(pack.originalPrice - pack.price)} DT !)`\n  : '';\nconst tagline = pack.tagline ? `\\n⚡ ${pack.tagline}` : '';\nconst shopUrl = `https://gympilot.tn/shop/pack/${pack.slug || pack.id}`;\nconst imageUrl = (pack.images && pack.images.length > 0) ? pack.images[0] : '';\n\nconst caption = `🔥 NOUVEAU PACK DISPONIBLE SUR GYMPILOT ! 🔥\\n\\n` +\n  `💪 ${name}\\n` +\n  `${tagline}\\n\\n` +\n  `💰 Prix Promo : ${price}${discount}\\n` +\n  `🚚 Livraison Express 24-48h partout en Tunisie\\n` +\n  `💵 Paiement à la livraison (Cash on Delivery)\\n` +\n  `✨ Produits 100% Certifiés & Authentiques\\n\\n` +\n  `👉 Commandez directement en 1 clic : ${shopUrl}\\n` +\n  `(Lien direct disponible aussi en Bio !)\\n\\n` +\n  `#GymPilot #GhaithNutrition #MusculationTunisie #WheyProtein #Creatine #MassGainer #FitnessTunisie #BodybuildingTunisia #SupplementsTunisie`;\n\nreturn [{\n  json: {\n    packId: pack.id,\n    packName: name,\n    imageUrl: imageUrl,\n    caption: caption,\n    shopUrl: shopUrl,\n    price: price\n  }\n}];"
+        "jsCode": "const pack = $json;\nconst name = pack.name || 'Pack Spécial Ghaith Nutrition';\nconst price = pack.price ? `${pack.price} DT` : '';\nconst shopUrl = `https://gympilot.tn/shop/pack/${pack.slug || pack.id || ''}`;\n\n// Use 9:16 story image, fallback to primary image, fallback to story snapshot\nconst storyImageUrl = pack.storyImageUrl || (pack.images && pack.images.length > 1 ? pack.images[1] : (pack.images && pack.images[0])) || pack.imageUrl || '';\n\nreturn [{\n  json: {\n    packId: pack.id,\n    packName: name,\n    price: price,\n    shopUrl: shopUrl,\n    storyImageUrl: storyImageUrl\n  }\n}];"
       },
       "id": "format-instagram-post",
-      "name": "📝 Format Instagram Post",
+      "name": "📝 Prepare Instagram Story",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -586,11 +586,11 @@
         "url": "=https://graph.facebook.com/v21.0/{{ $env.INSTAGRAM_ACCOUNT_ID || 'YOUR_INSTAGRAM_ACCOUNT_ID' }}/media",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{\n  JSON.stringify({\n    image_url: $json.imageUrl,\n    caption: $json.caption,\n    access_token: $env.INSTAGRAM_ACCESS_TOKEN || 'YOUR_INSTAGRAM_ACCESS_TOKEN'\n  })\n}}",
+        "jsonBody": "={{\n  JSON.stringify({\n    image_url: $json.storyImageUrl,\n    media_type: 'STORIES',\n    access_token: $env.INSTAGRAM_ACCESS_TOKEN || 'YOUR_INSTAGRAM_ACCESS_TOKEN'\n  })\n}}",
         "options": {}
       },
       "id": "instagram-create-container",
-      "name": "📸 Instagram: Create Media Container",
+      "name": "📸 Instagram: Create Story Container",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -624,7 +624,7 @@
         "options": {}
       },
       "id": "instagram-publish-post",
-      "name": "🚀 Instagram: Publish Post",
+      "name": "🚀 Instagram: Publish Story",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -635,10 +635,10 @@
     },
     {
       "parameters": {
-        "jsCode": "const igRes = $json;\nconst postData = $('📝 Format Instagram Post').first().json;\n\nreturn [{\n  json: {\n    success: true,\n    instagramPostId: igRes.id || 'simulated_or_pending',\n    packName: postData.packName,\n    shopUrl: postData.shopUrl,\n    imageUrl: postData.imageUrl,\n    publishedAt: new Date().toISOString(),\n    message: `Successfully published ${postData.packName} to Instagram feed!`\n  }\n}];"
+        "jsCode": "const result = $json;\nconsole.log('✅ Successfully published Instagram Story!', result);\nreturn [{ json: { status: 'story_published', instagramMediaId: result.id || 'simulated', timestamp: new Date().toISOString() } }];"
       },
       "id": "instagram-log-success",
-      "name": "✅ Instagram: Log Publish Success",
+      "name": "✅ Instagram: Log Story Published",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -858,18 +858,18 @@
         ]
       ]
     },
-    "📝 Format Instagram Post": {
+    "📝 Prepare Instagram Story": {
       "main": [
         [
           {
-            "node": "📸 Instagram: Create Media Container",
+            "node": "📸 Instagram: Create Story Container",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "📸 Instagram: Create Media Container": {
+    "📸 Instagram: Create Story Container": {
       "main": [
         [
           {
@@ -884,25 +884,25 @@
       "main": [
         [
           {
-            "node": "🚀 Instagram: Publish Post",
+            "node": "🚀 Instagram: Publish Story",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "🚀 Instagram: Publish Post": {
+    "🚀 Instagram: Publish Story": {
       "main": [
         [
           {
-            "node": "✅ Instagram: Log Publish Success",
+            "node": "✅ Instagram: Log Story Published",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "✅ Instagram: Log Publish Success": {
+    "✅ Instagram: Log Story Published": {
       "main": [
         [
           {
@@ -928,7 +928,7 @@
       "main": [
         [
           {
-            "node": "📝 Format Instagram Post",
+            "node": "📝 Prepare Instagram Story",
             "type": "main",
             "index": 0
           }
