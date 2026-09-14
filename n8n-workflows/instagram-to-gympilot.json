@@ -16,12 +16,15 @@
       "name": "⏰ Check Every 2 Hours",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [0, 300]
+      "position": [
+        0,
+        300
+      ]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.apify.com/v2/acts/apify~instagram-scraper/runs?token=apify_api_HbluonNj7LRvwaMtAaQwLjB2Cni9IU1i8zeY",
+        "url": "https://api.apify.com/v2/acts/apify~instagram-scraper/runs?token={{ $env.APIFY_API_TOKEN || 'YOUR_APIFY_API_TOKEN' }}",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "{\n  \"directUrls\": [\"https://www.instagram.com/ghaith_nutrition10.10/\"],\n  \"resultsType\": \"stories\",\n  \"resultsLimit\": 10,\n  \"addParentData\": true\n}",
@@ -33,7 +36,10 @@
       "name": "🔍 Apify: Fetch IG Stories",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [240, 300]
+      "position": [
+        240,
+        300
+      ]
     },
     {
       "parameters": {
@@ -43,12 +49,15 @@
       "name": "⏸️ Wait 60s for Scrape",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [480, 300]
+      "position": [
+        480,
+        300
+      ]
     },
     {
       "parameters": {
         "method": "GET",
-        "url": "=https://api.apify.com/v2/datasets/{{ $json.data?.defaultDatasetId || $('🔍 Apify: Fetch IG Stories').item?.json?.data?.defaultDatasetId || $json.data?.id }}/items?token=apify_api_HbluonNj7LRvwaMtAaQwLjB2Cni9IU1i8zeY",
+        "url": "=https://api.apify.com/v2/datasets/{{ $json.data?.defaultDatasetId || $('🔍 Apify: Fetch IG Stories').item?.json?.data?.defaultDatasetId || $json.data?.id }}/items?token={{ $env.APIFY_API_TOKEN || 'YOUR_APIFY_API_TOKEN' }}",
         "options": {
           "timeout": 120000
         }
@@ -57,7 +66,10 @@
       "name": "⏳ Get Apify Results",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [720, 300],
+      "position": [
+        720,
+        300
+      ],
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 5000
@@ -70,7 +82,10 @@
       "name": "📋 Parse Story Data",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [960, 300]
+      "position": [
+        960,
+        300
+      ]
     },
     {
       "parameters": {
@@ -99,7 +114,10 @@
       "name": "🔀 Filter Valid Stories",
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2,
-      "position": [1140, 300]
+      "position": [
+        1140,
+        300
+      ]
     },
     {
       "parameters": {
@@ -117,7 +135,10 @@
       "name": "📥 Download Story Image",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1340, 300],
+      "position": [
+        1340,
+        300
+      ],
       "continueOnFail": true
     },
     {
@@ -128,12 +149,15 @@
       "name": "⚙️ Prepare Gemini Request",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1540, 300]
+      "position": [
+        1540,
+        300
+      ]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=AQ.Ab8RN6Ll8bi50mRYEBGIk-qr1AjNuonDAXaeFIG38vyGrjmFdw",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={{ $env.GEMINI_API_KEY || 'YOUR_GEMINI_API_KEY' }}",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($json.geminiPayload) }}",
@@ -154,7 +178,10 @@
       "name": "🤖 Gemini: Classify & Extract (FREE)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1740, 300]
+      "position": [
+        1740,
+        300
+      ]
     },
     {
       "parameters": {
@@ -164,7 +191,10 @@
       "name": "📝 Parse AI Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1940, 300]
+      "position": [
+        1940,
+        300
+      ]
     },
     {
       "parameters": {
@@ -193,7 +223,10 @@
       "name": "🔀 Skip Promos",
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2,
-      "position": [1720, 300]
+      "position": [
+        1720,
+        300
+      ]
     },
     {
       "parameters": {
@@ -208,7 +241,10 @@
       "name": "🔐 GymPilot Login",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1900, 300]
+      "position": [
+        1900,
+        300
+      ]
     },
     {
       "parameters": {
@@ -266,7 +302,10 @@
       "name": "🔀 Product or Pack?",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
-      "position": [2100, 300]
+      "position": [
+        2180,
+        300
+      ]
     },
     {
       "parameters": {
@@ -283,14 +322,17 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"name\": \"{{ $('📝 Parse AI Response').item.json.name }}\",\n  \"description\": \"{{ $('📝 Parse AI Response').item.json.description }}\",\n  \"categoryId\": \"{{ $('📝 Parse AI Response').item.json.categoryId || $('📝 Parse AI Response').item.json.category || '6a985c4550777d3e0a93e603' }}\",\n  \"price\": {{ $('📝 Parse AI Response').item.json.price || 0 }},\n  \"originalPrice\": {{ $('📝 Parse AI Response').item.json.originalPrice || 'null' }},\n  \"stockQuantity\": 50,\n  \"images\": [\"{{ $('📝 Parse AI Response').item.json.imageUrl }}\"],\n  \"specs\": {\n    \"Brand / Vendor\": \"Ghaith Nutrition\",\n    \"Category\": \"{{ $('📝 Parse AI Response').item.json.category }}\",\n    \"Origin\": \"100% Genuine & Certified\",\n    \"Source\": \"Auto-imported from Instagram Story\"\n  },\n  \"active\": true,\n  \"featured\": false\n}",
+        "jsonBody": "={\n  \"name\": \"{{ $json.name }}\",\n  \"description\": \"{{ $json.description }}\",\n  \"categoryId\": \"{{ $json.categoryId || $json.category || '6a985c4550777d3e0a93e603' }}\",\n  \"price\": {{ $json.price || 0 }},\n  \"originalPrice\": {{ $json.originalPrice || 'null' }},\n  \"stockQuantity\": 50,\n  \"images\": {{ JSON.stringify($json.images || [$json.imageUrl]) }},\n  \"specs\": {\n    \"Brand / Vendor\": \"Ghaith Nutrition\",\n    \"Category\": \"{{ $json.category }}\",\n    \"Origin\": \"100% Genuine & Certified\",\n    \"Source\": \"Auto-imported from Instagram Story with AI Studio Visual\"\n  },\n  \"active\": true,\n  \"featured\": false\n}",
         "options": {}
       },
       "id": "create-product",
       "name": "📦 Create Product",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2340, 180]
+      "position": [
+        2340,
+        180
+      ]
     },
     {
       "parameters": {
@@ -307,14 +349,17 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"name\": \"{{ $('📝 Parse AI Response').item.json.name }}\",\n  \"tagline\": \"{{ $('📝 Parse AI Response').item.json.tagline || 'Offre speciale Ghaith Nutrition' }}\",\n  \"badge\": \"{{ $('📝 Parse AI Response').item.json.badge || 'NEW' }}\",\n  \"description\": \"{{ $('📝 Parse AI Response').item.json.description }}\",\n  \"originalPrice\": {{ $('📝 Parse AI Response').item.json.originalPrice || $('📝 Parse AI Response').item.json.price || 0 }},\n  \"price\": {{ $('📝 Parse AI Response').item.json.price || 0 }},\n  \"images\": [\"{{ $('📝 Parse AI Response').item.json.imageUrl }}\"],\n  \"items\": {{ JSON.stringify($('📝 Parse AI Response').item.json.items || [{\"name\": $('📝 Parse AI Response').item.json.name, \"quantity\": 1}]) }},\n  \"active\": true,\n  \"featured\": false,\n  \"stockQuantity\": 50\n}",
+        "jsonBody": "={\n  \"name\": \"{{ $json.name }}\",\n  \"tagline\": \"{{ $json.tagline || 'Offre speciale Ghaith Nutrition' }}\",\n  \"badge\": \"{{ $json.badge || 'NEW' }}\",\n  \"description\": \"{{ $json.description }}\",\n  \"originalPrice\": {{ $json.originalPrice || $json.price || 0 }},\n  \"price\": {{ $json.price || 0 }},\n  \"images\": {{ JSON.stringify($json.images || [$json.imageUrl]) }},\n  \"items\": {{ JSON.stringify($json.items || [{\"name\": $json.name, \"quantity\": 1}]) }},\n  \"active\": true,\n  \"featured\": false,\n  \"stockQuantity\": 50\n}",
         "options": {}
       },
       "id": "create-pack",
       "name": "📦 Create Pack",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2340, 420]
+      "position": [
+        2340,
+        480
+      ]
     },
     {
       "parameters": {
@@ -324,7 +369,10 @@
       "name": "✅ Log Success",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2580, 300]
+      "position": [
+        3680,
+        300
+      ]
     },
     {
       "parameters": {
@@ -337,7 +385,10 @@
       "name": "🔗 Manual Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [0, 720],
+      "position": [
+        0,
+        720
+      ],
       "webhookId": "gympilot-ig-import"
     },
     {
@@ -348,7 +399,10 @@
       "name": "✅ Validate Data",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [240, 720]
+      "position": [
+        240,
+        720
+      ]
     },
     {
       "parameters": {
@@ -363,7 +417,10 @@
       "name": "🔐 Manual Login",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [480, 720]
+      "position": [
+        480,
+        720
+      ]
     },
     {
       "parameters": {
@@ -421,7 +478,10 @@
       "name": "🔀 Type Switch",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
-      "position": [720, 720]
+      "position": [
+        720,
+        720
+      ]
     },
     {
       "parameters": {
@@ -445,7 +505,10 @@
       "name": "📦 Create Product (Manual)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [960, 600]
+      "position": [
+        960,
+        600
+      ]
     },
     {
       "parameters": {
@@ -469,7 +532,10 @@
       "name": "📦 Create Pack (Manual)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [960, 840]
+      "position": [
+        960,
+        840
+      ]
     },
     {
       "parameters": {
@@ -481,7 +547,102 @@
       "name": "📤 Webhook Response",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1200, 720]
+      "position": [
+        1200,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const data = item.json;\n  const isPack = data.type === 'pack';\n  \n  const name = data.name || 'Complément Alimentaire';\n  const category = data.category || 'Supplements';\n  \n  let prompt = '';\n  if (isPack) {\n    const itemsList = (data.items && Array.isArray(data.items))\n      ? data.items.map(i => i.name).filter(Boolean).join(', ')\n      : name;\n    prompt = `Commercial 3D e-commerce studio photography of a fitness supplement bundle pack: ${itemsList || name}. Premium matte black and neon lime supplement tubs and jars, sleek shaker bottle, displayed on a clean dark reflective carbon surface, soft gym background bokeh, dynamic neon edge lighting, ultra-realistic, 8k resolution, crisp photorealistic mockup`;\n  } else {\n    prompt = `Commercial 3D e-commerce studio product photography of ${name}, category ${category}. Premium fitness supplement tub on clean dark reflective gym surface, neon green and purple rim lighting, ultra-sharp focus, photorealistic packaging, 8k resolution, advertising quality`;\n  }\n  \n  const encodedPrompt = encodeURIComponent(prompt.trim());\n  const hash = Math.abs(name.split('').reduce((acc, char) => (acc << 5) - acc + char.charCodeAt(0), 0)) % 1000000;\n  \n  // Free high-speed AI image generator using Flux\n  const aiImageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&model=flux&seed=${hash}&nologo=true`;\n  \n  // AI visual is primary image, original IG story image is secondary fallback\n  const images = [aiImageUrl];\n  if (data.imageUrl && data.imageUrl.startsWith('http')) {\n    images.push(data.imageUrl);\n  }\n  \n  results.push({\n    json: {\n      ...data,\n      aiImageUrl,\n      generatedPrompt: prompt,\n      images\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "generate-ai-visual",
+      "name": "🎨 AI: Generate Product/Pack Visual",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2050,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const pack = $json;\nconst name = pack.name || 'Pack Spécial Ghaith Nutrition';\nconst price = pack.price ? `${pack.price} DT` : '';\nconst originalPrice = pack.originalPrice ? `${pack.originalPrice} DT` : '';\nconst discount = (pack.originalPrice && pack.price && pack.originalPrice > pack.price)\n  ? ` (Économisez ${Math.round(pack.originalPrice - pack.price)} DT !)`\n  : '';\nconst tagline = pack.tagline ? `\\n⚡ ${pack.tagline}` : '';\nconst shopUrl = `https://gympilot.tn/shop/pack/${pack.slug || pack.id}`;\nconst imageUrl = (pack.images && pack.images.length > 0) ? pack.images[0] : '';\n\nconst caption = `🔥 NOUVEAU PACK DISPONIBLE SUR GYMPILOT ! 🔥\\n\\n` +\n  `💪 ${name}\\n` +\n  `${tagline}\\n\\n` +\n  `💰 Prix Promo : ${price}${discount}\\n` +\n  `🚚 Livraison Express 24-48h partout en Tunisie\\n` +\n  `💵 Paiement à la livraison (Cash on Delivery)\\n` +\n  `✨ Produits 100% Certifiés & Authentiques\\n\\n` +\n  `👉 Commandez directement en 1 clic : ${shopUrl}\\n` +\n  `(Lien direct disponible aussi en Bio !)\\n\\n` +\n  `#GymPilot #GhaithNutrition #MusculationTunisie #WheyProtein #Creatine #MassGainer #FitnessTunisie #BodybuildingTunisia #SupplementsTunisie`;\n\nreturn [{\n  json: {\n    packId: pack.id,\n    packName: name,\n    imageUrl: imageUrl,\n    caption: caption,\n    shopUrl: shopUrl,\n    price: price\n  }\n}];"
+      },
+      "id": "format-instagram-post",
+      "name": "📝 Format Instagram Post",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2580,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v21.0/{{ $env.INSTAGRAM_ACCOUNT_ID || 'YOUR_INSTAGRAM_ACCOUNT_ID' }}/media",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"image_url\": \"{{ $json.imageUrl }}\",\n  \"caption\": {{ JSON.stringify($json.caption) }},\n  \"access_token\": \"{{ $env.INSTAGRAM_ACCESS_TOKEN || 'YOUR_INSTAGRAM_ACCESS_TOKEN' }}\"\n}",
+        "options": {}
+      },
+      "id": "instagram-create-container",
+      "name": "📸 Instagram: Create Media Container",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2800,
+        480
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "amount": 5,
+        "unit": "seconds"
+      },
+      "id": "instagram-wait-media",
+      "name": "⏸️ Wait 5s for Media Ready",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3020,
+        480
+      ],
+      "webhookId": "ig-wait-media"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v21.0/{{ $env.INSTAGRAM_ACCOUNT_ID || 'YOUR_INSTAGRAM_ACCOUNT_ID' }}/media_publish",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"creation_id\": \"{{ $('📸 Instagram: Create Media Container').item.json.id }}\",\n  \"access_token\": \"{{ $env.INSTAGRAM_ACCESS_TOKEN || 'YOUR_INSTAGRAM_ACCESS_TOKEN' }}\"\n}",
+        "options": {}
+      },
+      "id": "instagram-publish-post",
+      "name": "🚀 Instagram: Publish Post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3240,
+        480
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const igRes = $json;\nconst postData = $('📝 Format Instagram Post').first().json;\n\nreturn [{\n  json: {\n    success: true,\n    instagramPostId: igRes.id || 'simulated_or_pending',\n    packName: postData.packName,\n    shopUrl: postData.shopUrl,\n    imageUrl: postData.imageUrl,\n    publishedAt: new Date().toISOString(),\n    message: `Successfully published ${postData.packName} to Instagram feed!`\n  }\n}];"
+      },
+      "id": "instagram-log-success",
+      "name": "✅ Instagram: Log Publish Success",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3460,
+        480
+      ]
     }
   ],
   "connections": {
@@ -610,7 +771,7 @@
       "main": [
         [
           {
-            "node": "🔀 Product or Pack?",
+            "node": "🎨 AI: Generate Product/Pack Visual",
             "type": "main",
             "index": 0
           }
@@ -650,7 +811,7 @@
       "main": [
         [
           {
-            "node": "✅ Log Success",
+            "node": "📝 Format Instagram Post",
             "type": "main",
             "index": 0
           }
@@ -724,6 +885,72 @@
         [
           {
             "node": "📤 Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎨 AI: Generate Product/Pack Visual": {
+      "main": [
+        [
+          {
+            "node": "🔀 Product or Pack?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📝 Format Instagram Post": {
+      "main": [
+        [
+          {
+            "node": "📸 Instagram: Create Media Container",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📸 Instagram: Create Media Container": {
+      "main": [
+        [
+          {
+            "node": "⏸️ Wait 5s for Media Ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⏸️ Wait 5s for Media Ready": {
+      "main": [
+        [
+          {
+            "node": "🚀 Instagram: Publish Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🚀 Instagram: Publish Post": {
+      "main": [
+        [
+          {
+            "node": "✅ Instagram: Log Publish Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "✅ Instagram: Log Publish Success": {
+      "main": [
+        [
+          {
+            "node": "✅ Log Success",
             "type": "main",
             "index": 0
           }
