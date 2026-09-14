@@ -17,14 +17,14 @@
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
-        0,
-        300
+        80,
+        280
       ]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.apify.com/v2/acts/apify~instagram-scraper/runs?token={{ $env.APIFY_API_TOKEN || 'YOUR_APIFY_API_TOKEN' }}",
+        "url": "https://api.apify.com/v2/acts/apify~instagram-scraper/runs?token=apify_api_HbluonNj7LRvwaMtAaQwLjB2Cni9IU1i8zeY",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "{\n  \"directUrls\": [\"https://www.instagram.com/ghaith_nutrition10.10/\"],\n  \"resultsType\": \"stories\",\n  \"resultsLimit\": 10,\n  \"addParentData\": true\n}",
@@ -37,8 +37,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        240,
-        300
+        300,
+        280
       ]
     },
     {
@@ -50,14 +50,14 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        480,
-        300
+        520,
+        280
       ]
     },
     {
       "parameters": {
         "method": "GET",
-        "url": "=https://api.apify.com/v2/datasets/{{ $json.data?.defaultDatasetId || $('🔍 Apify: Fetch IG Stories').item?.json?.data?.defaultDatasetId || $json.data?.id }}/items?token={{ $env.APIFY_API_TOKEN || 'YOUR_APIFY_API_TOKEN' }}",
+        "url": "=https://api.apify.com/v2/datasets/{{ $json.data?.defaultDatasetId || $('🔍 Apify: Fetch IG Stories').item?.json?.data?.defaultDatasetId || $json.data?.id }}/items?token=apify_api_HbluonNj7LRvwaMtAaQwLjB2Cni9IU1i8zeY",
         "options": {
           "timeout": 120000
         }
@@ -67,8 +67,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        720,
-        300
+        740,
+        280
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -84,7 +84,7 @@
       "typeVersion": 2,
       "position": [
         960,
-        300
+        280
       ]
     },
     {
@@ -115,8 +115,8 @@
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2,
       "position": [
-        1140,
-        300
+        1180,
+        280
       ]
     },
     {
@@ -136,8 +136,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1340,
-        300
+        1400,
+        280
       ],
       "continueOnFail": true
     },
@@ -150,14 +150,14 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1540,
-        300
+        1620,
+        280
       ]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={{ $env.GEMINI_API_KEY || 'YOUR_GEMINI_API_KEY' }}",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=AQ.Ab8RN6Ll8bi50mRYEBGIk-qr1AjNuonDAXaeFIG38vyGrjmFdw",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($json.geminiPayload) }}",
@@ -179,8 +179,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1740,
-        300
+        1840,
+        280
       ]
     },
     {
@@ -192,8 +192,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1940,
-        300
+        2060,
+        280
       ]
     },
     {
@@ -224,8 +224,8 @@
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2,
       "position": [
-        1720,
-        300
+        2280,
+        280
       ]
     },
     {
@@ -242,8 +242,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1900,
-        300
+        2500,
+        280
       ]
     },
     {
@@ -303,8 +303,8 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
       "position": [
-        2180,
-        300
+        2940,
+        280
       ]
     },
     {
@@ -330,8 +330,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2340,
-        180
+        3180,
+        120
       ]
     },
     {
@@ -357,8 +357,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2340,
-        480
+        3180,
+        440
       ]
     },
     {
@@ -370,8 +370,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3680,
-        300
+        4520,
+        280
       ]
     },
     {
@@ -386,8 +386,8 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        0,
-        720
+        80,
+        760
       ],
       "webhookId": "gympilot-ig-import"
     },
@@ -400,8 +400,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        240,
-        720
+        300,
+        760
       ]
     },
     {
@@ -418,8 +418,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        480,
-        720
+        520,
+        760
       ]
     },
     {
@@ -479,8 +479,8 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
       "position": [
-        720,
-        720
+        740,
+        760
       ]
     },
     {
@@ -507,7 +507,7 @@
       "typeVersion": 4.2,
       "position": [
         960,
-        600
+        640
       ]
     },
     {
@@ -534,7 +534,7 @@
       "typeVersion": 4.2,
       "position": [
         960,
-        840
+        880
       ]
     },
     {
@@ -548,8 +548,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        1200,
-        720
+        1180,
+        760
       ]
     },
     {
@@ -561,8 +561,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2050,
-        300
+        2720,
+        280
       ]
     },
     {
@@ -574,8 +574,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2580,
-        480
+        3400,
+        440
       ]
     },
     {
@@ -592,8 +592,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2800,
-        480
+        3620,
+        440
       ],
       "continueOnFail": true
     },
@@ -607,8 +607,8 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        3020,
-        480
+        3840,
+        440
       ],
       "webhookId": "ig-wait-media"
     },
@@ -626,8 +626,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3240,
-        480
+        4060,
+        440
       ],
       "continueOnFail": true
     },
@@ -640,8 +640,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3460,
-        480
+        4280,
+        440
       ]
     }
   ],
