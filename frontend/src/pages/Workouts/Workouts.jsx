@@ -31,6 +31,10 @@ export default function Workouts() {
   ], [t]);
 
   useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['programs', 'start', 'library'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
     const dayParam = searchParams.get('day');
     if (dayParam !== null) {
       const idx = parseInt(dayParam, 10);

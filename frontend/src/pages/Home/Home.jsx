@@ -6,6 +6,7 @@ import AnnouncementsSection from './components/AnnouncementsSection';
 import WelcomeOfferBanner from './components/WelcomeOfferBanner';
 import SpecialOffersSection from './components/SpecialOffersSection';
 import FeaturesSection from './components/FeaturesSection';
+import InteractiveBodySection from './components/InteractiveBodySection';
 import StatsPreviewSection from './components/StatsPreviewSection';
 import MediaShowcaseSlider from './components/MediaShowcaseSlider';
 import WorkoutVideosSection from './components/WorkoutVideosSection';
@@ -37,6 +38,7 @@ export default function Home() {
         <WelcomeOfferBanner />
         <SpecialOffersSection />
         <FeaturesSection />
+        <InteractiveBodySection />
         <StatsPreviewSection />
         <MediaShowcaseSlider />
         <WorkoutVideosSection />

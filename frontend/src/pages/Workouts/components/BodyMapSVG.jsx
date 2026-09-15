@@ -84,8 +84,23 @@ const BACK_MUSCLES = [
 ];
 
 // ─── Component ────────────────────────────────────────────────────────
-export default function BodyMapSVG({ selectedMuscle, onSelectMuscle }) {
-  const [view, setView] = useState('front');
+export default function BodyMapSVG({
+  selectedMuscle,
+  onSelectMuscle,
+  onHoverMuscle,
+  view: externalView,
+  onViewChange,
+  showLegend = true,
+  showToggle = true,
+  showClear = true,
+  sx = {},
+}) {
+  const [internalView, setInternalView] = useState('front');
+  const view = externalView !== undefined ? externalView : internalView;
+  const setView = (v) => {
+    if (onViewChange) onViewChange(v);
+    setInternalView(v);
+  };
   const [hoveredMuscle, setHoveredMuscle] = useState(null);
   const [tooltip, setTooltip] = useState({ show: false, x: 0, y: 0, label: '' });
   const containerRef = useRef(null);
@@ -104,7 +119,13 @@ export default function BodyMapSVG({ selectedMuscle, onSelectMuscle }) {
 
   const getMuscleCategory = (cat) => MUSCLE_TO_CATEGORY[cat] || cat;
 
-  const handleMouseEnter = useCallback((label) => setHoveredMuscle(label), []);
+  const handleMouseEnter = useCallback(
+    (label, cat) => {
+      setHoveredMuscle(label);
+      if (onHoverMuscle) onHoverMuscle(getMuscleCategory(cat) || label);
+    },
+    [onHoverMuscle]
+  );
 
   const handleMouseMove = useCallback((e, label) => {
     if (!containerRef.current || !label) return;
@@ -115,7 +136,8 @@ export default function BodyMapSVG({ selectedMuscle, onSelectMuscle }) {
   const handleMouseLeave = useCallback(() => {
     setHoveredMuscle(null);
     setTooltip((prev) => ({ ...prev, show: false }));
-  }, []);
+    if (onHoverMuscle) onHoverMuscle(null);
+  }, [onHoverMuscle]);
 
   const handleClick = useCallback(
     (category) => {
@@ -139,7 +161,7 @@ export default function BodyMapSVG({ selectedMuscle, onSelectMuscle }) {
     if (!muscle.category) return 'body';
     const mapped = getMuscleCategory(muscle.category);
     if (selectedMuscle && selectedMuscle === mapped) return 'selected';
-    if (hoveredMuscle && hoveredMuscle === muscle.label) return 'hover';
+    if (hoveredMuscle && (hoveredMuscle === muscle.label || hoveredMuscle === mapped)) return 'hover';
     return 'default';
   };
 
@@ -172,6 +194,7 @@ export default function BodyMapSVG({ selectedMuscle, onSelectMuscle }) {
         width: '100%',
         boxSizing: 'border-box',
         overflow: 'hidden',
+        ...sx,
       }}
     >
       <style>{`
@@ -198,54 +221,56 @@ export default function BodyMapSVG({ selectedMuscle, onSelectMuscle }) {
       `}</style>
 
       {/* ── View Toggle (sliding pill) ── */}
-      <Box
-        sx={{
-          position: 'relative',
-          display: 'flex',
-          width: 176,
-          height: 36,
-          bgcolor: 'rgba(255,255,255,0.04)',
-          borderRadius: 999,
-          border: '1px solid rgba(255,255,255,0.08)',
-          p: '3px',
-        }}
-      >
+      {showToggle && (
         <Box
-          className="toggle-thumb"
           sx={{
-            position: 'absolute',
-            top: 3,
-            left: 3,
-            width: 'calc(50% - 3px)',
-            height: 30,
+            position: 'relative',
+            display: 'flex',
+            width: 176,
+            height: 36,
+            bgcolor: 'rgba(255,255,255,0.04)',
             borderRadius: 999,
-            bgcolor: ACCENT,
-            transform: view === 'back' ? 'translateX(calc(88px - 3px))' : 'translateX(0px)',
-            boxShadow: '0 2px 10px rgba(198,255,62,0.35)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            p: '3px',
           }}
-        />
-        {['front', 'back'].map((v) => (
-          <Button
-            key={v}
-            disableRipple
-            onClick={() => setView(v)}
+        >
+          <Box
+            className="toggle-thumb"
             sx={{
-              position: 'relative',
-              zIndex: 1,
-              flex: 1,
-              minWidth: 0,
+              position: 'absolute',
+              top: 3,
+              left: 3,
+              width: 'calc(50% - 3px)',
+              height: 30,
               borderRadius: 999,
-              fontWeight: 700,
-              fontSize: '0.78rem',
-              color: view === v ? '#0A0C0F' : 'text.secondary',
-              transition: 'color 0.2s ease',
-              '&:hover': { bgcolor: 'transparent' },
+              bgcolor: ACCENT,
+              transform: view === 'back' ? 'translateX(calc(88px - 3px))' : 'translateX(0px)',
+              boxShadow: '0 2px 10px rgba(198,255,62,0.35)',
             }}
-          >
-            {v === 'front' ? 'Front' : 'Back'}
-          </Button>
-        ))}
-      </Box>
+          />
+          {['front', 'back'].map((v) => (
+            <Button
+              key={v}
+              disableRipple
+              onClick={() => setView(v)}
+              sx={{
+                position: 'relative',
+                zIndex: 1,
+                flex: 1,
+                minWidth: 0,
+                borderRadius: 999,
+                fontWeight: 700,
+                fontSize: '0.78rem',
+                color: view === v ? '#0A0C0F' : 'text.secondary',
+                transition: 'color 0.2s ease',
+                '&:hover': { bgcolor: 'transparent' },
+              }}
+            >
+              {v === 'front' ? 'Front' : 'Back'}
+            </Button>
+          ))}
+        </Box>
+      )}
 
       {/* ── SVG Body ── */}
       <Box
@@ -335,7 +360,7 @@ export default function BodyMapSVG({ selectedMuscle, onSelectMuscle }) {
                 aria-label={clickable ? `${muscle.label} — filter exercises` : undefined}
                 aria-pressed={state === 'selected'}
                 style={{ cursor: clickable ? 'pointer' : 'default', outline: 'none' }}
-                onMouseEnter={muscle.label ? () => handleMouseEnter(muscle.label) : undefined}
+                onMouseEnter={muscle.label ? () => handleMouseEnter(muscle.label, muscle.category) : undefined}
                 onMouseMove={muscle.label ? (e) => handleMouseMove(e, muscle.label) : undefined}
                 onMouseLeave={muscle.label ? handleMouseLeave : undefined}
                 onClick={clickable ? () => handleClick(muscle.category) : undefined}
@@ -374,46 +399,48 @@ export default function BodyMapSVG({ selectedMuscle, onSelectMuscle }) {
       </Box>
 
       {/* ── Legend / tap targets — doubles as a mobile-friendly picker ── */}
-      <Stack
-        direction="row"
-        flexWrap="wrap"
-        justifyContent="center"
-        gap={{ xs: 0.5, sm: 0.75 }}
-        sx={{ width: '100%', maxWidth: { xs: '100%', sm: 300 }, px: 0.5 }}
-      >
-        {legendItems.map((cat) => {
-          const mapped = getMuscleCategory(cat);
-          const active = selectedMuscle === mapped;
-          const hovered = hoveredMuscle === cat;
-          return (
-            <Box
-              key={cat}
-              component="button"
-              onClick={() => handleClick(cat)}
-              onMouseEnter={() => handleMouseEnter(cat)}
-              onMouseLeave={handleMouseLeave}
-              sx={{
-                border: `1px solid ${active ? ACCENT : 'rgba(255,255,255,0.1)'}`,
-                bgcolor: active ? 'rgba(198,255,62,0.14)' : hovered ? 'rgba(198,255,62,0.06)' : 'transparent',
-                color: active ? ACCENT : 'text.secondary',
-                borderRadius: 999,
-                px: 1.3,
-                py: 0.45,
-                fontSize: '0.72rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                transition: 'background 0.2s ease, border-color 0.2s ease, color 0.2s ease',
-              }}
-            >
-              {cat}
-            </Box>
-          );
-        })}
-      </Stack>
+      {showLegend && (
+        <Stack
+          direction="row"
+          flexWrap="wrap"
+          justifyContent="center"
+          gap={{ xs: 0.5, sm: 0.75 }}
+          sx={{ width: '100%', maxWidth: { xs: '100%', sm: 300 }, px: 0.5 }}
+        >
+          {legendItems.map((cat) => {
+            const mapped = getMuscleCategory(cat);
+            const active = selectedMuscle === mapped;
+            const hovered = hoveredMuscle === cat;
+            return (
+              <Box
+                key={cat}
+                component="button"
+                onClick={() => handleClick(cat)}
+                onMouseEnter={() => handleMouseEnter(cat, cat)}
+                onMouseLeave={handleMouseLeave}
+                sx={{
+                  border: `1px solid ${active ? ACCENT : 'rgba(255,255,255,0.1)'}`,
+                  bgcolor: active ? 'rgba(198,255,62,0.14)' : hovered ? 'rgba(198,255,62,0.06)' : 'transparent',
+                  color: active ? ACCENT : 'text.secondary',
+                  borderRadius: 999,
+                  px: 1.3,
+                  py: 0.45,
+                  fontSize: '0.72rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  transition: 'background 0.2s ease, border-color 0.2s ease, color 0.2s ease',
+                }}
+              >
+                {cat}
+              </Box>
+            );
+          })}
+        </Stack>
+      )}
 
       {/* ── Selected muscle indicator ── */}
-      {selectedMuscle && (
+      {showClear && selectedMuscle && (
         <Stack direction="row" alignItems="center" gap={1}>
           <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: ACCENT, boxShadow: `0 0 8px ${ACCENT}` }} />
           <Typography variant="body2" sx={{ fontWeight: 700, color: ACCENT, fontSize: '0.82rem' }}>

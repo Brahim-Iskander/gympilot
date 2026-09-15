@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -255,12 +256,27 @@ export default function ExerciseLibrary({ onAddExercise, addedExerciseIds = [] }
   const { t } = useLanguage();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const paramCategory = searchParams.get('category') || searchParams.get('muscle') || 'All';
+  const matchedInitial = categories.find((c) => c.toLowerCase() === paramCategory.toLowerCase()) || 'All';
 
   const [search, setSearch] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState(matchedInitial);
   const [selectedEquipment, setSelectedEquipment] = useState('All');
   const [snackbar, setSnackbar] = useState('');
   const [showMobileMap, setShowMobileMap] = useState(false);
+
+  // Sync category if URL parameter changes
+  useEffect(() => {
+    const pCat = searchParams.get('category') || searchParams.get('muscle');
+    if (pCat) {
+      const match = categories.find((c) => c.toLowerCase() === pCat.toLowerCase());
+      if (match && match !== selectedCategory) {
+        setSelectedCategory(match);
+      }
+    }
+  }, [searchParams]);
 
   // Selected exercise for tutorial modal
   const [activeTutorialExercise, setActiveTutorialExercise] = useState(null);
@@ -285,9 +301,34 @@ export default function ExerciseLibrary({ onAddExercise, addedExerciseIds = [] }
     }
   };
 
-  // Body map muscle click → sync with selectedCategory
+  // Body map muscle click → sync with selectedCategory & URL
   const handleBodyMapMuscleSelect = (muscle) => {
-    setSelectedCategory((prev) => (prev?.toLowerCase() === muscle?.toLowerCase() ? 'All' : muscle));
+    const nextCat = selectedCategory?.toLowerCase() === muscle?.toLowerCase() ? 'All' : muscle;
+    setSelectedCategory(nextCat);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (nextCat === 'All') {
+        next.delete('category');
+        next.delete('muscle');
+      } else {
+        next.set('category', nextCat);
+      }
+      return next;
+    }, { replace: true });
+  };
+
+  const handleCategorySelectChange = (val) => {
+    setSelectedCategory(val);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (val === 'All') {
+        next.delete('category');
+        next.delete('muscle');
+      } else {
+        next.set('category', val);
+      }
+      return next;
+    }, { replace: true });
   };
 
   // ── Body Map Panel ──
@@ -342,7 +383,7 @@ export default function ExerciseLibrary({ onAddExercise, addedExerciseIds = [] }
           <TextField
             select
             value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
+            onChange={(e) => handleCategorySelectChange(e.target.value)}
             size="small"
             sx={{ minWidth: 150 }}
             SelectProps={{ IconComponent: () => <ExpandMoreRoundedIcon fontSize="small" /> }}
