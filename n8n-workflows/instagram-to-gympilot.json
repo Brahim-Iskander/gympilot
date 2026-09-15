@@ -324,7 +324,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{\n  JSON.stringify({\n    name: $json.name || 'Produit Nutrition',\n    description: $json.description || $json.name || '',\n    categoryId: $json.categoryId || $json.category || '6a985c4550777d3e0a93e603',\n    price: Number($json.price) || 0,\n    originalPrice: $json.originalPrice ? Number($json.originalPrice) : null,\n    stockQuantity: 50,\n    images: ($json.images && $json.images.length > 0) ? $json.images : ($json.imageUrl ? [$json.imageUrl] : []),\n    specs: {\n      'Brand / Vendor': 'Ghaith Nutrition',\n      'Category': $json.category || 'Supplements',\n      'Origin': '100% Genuine & Certified',\n      'Source': 'Auto-imported from Instagram Story with AI Studio Visual'\n    },\n    active: true,\n    featured: false\n  })\n}}",
+        "jsonBody": "={\n  \"name\": \"{{ $json.name || \"Produit Ghaith Nutrition\" }}\",\n  \"description\": \"{{ $json.description || $json.name || \"\" }}\",\n  \"categoryId\": \"{{ $json.categoryId || $json.category || \"6a985c4550777d3e0a93e603\" }}\",\n  \"price\": {{ Number($json.price) || 0 }},\n  \"originalPrice\": {{ $json.originalPrice ? Number($json.originalPrice) : \"null\" }},\n  \"stockQuantity\": 50,\n  \"images\": {{ JSON.stringify(($json.images && $json.images.length > 0) ? $json.images : ($json.imageUrl ? [$json.imageUrl] : [])) }},\n  \"specs\": {\n    \"Brand / Vendor\": \"Ghaith Nutrition\",\n    \"Category\": \"{{ $json.category || \"Supplements\" }}\",\n    \"Origin\": \"100% Genuine & Certified\",\n    \"Source\": \"Auto-imported from Instagram Story with AI Studio Visual\"\n  },\n  \"active\": true,\n  \"featured\": false\n}",
         "options": {}
       },
       "id": "create-product",
@@ -351,7 +351,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{\n  JSON.stringify({\n    name: $json.name || 'Pack Promo Ghaith Nutrition',\n    tagline: $json.tagline || 'Offre exclusive Ghaith Nutrition',\n    badge: $json.badge || 'PACK PROMO',\n    description: $json.description || $json.name || '',\n    originalPrice: $json.originalPrice ? Number($json.originalPrice) : (Number($json.price) ? Math.round(Number($json.price) * 1.25) : 0),\n    price: Number($json.price) || 0,\n    images: ($json.images && $json.images.length > 0) ? $json.images : ($json.imageUrl ? [$json.imageUrl] : []),\n    items: ($json.items && Array.isArray($json.items) && $json.items.length > 0)\n      ? $json.items\n      : [{ name: $json.name || 'Pack Promo', quantity: 1, description: 'Produit 100% authentique', dosage: '1 dose/jour' }],\n    active: true,\n    featured: false,\n    stockQuantity: 50\n  })\n}}",
+        "jsonBody": "={\n  \"name\": \"{{ $json.name || \"Pack Promo Ghaith Nutrition \" + Date.now() }}\",\n  \"tagline\": \"{{ $json.tagline || \"Offre exclusive Ghaith Nutrition\" }}\",\n  \"badge\": \"{{ $json.badge || \"PACK PROMO\" }}\",\n  \"description\": \"{{ $json.description || $json.name || \"\" }}\",\n  \"originalPrice\": {{ $json.originalPrice ? Number($json.originalPrice) : (Number($json.price) ? Math.round(Number($json.price) * 1.25) : 0) }},\n  \"price\": {{ Number($json.price) || 0 }},\n  \"images\": {{ JSON.stringify(($json.images && $json.images.length > 0) ? $json.images : ($json.imageUrl ? [$json.imageUrl] : [])) }},\n  \"items\": {{ JSON.stringify(($json.items && Array.isArray($json.items) && $json.items.length > 0) ? $json.items : [{\"name\": $json.name || \"Pack Promo\", \"quantity\": 1, \"description\": \"Produit 100% authentique\", \"dosage\": \"1 dose/jour\"}]) }},\n  \"active\": true,\n  \"featured\": false,\n  \"stockQuantity\": 50\n}",
         "options": {}
       },
       "id": "create-pack",
@@ -583,10 +583,10 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://graph.facebook.com/v21.0/{{ $env.INSTAGRAM_ACCOUNT_ID || 'YOUR_INSTAGRAM_ACCOUNT_ID' }}/media",
+        "url": "https://graph.facebook.com/v21.0/17841430839324619/media",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{\n  JSON.stringify({\n    image_url: $json.storyImageUrl,\n    media_type: 'STORIES',\n    access_token: $env.INSTAGRAM_ACCESS_TOKEN || 'YOUR_INSTAGRAM_ACCESS_TOKEN'\n  })\n}}",
+        "jsonBody": "={{\n  JSON.stringify({\n    image_url: $json.storyImageUrl,\n    media_type: 'STORIES',\n    access_token: $env.INSTAGRAM_ACCESS_TOKEN || 'EAAibpp9nKZAEBSR2BYBlU9Lu2Ks0k10VZBViSJEGQ1ovnADNhZBCD9l5ZC8Kd2QZCK7oRB1wjgyVbQIRCohlVWtq47SPtZCIumWXjbvdDhZAt3TEjdTlGfXok5IlJ2giVLJgX1G5DMAU0ZBmirQRbavoizhrHysLTivYxWSHQwsMlZA9KfgfC9oSbMZBhxxJxR57kuUKalA1ok20kIr8c2ZB9QsfH6d4ZAAJyW7uii8bqFfbazVFlX8ZAd3ACH5sGj1L6CuehZA9c6YU8IdFOKwQxOOJ5A1TvaInGvIBSF36hBkgZDZD'\n  })\n}}",
         "options": {}
       },
       "id": "instagram-create-container",
@@ -617,10 +617,10 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://graph.facebook.com/v21.0/{{ $env.INSTAGRAM_ACCOUNT_ID || 'YOUR_INSTAGRAM_ACCOUNT_ID' }}/media_publish",
+        "url": "https://graph.facebook.com/v21.0/17841430839324619/media_publish",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{\n  JSON.stringify({\n    creation_id: $('📸 Instagram: Create Media Container').item?.json?.id || '',\n    access_token: $env.INSTAGRAM_ACCESS_TOKEN || 'YOUR_INSTAGRAM_ACCESS_TOKEN'\n  })\n}}",
+        "jsonBody": "={{\n  JSON.stringify({\n    creation_id: $('📸 Instagram: Create Story Container').item?.json?.id || '',\n    access_token: $env.INSTAGRAM_ACCESS_TOKEN || 'EAAibpp9nKZAEBSR2BYBlU9Lu2Ks0k10VZBViSJEGQ1ovnADNhZBCD9l5ZC8Kd2QZCK7oRB1wjgyVbQIRCohlVWtq47SPtZCIumWXjbvdDhZAt3TEjdTlGfXok5IlJ2giVLJgX1G5DMAU0ZBmirQRbavoizhrHysLTivYxWSHQwsMlZA9KfgfC9oSbMZBhxxJxR57kuUKalA1ok20kIr8c2ZB9QsfH6d4ZAAJyW7uii8bqFfbazVFlX8ZAd3ACH5sGj1L6CuehZA9c6YU8IdFOKwQxOOJ5A1TvaInGvIBSF36hBkgZDZD'\n  })\n}}",
         "options": {}
       },
       "id": "instagram-publish-post",
