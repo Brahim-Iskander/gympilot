@@ -74,6 +74,9 @@ public class User {
     /** Reward points balance (default 0). */
     private int points = 0;
 
+    /** Purchased extra AI credits balance for AI Body Scans and Progress Analyses. */
+    private int aiCredits = 0;
+
     /** Unique referral code for inviting friends. */
     @Indexed(unique = true, sparse = true)
     private String referralCode;
@@ -359,6 +362,14 @@ public class User {
 
     public void setPoints(int points) {
         this.points = points;
+    }
+
+    public int getAiCredits() {
+        return aiCredits;
+    }
+
+    public void setAiCredits(int aiCredits) {
+        this.aiCredits = Math.max(0, aiCredits);
     }
 
     public String getReferralCode() {

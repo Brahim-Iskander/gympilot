@@ -907,4 +907,174 @@ public class MailService {
             </html>
             """.formatted(escaped, java.time.Year.now().getValue());
     }
+
+    /**
+     * Sends confirmation that a D17 payment proof was received and is pending verification.
+     */
+    @Async
+    public void sendD17PaymentProofReceived(String to, String userName, String referenceNumber, double amount, String type) {
+        String subject = "Payment Proof Received — Ticket #" + referenceNumber + " (GymPilot D17)";
+        String greeting = userName != null && !userName.isBlank() ? "Hi " + userName : "Hello";
+        String typeLabel = "SUBSCRIPTION".equalsIgnoreCase(type) ? "Membership Subscription" : "Marketplace Order";
+
+        String template = """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+              <meta charset="UTF-8">
+              <style>
+                body { margin: 0; padding: 0; background-color: #0A0C0F; font-family: 'Segoe UI', Roboto, sans-serif; color: #F4F6F8; }
+                .wrapper { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
+                .card { background-color: #12151B; border: 1px solid rgba(198,255,62,0.25); border-radius: 16px; padding: 36px 32px; }
+                .badge { display: inline-block; padding: 6px 14px; background: rgba(198,255,62,0.12); color: #C6FF3E; border-radius: 8px; font-weight: 800; font-size: 13px; }
+                .box { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; margin: 24px 0; }
+                .footer { text-align: center; margin-top: 32px; font-size: 12px; color: #64748B; }
+              </style>
+            </head>
+            <body>
+              <div class="wrapper">
+                <div class="card">
+                  %s
+                  <div style="text-align: center; margin-bottom: 24px;">
+                    <span class="badge">D17 PAYMENT PROOF RECEIVED</span>
+                    <h2 style="font-size: 24px; font-weight: 800; margin: 16px 0 8px 0; color: #FFFFFF;">Verification in Progress</h2>
+                    <p style="color: #94A3B8; font-size: 14px; margin: 0;">Ticket Reference: <strong style="color: #C6FF3E;">%s</strong></p>
+                  </div>
+                  <p style="font-size: 15px; color: #D1D5DB; line-height: 1.6;">%s,</p>
+                  <p style="font-size: 15px; color: #D1D5DB; line-height: 1.6;">
+                    We have successfully received your D17 payment screenshot proof for your <strong>%s</strong> in the amount of <strong style="color: #C6FF3E;">%.2f TND</strong>.
+                  </p>
+                  <div class="box">
+                    <p style="margin: 0 0 8px 0; font-size: 14px; color: #94A3B8;"><strong>What happens next?</strong></p>
+                    <p style="margin: 0; font-size: 14px; color: #E2E8F0; line-height: 1.6;">
+                      Our finance &amp; operations team verifies manual D17 transfers within <strong>24 to 48 hours</strong>. Once confirmed, your subscription or order will be automatically activated and you will receive an instant confirmation.
+                    </p>
+                  </div>
+                  <p style="font-size: 14px; color: #94A3B8; line-height: 1.6;">
+                    You can track your support ticket conversation anytime by logging into your GymPilot account under <strong>Support Tickets</strong>.
+                  </p>
+                </div>
+                <div class="footer">&copy; %d GymPilot Tunisia. All rights reserved.</div>
+              </div>
+            </body>
+            </html>
+            """;
+
+        String html = template.formatted(getLogoHtml(), referenceNumber, greeting, typeLabel, amount, java.time.Year.now().getValue());
+        sendAdminEmail(to, subject, html, true);
+    }
+
+    /**
+     * Sends notification that D17 payment was approved and activated.
+     */
+    @Async
+    public void sendD17PaymentApproved(String to, String userName, String referenceNumber, double amount, String type, String details) {
+        String subject = "Payment Confirmed! Your " + ("SUBSCRIPTION".equalsIgnoreCase(type) ? "Subscription is Active" : "Order is Processing") + " (GymPilot D17)";
+        String greeting = userName != null && !userName.isBlank() ? "Hi " + userName : "Hello";
+
+        String template = """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+              <meta charset="UTF-8">
+              <style>
+                body { margin: 0; padding: 0; background-color: #0A0C0F; font-family: 'Segoe UI', Roboto, sans-serif; color: #F4F6F8; }
+                .wrapper { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
+                .card { background-color: #12151B; border: 1px solid #00E676; border-radius: 16px; padding: 36px 32px; }
+                .badge { display: inline-block; padding: 6px 14px; background: rgba(0,230,118,0.15); color: #00E676; border-radius: 8px; font-weight: 800; font-size: 13px; }
+                .box { background: rgba(0,230,118,0.06); border: 1px solid rgba(0,230,118,0.25); border-radius: 12px; padding: 20px; margin: 24px 0; }
+                .footer { text-align: center; margin-top: 32px; font-size: 12px; color: #64748B; }
+                .btn { display: inline-block; background-color: #C6FF3E; color: #000000; font-weight: 800; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin-top: 16px; }
+              </style>
+            </head>
+            <body>
+              <div class="wrapper">
+                <div class="card">
+                  %s
+                  <div style="text-align: center; margin-bottom: 24px;">
+                    <span class="badge">PAYMENT CONFIRMED</span>
+                    <h2 style="font-size: 24px; font-weight: 800; margin: 16px 0 8px 0; color: #FFFFFF;">Your D17 Payment Has Been Approved!</h2>
+                    <p style="color: #94A3B8; font-size: 14px; margin: 0;">Ticket: <strong style="color: #00E676;">%s</strong></p>
+                  </div>
+                  <p style="font-size: 15px; color: #D1D5DB; line-height: 1.6;">%s,</p>
+                  <p style="font-size: 15px; color: #D1D5DB; line-height: 1.6;">
+                    Great news! Your manual D17 payment of <strong style="color: #00E676;">%.2f TND</strong> has been verified and confirmed by our team.
+                  </p>
+                  <div class="box">
+                    <p style="margin: 0 0 6px 0; font-size: 14px; color: #00E676; font-weight: 700;">Status: ACTIVATED</p>
+                    <p style="margin: 0; font-size: 14px; color: #E2E8F0; line-height: 1.6;">%s</p>
+                  </div>
+                  <div style="text-align: center;">
+                    <a href="%s/dashboard" class="btn">Open GymPilot Dashboard</a>
+                  </div>
+                </div>
+                <div class="footer">&copy; %d GymPilot Tunisia. All rights reserved.</div>
+              </div>
+            </body>
+            </html>
+            """;
+
+        String html = template.formatted(getLogoHtml(), referenceNumber, greeting, amount,
+                details != null ? details : "Your purchase is now fully active.",
+                frontendUrl, java.time.Year.now().getValue());
+        sendAdminEmail(to, subject, html, true);
+    }
+
+    /**
+     * Sends notification when a D17 payment proof was rejected.
+     */
+    @Async
+    public void sendD17PaymentRejected(String to, String userName, String referenceNumber, double amount, String reason) {
+        String subject = "Action Required: D17 Payment Verification — Ticket #" + referenceNumber;
+        String greeting = userName != null && !userName.isBlank() ? "Hi " + userName : "Hello";
+
+        String template = """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+              <meta charset="UTF-8">
+              <style>
+                body { margin: 0; padding: 0; background-color: #0A0C0F; font-family: 'Segoe UI', Roboto, sans-serif; color: #F4F6F8; }
+                .wrapper { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
+                .card { background-color: #12151B; border: 1px solid #FF5252; border-radius: 16px; padding: 36px 32px; }
+                .badge { display: inline-block; padding: 6px 14px; background: rgba(255,82,82,0.15); color: #FF5252; border-radius: 8px; font-weight: 800; font-size: 13px; }
+                .box { background: rgba(255,82,82,0.06); border: 1px solid rgba(255,82,82,0.25); border-radius: 12px; padding: 20px; margin: 24px 0; }
+                .footer { text-align: center; margin-top: 32px; font-size: 12px; color: #64748B; }
+                .btn { display: inline-block; background-color: #FF5252; color: #FFFFFF; font-weight: 800; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin-top: 16px; }
+              </style>
+            </head>
+            <body>
+              <div class="wrapper">
+                <div class="card">
+                  %s
+                  <div style="text-align: center; margin-bottom: 24px;">
+                    <span class="badge">VERIFICATION UNSUCCESSFUL</span>
+                    <h2 style="font-size: 24px; font-weight: 800; margin: 16px 0 8px 0; color: #FFFFFF;">Unable to Verify D17 Payment</h2>
+                    <p style="color: #94A3B8; font-size: 14px; margin: 0;">Ticket: <strong style="color: #FF5252;">%s</strong></p>
+                  </div>
+                  <p style="font-size: 15px; color: #D1D5DB; line-height: 1.6;">%s,</p>
+                  <p style="font-size: 15px; color: #D1D5DB; line-height: 1.6;">
+                    Our team was unable to verify your D17 payment of <strong style="color: #FF5252;">%.2f TND</strong> for the following reason:
+                  </p>
+                  <div class="box">
+                    <p style="margin: 0; font-size: 14px; color: #FFCDD2; line-height: 1.6;"><strong>Reason:</strong> %s</p>
+                  </div>
+                  <p style="font-size: 14px; color: #94A3B8; line-height: 1.6;">
+                    Please reply directly to your support ticket with a clear, readable screenshot, or retry the payment flow. If you have questions, our support desk is ready to help.
+                  </p>
+                  <div style="text-align: center;">
+                    <a href="%s/support" class="btn">View Ticket &amp; Reply</a>
+                  </div>
+                </div>
+                <div class="footer">&copy; %d GymPilot Tunisia. All rights reserved.</div>
+              </div>
+            </body>
+            </html>
+            """;
+
+        String html = template.formatted(getLogoHtml(), referenceNumber, greeting, amount,
+                reason != null ? reason : "Payment details could not be matched.",
+                frontendUrl, java.time.Year.now().getValue());
+        sendAdminEmail(to, subject, html, true);
+    }
 }

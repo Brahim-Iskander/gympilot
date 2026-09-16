@@ -18,6 +18,7 @@ import {
   CircularProgress,
   Paper,
   IconButton,
+  Alert,
 } from '@mui/material';
 import ShoppingBagRoundedIcon from '@mui/icons-material/ShoppingBagRounded';
 import LocalShippingRoundedIcon from '@mui/icons-material/LocalShippingRounded';
@@ -44,6 +45,22 @@ function statusChipConfig(status) {
     default:
       return { label: 'Order Placed', color: 'default', icon: <AccessTimeRoundedIcon sx={{ fontSize: 16 }} /> };
   }
+}
+
+function paymentChipConfig(paymentMethod, paymentStatus) {
+  if (paymentMethod === 'D17') {
+    switch ((paymentStatus || '').toUpperCase()) {
+      case 'PENDING_VERIFICATION':
+        return { label: 'D17 Verification Pending', color: 'warning', icon: <AccessTimeRoundedIcon sx={{ fontSize: 15 }} /> };
+      case 'PAID':
+        return { label: 'D17 Verified & Paid', color: 'success', icon: <CheckCircleRoundedIcon sx={{ fontSize: 15 }} /> };
+      case 'REJECTED':
+        return { label: 'D17 Rejected', color: 'error', icon: <CloseRoundedIcon sx={{ fontSize: 15 }} /> };
+      default:
+        return { label: 'D17 Mobile Payment', color: 'info', icon: <AccessTimeRoundedIcon sx={{ fontSize: 15 }} /> };
+    }
+  }
+  return null;
 }
 
 export default function OrderHistory() {
@@ -137,6 +154,7 @@ export default function OrderHistory() {
           <Stack spacing={3}>
             {orders.map((order) => {
               const st = statusChipConfig(order.status);
+              const payChip = paymentChipConfig(order.paymentMethod, order.paymentStatus);
               return (
                 <Card
                   key={order.id}
@@ -154,7 +172,7 @@ export default function OrderHistory() {
                   {/* Order header */}
                   <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} gap={2} sx={{ mb: 2.5 }}>
                     <Box>
-                      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 0.5 }}>
+                      <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" gap={1} sx={{ mb: 0.5 }}>
                         <Typography variant="subtitle1" sx={{ fontWeight: 800, fontFamily: "'Sora', sans-serif" }}>
                           Order #{order.orderNumber}
                         </Typography>
@@ -165,6 +183,16 @@ export default function OrderHistory() {
                           icon={st.icon}
                           sx={{ fontWeight: 700, fontSize: '0.72rem', height: 24 }}
                         />
+                        {payChip && (
+                          <Chip
+                            label={payChip.label}
+                            size="small"
+                            color={payChip.color}
+                            icon={payChip.icon}
+                            variant="outlined"
+                            sx={{ fontWeight: 700, fontSize: '0.72rem', height: 24 }}
+                          />
+                        )}
                       </Stack>
                       <Typography variant="caption" color="text.secondary">
                         Placed on {order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
@@ -292,7 +320,26 @@ export default function OrderHistory() {
 
                 <Divider sx={{ my: 1.5 }} />
 
-                <Stack spacing={1}>
+                <Stack spacing={1} sx={{ mb: 1.5 }}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Typography variant="body2" color="text.secondary">Payment Method:</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                      {selectedOrder.paymentMethod === 'D17' ? 'D17 Mobile Payment' : (selectedOrder.paymentMethod === 'CASH_ON_DELIVERY' ? 'Cash on Delivery' : selectedOrder.paymentMethod || 'Standard')}
+                    </Typography>
+                  </Stack>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Typography variant="body2" color="text.secondary">Payment Status:</Typography>
+                    <Chip
+                      label={selectedOrder.paymentStatus || 'PENDING'}
+                      size="small"
+                      color={
+                        selectedOrder.paymentStatus === 'PAID' ? 'success' :
+                        selectedOrder.paymentStatus === 'PENDING_VERIFICATION' ? 'warning' :
+                        selectedOrder.paymentStatus === 'REJECTED' ? 'error' : 'default'
+                      }
+                      sx={{ fontWeight: 700, fontSize: '0.7rem', height: 22 }}
+                    />
+                  </Stack>
                   <Stack direction="row" justifyContent="space-between">
                     <Typography variant="body2" color="text.secondary">Total Paid:</Typography>
                     <Typography variant="subtitle1" sx={{ fontWeight: 900, color: 'primary.main' }}>
@@ -306,6 +353,12 @@ export default function OrderHistory() {
                     </Stack>
                   )}
                 </Stack>
+
+                {selectedOrder.paymentMethod === 'D17' && selectedOrder.paymentStatus === 'PENDING_VERIFICATION' && (
+                  <Alert severity="info" sx={{ mt: 1.5, fontSize: '0.8rem', borderRadius: 2 }}>
+                    <strong>D17 Verification in Progress:</strong> Your mobile payment proof has been submitted to GymPilot Official and is being verified (24–48 hours). You'll receive email notification as soon as it is approved.
+                  </Alert>
+                )}
               </DialogContent>
 
               <DialogActions>

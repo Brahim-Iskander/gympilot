@@ -43,6 +43,7 @@ import { useAuth } from '../context/AuthContext';
 import { useThemeMode } from '../context/ThemeContext';
 import { coachChatService } from '../services/coachChatService';
 import { adminService } from '../services/adminService';
+import { d17Service } from '../services/d17Service';
 import DarkModeRoundedIcon from '@mui/icons-material/DarkModeRounded';
 import LightModeRoundedIcon from '@mui/icons-material/LightModeRounded';
 
@@ -55,6 +56,13 @@ const ADMIN_NAV = [
     label: 'Dashboard',
     icon: <DashboardRounded />,
     path: '/admin',
+  },
+  {
+    id: 'admin-d17-payments',
+    label: 'D17 Payments',
+    icon: <Box component="img" src="/d17-logo.webp" alt="D17" sx={{ width: 22, height: 22, objectFit: 'contain', bgcolor: '#fff', borderRadius: 0.8, p: 0.3 }} />,
+    path: '/admin/d17-payments',
+    isD17: true,
   },
   {
     id: 'admin-tickets',
@@ -125,13 +133,15 @@ export default function AdminLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [coachUnread, setCoachUnread] = useState(0);
   const [ticketUnread, setTicketUnread] = useState(0);
+  const [d17PendingCount, setD17PendingCount] = useState(0);
   const currentPath = location.pathname;
 
-  // Poll for coach unread inquiries and support tickets unread
+  // Poll for coach unread inquiries, support tickets, and pending D17 payments
   useEffect(() => {
     coachChatService.getAdminUnreadCount().then(setCoachUnread).catch(() => { });
     if (isAdmin) {
       adminService.getTicketUnreadCount().then((res) => setTicketUnread(res.unreadCount || 0)).catch(() => { });
+      d17Service.getAdminStats().then((res) => setD17PendingCount(res.pendingCount || 0)).catch(() => { });
     }
 
     const interval = setInterval(() => {
@@ -139,6 +149,7 @@ export default function AdminLayout() {
       coachChatService.getAdminUnreadCount().then(setCoachUnread).catch(() => { });
       if (isAdmin) {
         adminService.getTicketUnreadCount().then((res) => setTicketUnread(res.unreadCount || 0)).catch(() => { });
+        d17Service.getAdminStats().then((res) => setD17PendingCount(res.pendingCount || 0)).catch(() => { });
       }
     }, 15000);
     return () => clearInterval(interval);
@@ -202,7 +213,13 @@ export default function AdminLayout() {
         <List disablePadding>
           {visibleNav.map((item) => {
             const isActive = currentPath === item.path;
-            const unreadCount = item.isCoach ? coachUnread : item.isTicket ? ticketUnread : 0;
+            const unreadCount = item.isCoach
+              ? coachUnread
+              : item.isTicket
+              ? ticketUnread
+              : item.isD17
+              ? d17PendingCount
+              : 0;
 
             return (
               <ListItem key={item.id} disablePadding sx={{ mb: 0.5 }}>
@@ -226,7 +243,7 @@ export default function AdminLayout() {
                     <Chip
                       label={unreadCount}
                       size="small"
-                      color="error"
+                      color={item.isD17 ? 'warning' : 'error'}
                       sx={{ height: 20, fontSize: '0.65rem', fontWeight: 800 }}
                     />
                   )}

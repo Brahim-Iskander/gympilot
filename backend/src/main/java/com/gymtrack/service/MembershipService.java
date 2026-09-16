@@ -87,4 +87,33 @@ public class MembershipService {
 
         return UserResponse.from(saved);
     }
+
+    public User activateMembershipFromPayment(String userId, String tier, int durationDays, String paymentReference) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new InvalidCredentialsException("User not found: " + userId));
+
+        String targetTier = tier != null ? tier.trim().toUpperCase() : "BASIC";
+        if (!"BASIC".equals(targetTier) && !"PREMIUM".equals(targetTier)) {
+            targetTier = "BASIC";
+        }
+
+        Instant baseTime = Instant.now();
+        if (targetTier.equalsIgnoreCase(user.getMembershipTier())
+                && user.getMembershipExpiresAt() != null
+                && user.getMembershipExpiresAt().isAfter(baseTime)) {
+            baseTime = user.getMembershipExpiresAt();
+        }
+
+        Instant expiresAt = baseTime.plus(Duration.ofDays(durationDays > 0 ? durationDays : SUBSCRIPTION_DURATION_DAYS));
+
+        user.setMembershipTier(targetTier);
+        user.setMembershipStatus("ACTIVE");
+        user.setMembershipExpiresAt(expiresAt);
+
+        User saved = userRepository.save(user);
+        log.info("User {} ({}) activated {} membership via payment ref '{}' until {}",
+                saved.getEmail(), saved.getId(), targetTier, paymentReference, expiresAt);
+
+        return saved;
+    }
 }

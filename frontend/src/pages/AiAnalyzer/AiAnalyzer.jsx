@@ -33,9 +33,11 @@ import {
   CloseRounded,
   AddShoppingCartRounded,
   CardMembershipRounded,
+  BoltRounded,
 } from '@mui/icons-material';
 
 import SEO from '../../components/SEO';
+import BuyAiCreditsModal from '../../components/BuyAiCreditsModal';
 import { aiPhotoAnalysisService } from '../../services/aiPhotoAnalysisService';
 import { aiService } from '../../services/aiService';
 import { useCart } from '../../context/CartContext';
@@ -65,6 +67,7 @@ export default function AiAnalyzer() {
   const [result, setResult] = useState(null);
   const [addedProductIds, setAddedProductIds] = useState(new Set());
   const [usageStatus, setUsageStatus] = useState(null);
+  const [buyCreditsOpen, setBuyCreditsOpen] = useState(false);
 
   const loadQuota = async () => {
     if (isAuthenticated) {
@@ -307,10 +310,49 @@ export default function AiAnalyzer() {
               >
                 <AutoAwesomeRounded sx={{ color: usageStatus.bodyScan.isExceeded ? 'error.main' : 'primary.main', fontSize: 20 }} />
                 <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                  Body Scans: <Box component="span" sx={{ color: usageStatus.bodyScan.isExceeded ? 'error.main' : 'primary.main', fontWeight: 800 }}>
-                    {usageStatus.isAdmin ? 'Unlimited (Admin)' : `${usageStatus.bodyScan.remaining} of ${usageStatus.bodyScan.limit} remaining (${usageStatus.bodyScan.period.toLowerCase()})`}
+                  Body Scans:{' '}
+                  <Box component="span" sx={{ color: usageStatus.bodyScan.isExceeded ? 'error.main' : 'primary.main', fontWeight: 800 }}>
+                    {usageStatus.isAdmin
+                      ? 'Unlimited (Admin)'
+                      : `${usageStatus.bodyScan.remaining} of ${usageStatus.bodyScan.limit} remaining (${usageStatus.bodyScan.period.toLowerCase()})`}
                   </Box>
                 </Typography>
+
+                {(usageStatus.aiCredits > 0 || usageStatus.bodyScan.aiCredits > 0) && (
+                  <Chip
+                    size="small"
+                    icon={<BoltRounded sx={{ color: '#8A7CFF !important', fontSize: 16 }} />}
+                    label={`+${usageStatus.aiCredits || usageStatus.bodyScan.aiCredits} Extra Credits`}
+                    sx={{
+                      fontWeight: 800,
+                      bgcolor: 'rgba(138, 124, 255, 0.15)',
+                      color: '#8A7CFF',
+                      border: '1px solid rgba(138, 124, 255, 0.3)',
+                    }}
+                  />
+                )}
+
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => setBuyCreditsOpen(true)}
+                  startIcon={<BoltRounded sx={{ color: '#8A7CFF' }} />}
+                  sx={{
+                    fontWeight: 800,
+                    borderRadius: 2,
+                    fontSize: '0.75rem',
+                    py: 0.5,
+                    borderColor: 'rgba(138, 124, 255, 0.4)',
+                    color: '#8A7CFF',
+                    '&:hover': {
+                      borderColor: '#8A7CFF',
+                      bgcolor: 'rgba(138, 124, 255, 0.1)',
+                    },
+                  }}
+                >
+                  Buy AI Credits
+                </Button>
+
                 {usageStatus.bodyScan.isExceeded && (
                   <Button
                     size="small"
@@ -963,19 +1005,30 @@ export default function AiAnalyzer() {
                       <Alert
                         severity="warning"
                         action={
-                          <Button
-                            color="inherit"
-                            size="small"
-                            onClick={() => navigate('/membership')}
-                            startIcon={<CardMembershipRounded />}
-                            sx={{ fontWeight: 800 }}
-                          >
-                            Upgrade
-                          </Button>
+                          <Stack direction="row" spacing={1}>
+                            <Button
+                              color="inherit"
+                              size="small"
+                              onClick={() => setBuyCreditsOpen(true)}
+                              startIcon={<BoltRounded sx={{ color: '#8A7CFF' }} />}
+                              sx={{ fontWeight: 800 }}
+                            >
+                              Buy Credits
+                            </Button>
+                            <Button
+                              color="inherit"
+                              size="small"
+                              onClick={() => navigate('/membership')}
+                              startIcon={<CardMembershipRounded />}
+                              sx={{ fontWeight: 800 }}
+                            >
+                              Upgrade
+                            </Button>
+                          </Stack>
                         }
                         sx={{ mb: 2.5, borderRadius: 2.5 }}
                       >
-                        You have reached your {usageStatus.bodyScan.period.toLowerCase()} limit of {usageStatus.bodyScan.limit} Body Scans. Upgrade to Basic (5/mo) or Premium (15/mo) to continue.
+                        You have reached your {usageStatus.bodyScan.period.toLowerCase()} limit of {usageStatus.bodyScan.limit} Body Scans. Purchase instant AI credits (starting at 5 TND for 3 scans) or upgrade your plan to continue.
                       </Alert>
                     )}
 
@@ -1009,6 +1062,13 @@ export default function AiAnalyzer() {
           )}
         </Container>
       </Box>
+
+      {/* Buy AI Credits Modal */}
+      <BuyAiCreditsModal
+        open={buyCreditsOpen}
+        onClose={() => setBuyCreditsOpen(false)}
+        onCreditUpdated={() => loadQuota()}
+      />
     </>
   );
 }

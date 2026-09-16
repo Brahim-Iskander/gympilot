@@ -161,6 +161,11 @@ public class OrderService {
         order.setPointsEarned(pointsEarned);
         order.setNotes(request.notes());
 
+        if ("D17".equalsIgnoreCase(request.paymentMethod())) {
+            order.setPaymentStatus("PENDING_VERIFICATION");
+            order.setStatus("PENDING_VERIFICATION");
+        }
+
         Order saved = orderRepository.save(order);
         log.info("Created order {} for user {} with total {} TND (shipping: {} TND)", orderNumber, buyerEmail, finalTotal, shippingFee);
 
@@ -347,5 +352,31 @@ public class OrderService {
                 bestSellingProduct,
                 recentOrders
         );
+    }
+
+    public Order markOrderPaidByD17(String orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new InvalidCredentialsException("Order not found: " + orderId));
+        order.setPaymentStatus("PAID");
+        order.setStatus("PROCESSING");
+        order.setUpdatedAt(Instant.now());
+        Order saved = orderRepository.save(order);
+        log.info("Order {} marked as PAID via D17 verification", order.getOrderNumber());
+        return saved;
+    }
+
+    public Order markOrderD17Rejected(String orderId, String reason) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new InvalidCredentialsException("Order not found: " + orderId));
+        order.setPaymentStatus("FAILED");
+        order.setStatus("PAYMENT_FAILED");
+        if (reason != null && !reason.isBlank()) {
+            String currentNotes = order.getNotes() != null ? order.getNotes() + " | " : "";
+            order.setNotes(currentNotes + "D17 payment verification rejected: " + reason);
+        }
+        order.setUpdatedAt(Instant.now());
+        Order saved = orderRepository.save(order);
+        log.info("Order {} payment rejected: {}", order.getOrderNumber(), reason);
+        return saved;
     }
 }

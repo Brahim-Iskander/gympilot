@@ -25,6 +25,7 @@ import AdminUsers from '../pages/Admin/AdminUsers';
 import AdminPartners from '../pages/Admin/AdminPartners';
 import AdminCoachChat from '../pages/Admin/AdminCoachChat';
 import AdminTickets from '../pages/Admin/AdminTickets';
+import AdminD17Payments from '../pages/Admin/AdminD17Payments';
 import AdminVouchers from '../pages/Admin/AdminVouchers';
 import AdminPacks from '../pages/Admin/AdminPacks';
 import AdminSellerEarnings from '../pages/Admin/AdminSellerEarnings';
@@ -276,6 +277,7 @@ export default function AppRoutes() {
         }
       >
         <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/d17-payments" element={<AdminD17Payments />} />
         <Route path="/admin/tickets" element={<AdminTickets />} />
         <Route path="/admin/coach-chat" element={<AdminCoachChat />} />
         <Route path="/admin/users" element={<AdminUsers />} />

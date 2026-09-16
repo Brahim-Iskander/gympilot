@@ -50,8 +50,10 @@ import ShowChartRoundedIcon from '@mui/icons-material/ShowChartRounded';
 import FlagRoundedIcon from '@mui/icons-material/FlagRounded';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 import CardMembershipRoundedIcon from '@mui/icons-material/CardMembershipRounded';
+import BoltRoundedIcon from '@mui/icons-material/BoltRounded';
 
 import { Card, StatCard, SectionHeader, ChartCard, EmptyState, LoadingSpinner } from '../../components/ui';
+import BuyAiCreditsModal from '../../components/BuyAiCreditsModal';
 import { progressService } from '../../services/progressService';
 import { aiService } from '../../services/aiService';
 import { onboardingService } from '../../services/onboardingService';
@@ -229,6 +231,7 @@ export default function Analytics() {
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState('');
   const [usageStatus, setUsageStatus] = useState(null);
+  const [buyCreditsOpen, setBuyCreditsOpen] = useState(false);
 
   // Consent modal state
   const [consentDialogOpen, setConsentDialogOpen] = useState(false);
@@ -500,6 +503,36 @@ export default function Analytics() {
                   : `${usageStatus.progressAnalysis.remaining} of ${usageStatus.progressAnalysis.limit} remaining (${usageStatus.progressAnalysis.period.toLowerCase()})`}
               </Box>
             </Typography>
+
+            {(usageStatus.aiCredits > 0 || usageStatus.progressAnalysis.aiCredits > 0) && (
+              <Chip
+                size="small"
+                icon={<BoltRoundedIcon sx={{ color: '#8A7CFF !important', fontSize: 16 }} />}
+                label={`+${usageStatus.aiCredits || usageStatus.progressAnalysis.aiCredits} Extra Credits`}
+                sx={{
+                  fontWeight: 800,
+                  bgcolor: 'rgba(138, 124, 255, 0.15)',
+                  color: '#8A7CFF',
+                  border: '1px solid rgba(138, 124, 255, 0.3)',
+                }}
+              />
+            )}
+
+            <Chip
+              label="Buy AI Credits"
+              icon={<BoltRoundedIcon sx={{ color: '#8A7CFF !important', fontSize: 16 }} />}
+              size="small"
+              onClick={() => setBuyCreditsOpen(true)}
+              sx={{
+                fontWeight: 800,
+                bgcolor: 'rgba(138, 124, 255, 0.12)',
+                color: '#8A7CFF',
+                border: '1px solid rgba(138, 124, 255, 0.4)',
+                cursor: 'pointer',
+                '&:hover': { bgcolor: 'rgba(138, 124, 255, 0.22)' },
+              }}
+            />
+
             {usageStatus.progressAnalysis.isExceeded && (
               <Chip
                 label="Upgrade Plan"
@@ -914,14 +947,25 @@ export default function Analytics() {
                 <Alert
                   severity="warning"
                   icon={<WarningAmberRoundedIcon />}
-                  sx={{ borderRadius: 2, maxWidth: 520, mx: 'auto' }}
+                  sx={{ borderRadius: 2, maxWidth: 540, mx: 'auto' }}
                   action={
-                    <Button color="inherit" size="small" onClick={() => navigate('/membership')} sx={{ fontWeight: 700 }}>
-                      Upgrade
-                    </Button>
+                    <Stack direction="row" spacing={1}>
+                      <Button
+                        color="inherit"
+                        size="small"
+                        onClick={() => setBuyCreditsOpen(true)}
+                        startIcon={<BoltRoundedIcon sx={{ color: '#8A7CFF' }} />}
+                        sx={{ fontWeight: 800 }}
+                      >
+                        Buy Credits
+                      </Button>
+                      <Button color="inherit" size="small" onClick={() => navigate('/membership')} sx={{ fontWeight: 700 }}>
+                        Upgrade
+                      </Button>
+                    </Stack>
                   }
                 >
-                  You've reached your {usageStatus.progressAnalysis.period.toLowerCase()} limit of {usageStatus.progressAnalysis.limit} AI Progress Analyses. Upgrade to continue.
+                  You've reached your {usageStatus.progressAnalysis.period.toLowerCase()} limit of {usageStatus.progressAnalysis.limit} AI Progress Analyses. Buy instant credits or upgrade your plan to continue.
                 </Alert>
               ) : (
                 <Button
@@ -1092,6 +1136,13 @@ export default function Analytics() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Buy AI Credits Modal */}
+      <BuyAiCreditsModal
+        open={buyCreditsOpen}
+        onClose={() => setBuyCreditsOpen(false)}
+        onCreditUpdated={loadQuota}
+      />
     </Box>
   );
 }

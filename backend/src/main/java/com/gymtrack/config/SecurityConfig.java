@@ -72,6 +72,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/packs/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/packs").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/vouchers/validate").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/payments/d17/config").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/ai/credits/packs").permitAll()
                         .requestMatchers("/api/health", "/health").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/admin/coach-chat/**").hasAnyRole("ADMIN", "COACH")

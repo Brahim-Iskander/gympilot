@@ -15,6 +15,7 @@ import com.gymtrack.model.AiFeature;
 import com.gymtrack.model.AiUsageLog;
 import com.gymtrack.model.User;
 import com.gymtrack.repository.AiUsageLogRepository;
+import com.gymtrack.repository.UserRepository;
 
 @Service
 public class AiUsageService {
@@ -26,15 +27,18 @@ public class AiUsageService {
     public static final int PREMIUM_MONTHLY_LIMIT = 15;
 
     private final AiUsageLogRepository aiUsageLogRepository;
+    private final UserRepository userRepository;
 
-    public AiUsageService(AiUsageLogRepository aiUsageLogRepository) {
+    public AiUsageService(AiUsageLogRepository aiUsageLogRepository, UserRepository userRepository) {
         this.aiUsageLogRepository = aiUsageLogRepository;
+        this.userRepository = userRepository;
     }
 
     /**
-     * Checks if the user is allowed to execute the specified AI feature according to their membership tier.
-     * If allowed, saves a new usage log and returns the new usage count.
-     * If exceeded, throws AiUsageLimitExceededException.
+     * Checks if the user is allowed to execute the specified AI feature according to their membership tier
+     * or purchased AI credits.
+     * If tier quota is exhausted but user has AI credits, 1 credit is consumed.
+     * If all quota & credits are exhausted, throws AiUsageLimitExceededException.
      */
     public long checkAndIncrementUsage(User user, AiFeature feature) {
         if (isAdmin(user)) {
@@ -50,7 +54,16 @@ public class AiUsageService {
         long currentUsage = getCurrentUsage(user.getId(), feature, period);
 
         if (currentUsage >= limit) {
-            log.warn("User {} exceeded {} quota (tier: {}, limit: {}, used: {})",
+            int credits = user.getAiCredits();
+            if (credits > 0) {
+                user.setAiCredits(credits - 1);
+                userRepository.save(user);
+                log.info("User {} consumed 1 AI credit for {} (credits remaining: {})",
+                        user.getEmail(), feature, user.getAiCredits());
+                recordUsage(user, feature);
+                return currentUsage + 1;
+            }
+            log.warn("User {} exceeded {} quota (tier: {}, limit: {}, used: {}, credits: 0)",
                     user.getEmail(), feature, tier, limit, currentUsage);
             throw new AiUsageLimitExceededException(feature, tier, limit, period);
         }
@@ -60,30 +73,33 @@ public class AiUsageService {
     }
 
     /**
-     * Returns the comprehensive usage status for both AI features for the specified user.
+     * Returns the comprehensive usage status for both AI features for the specified user,
+     * including purchased AI credits.
      */
     public AiUsageStatusResponse getUsageStatus(User user) {
         boolean admin = isAdmin(user);
         String tier = resolveTier(user);
+        int credits = user != null ? user.getAiCredits() : 0;
 
-        FeatureUsage progressUsage = buildFeatureUsage(user, AiFeature.PROGRESS_ANALYSIS, tier, admin);
-        FeatureUsage bodyScanUsage = buildFeatureUsage(user, AiFeature.BODY_SCAN, tier, admin);
+        FeatureUsage progressUsage = buildFeatureUsage(user, AiFeature.PROGRESS_ANALYSIS, tier, admin, credits);
+        FeatureUsage bodyScanUsage = buildFeatureUsage(user, AiFeature.BODY_SCAN, tier, admin, credits);
 
-        return new AiUsageStatusResponse(tier, admin, progressUsage, bodyScanUsage);
+        return new AiUsageStatusResponse(tier, admin, credits, progressUsage, bodyScanUsage);
     }
 
-    private FeatureUsage buildFeatureUsage(User user, AiFeature feature, String tier, boolean admin) {
+    private FeatureUsage buildFeatureUsage(User user, AiFeature feature, String tier, boolean admin, int credits) {
         if (admin) {
-            return new FeatureUsage(feature.name(), 9999, 0, 9999, "UNLIMITED", false);
+            return new FeatureUsage(feature.name(), 9999, 0, 9999, "UNLIMITED", false, credits, 9999);
         }
 
         int limit = getLimitForTier(tier);
         String period = getPeriodForTier(tier);
-        long used = getCurrentUsage(user.getId(), feature, period);
+        long used = user != null ? getCurrentUsage(user.getId(), feature, period) : 0;
         long remaining = Math.max(0, limit - used);
-        boolean isExceeded = used >= limit;
+        long totalAvailable = remaining + credits;
+        boolean isExceeded = remaining <= 0 && credits <= 0;
 
-        return new FeatureUsage(feature.name(), limit, used, remaining, period, isExceeded);
+        return new FeatureUsage(feature.name(), limit, used, remaining, period, isExceeded, credits, totalAvailable);
     }
 
     private void recordUsage(User user, AiFeature feature) {

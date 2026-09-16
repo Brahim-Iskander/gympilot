@@ -3,6 +3,7 @@ package com.gymtrack.dto;
 public record AiUsageStatusResponse(
         String tier,
         boolean isAdmin,
+        int aiCredits,
         FeatureUsage progressAnalysis,
         FeatureUsage bodyScan
 ) {
@@ -12,6 +13,8 @@ public record AiUsageStatusResponse(
             long used,
             long remaining,
             String period, // "LIFETIME" or "MONTHLY" or "UNLIMITED"
-            boolean isExceeded
+            boolean isExceeded,
+            int aiCredits,
+            long totalAvailable
     ) {}
 }

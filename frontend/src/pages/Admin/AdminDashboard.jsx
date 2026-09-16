@@ -49,6 +49,7 @@ import {
 } from 'recharts';
 
 import { adminService } from '../../services/adminService';
+import { d17Service } from '../../services/d17Service';
 
 function StatCard({ title, value, subtitle, icon: Icon, color = 'primary.main', bgColor, loading }) {
   return (
@@ -117,6 +118,7 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [ticketStats, setTicketStats] = useState(null);
+  const [d17Stats, setD17Stats] = useState(null);
   const [regPeriod, setRegPeriod] = useState('daily');
   const [regData, setRegData] = useState([]);
   const [loginPeriod, setLoginPeriod] = useState('daily');
@@ -127,12 +129,14 @@ export default function AdminDashboard() {
     async function loadStats() {
       try {
         setLoading(true);
-        const [dashRes, ticketRes] = await Promise.allSettled([
+        const [dashRes, ticketRes, d17Res] = await Promise.allSettled([
           adminService.getDashboardStats(),
           adminService.getTicketStats(),
+          d17Service.getAdminStats(),
         ]);
         if (dashRes.status === 'fulfilled') setStats(dashRes.value);
         if (ticketRes.status === 'fulfilled') setTicketStats(ticketRes.value);
+        if (d17Res.status === 'fulfilled') setD17Stats(d17Res.value);
       } catch (err) {
         console.error('Failed to load admin stats', err);
       } finally {
@@ -502,6 +506,118 @@ export default function AdminDashboard() {
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
                   All-time tickets
+                </Typography>
+              </Box>
+            </Grid>
+          </Grid>
+        </Paper>
+
+        {/* D17 Mobile Payment Verification Operations */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            mt: 3,
+            border: '1px solid',
+            borderColor: (d17Stats?.slaBreachCount || 0) > 0 ? 'error.main' : 'divider',
+            borderRadius: 3,
+            bgcolor: (d17Stats?.slaBreachCount || 0) > 0 ? 'rgba(239,83,80,0.03)' : 'background.paper',
+          }}
+        >
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            justifyContent="space-between"
+            alignItems={{ xs: 'flex-start', sm: 'center' }}
+            spacing={2}
+            sx={{ mb: 2.5 }}
+          >
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <Box
+                component="img"
+                src="/d17-logo.webp"
+                alt="D17"
+                sx={{ width: 34, height: 34, objectFit: 'contain', bgcolor: '#fff', borderRadius: 1, p: 0.4 }}
+              />
+              <Box>
+                <Typography variant="h6" fontWeight={800}>
+                  D17 Mobile Payment Verification
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Manual Tunisian Post transfers to GymPilot Official (24–48h SLA monitoring)
+                </Typography>
+              </Box>
+            </Stack>
+
+            <Button
+              variant="contained"
+              endIcon={<ArrowForwardRounded />}
+              onClick={() => navigate('/admin/d17-payments')}
+              sx={{
+                bgcolor: 'warning.main',
+                color: '#000',
+                fontWeight: 800,
+                borderRadius: 2.5,
+                px: 2.5,
+                '&:hover': { bgcolor: '#f57c00' },
+              }}
+            >
+              Triage D17 Payments
+            </Button>
+          </Stack>
+
+          <Grid container spacing={2}>
+            <Grid item xs={6} sm={3}>
+              <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'rgba(255,167,38,0.08)', border: '1px solid rgba(255,167,38,0.25)' }}>
+                <Typography variant="caption" color="warning.main" fontWeight={800} display="block">
+                  PENDING REVIEW
+                </Typography>
+                <Typography variant="h5" fontWeight={900} sx={{ color: 'warning.main', my: 0.25 }}>
+                  {d17Stats?.pendingCount ?? 0}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Awaiting verification
+                </Typography>
+              </Box>
+            </Grid>
+
+            <Grid item xs={6} sm={3}>
+              <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'rgba(0,230,118,0.08)', border: '1px solid rgba(0,230,118,0.2)' }}>
+                <Typography variant="caption" color="#00E676" fontWeight={800} display="block">
+                  APPROVED
+                </Typography>
+                <Typography variant="h5" fontWeight={900} sx={{ color: '#00E676', my: 0.25 }}>
+                  {d17Stats?.approvedCount ?? 0}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Activated plans & orders
+                </Typography>
+              </Box>
+            </Grid>
+
+            <Grid item xs={6} sm={3}>
+              <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'rgba(255,152,0,0.08)', border: '1px solid rgba(255,152,0,0.2)' }}>
+                <Typography variant="caption" color="#FF9800" fontWeight={800} display="block">
+                  SLA WARNING (&gt;24H)
+                </Typography>
+                <Typography variant="h5" fontWeight={900} sx={{ color: '#FF9800', my: 0.25 }}>
+                  {d17Stats?.slaWarningCount ?? 0}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Tickets pending &gt; 24h
+                </Typography>
+              </Box>
+            </Grid>
+
+            <Grid item xs={6} sm={3}>
+              <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'rgba(239,83,80,0.08)', border: '1px solid rgba(239,83,80,0.2)' }}>
+                <Typography variant="caption" color="error.main" fontWeight={800} display="block">
+                  SLA BREACH (&gt;48H)
+                </Typography>
+                <Typography variant="h5" fontWeight={900} sx={{ color: 'error.main', my: 0.25 }}>
+                  {d17Stats?.slaBreachCount ?? 0}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Urgent verification overdue
                 </Typography>
               </Box>
             </Grid>

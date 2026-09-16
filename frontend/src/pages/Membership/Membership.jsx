@@ -43,6 +43,7 @@ import {
   ConfirmationNumberRounded,
   MonetizationOnRounded,
   StarRounded,
+  PhoneAndroidRounded,
 } from '@mui/icons-material';
 
 import { ticketService } from '../../services/ticketService';
@@ -53,6 +54,7 @@ import { useLanguage } from '../../i18n';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import { useGeoCurrency } from '../../utils/geoCurrency';
+import D17PaymentModal from '../../components/D17PaymentModal';
 
 export default function MembershipPage() {
   const { t } = useLanguage();
@@ -70,6 +72,37 @@ export default function MembershipPage() {
   const [successRedeem, setSuccessRedeem] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [confirmationOpen, setConfirmationOpen] = useState(false);
+
+  // D17 manual payment modal state
+  const [d17Modal, setD17Modal] = useState({
+    open: false,
+    tier: 'BASIC',
+    planName: 'Basic Plan',
+    amount: 49,
+  });
+
+  const handleOpenD17 = (tier, planName, defaultAmount) => {
+    if (!user) {
+      navigate('/login?redirect=/membership');
+      return;
+    }
+    const amount = tier === 'BASIC'
+      ? (geo.config?.basicAmount || defaultAmount || 49)
+      : (geo.config?.premiumAmount || defaultAmount || 99);
+
+    setD17Modal({
+      open: true,
+      tier,
+      planName,
+      amount,
+    });
+  };
+
+  const handleD17Success = (ticket) => {
+    if (user) {
+      updateUser({ ...user, membershipStatus: 'PENDING_VERIFICATION' });
+    }
+  };
 
   const basicFeatures = [
     'Complete access to workout logger & exercise history',
@@ -376,6 +409,32 @@ export default function MembershipPage() {
         </Alert>
       )}
 
+      {user?.membershipStatus === 'PENDING_VERIFICATION' && (
+        <Alert
+          severity="info"
+          icon={<VerifiedUserRounded sx={{ color: '#00E676' }} />}
+          action={
+            <Button
+              color="inherit"
+              size="small"
+              onClick={() => navigate('/support')}
+              sx={{ fontWeight: 700 }}
+            >
+              View Support Ticket
+            </Button>
+          }
+          sx={{
+            mb: 4,
+            borderRadius: 3,
+            bgcolor: 'rgba(0,230,118,0.08)',
+            border: '1px solid rgba(0,230,118,0.25)',
+            color: 'text.primary',
+          }}
+        >
+          Your D17 mobile payment proof is currently <strong>Pending Verification</strong> by our finance team (SLA: 24–48h). You will receive an instant notification and email once your membership plan is activated!
+        </Alert>
+      )}
+
       {/* Pricing Cards Grid */}
       <Grid container spacing={{ xs: 3, md: 4 }} alignItems="stretch" justifyContent="center">
         {/* ===================== BASIC PLAN ===================== */}
@@ -403,7 +462,9 @@ export default function MembershipPage() {
             {/* Available / Active Badge */}
             <Chip
               label={
-                user?.isTrialActive
+                user?.membershipStatus === 'PENDING_VERIFICATION' && (user?.membershipTier === 'BASIC' || !user?.membershipTier)
+                  ? 'PENDING D17 VERIFICATION'
+                  : user?.isTrialActive
                   ? 'ACTIVE 2-WEEK FREE TRIAL'
                   : user?.membershipTier === 'BASIC' && user?.membershipStatus === 'ACTIVE'
                   ? 'CURRENT ACTIVE PLAN'
@@ -414,7 +475,7 @@ export default function MembershipPage() {
                 position: 'absolute',
                 top: -14,
                 left: 28,
-                bgcolor: 'primary.main',
+                bgcolor: user?.membershipStatus === 'PENDING_VERIFICATION' ? '#00E676' : 'primary.main',
                 color: '#000',
                 fontWeight: 900,
                 fontSize: '0.75rem',
@@ -542,51 +603,62 @@ export default function MembershipPage() {
                       fullWidth
                       variant="contained"
                       size="large"
-                      onClick={() => handleRedeemWithPoints('BASIC')}
-                      disabled={redeemingTier === 'BASIC' || (user?.points ?? 0) < BASIC_POINTS_COST}
-                      startIcon={redeemingTier === 'BASIC' ? <CircularProgress size={20} color="inherit" /> : <MonetizationOnRounded />}
+                      onClick={() => handleOpenD17('BASIC', 'Basic Plan', 49)}
+                      startIcon={
+                        <Box
+                          component="img"
+                          src="/d17-logo.webp"
+                          alt="D17"
+                          sx={{ width: 22, height: 22, borderRadius: 0.75, objectFit: 'contain' }}
+                        />
+                      }
                       sx={{
                         py: 1.5,
                         bgcolor: 'primary.main',
                         color: '#000',
-                        fontWeight: 800,
+                        fontWeight: 900,
                         fontSize: '0.95rem',
                         borderRadius: 3,
-                        boxShadow: '0 8px 24px rgba(198,255,62,0.3)',
+                        boxShadow: '0 8px 24px rgba(198,255,62,0.35)',
                         '&:hover': {
                           bgcolor: '#b3f520',
                         },
                       }}
                     >
-                      {redeemingTier === 'BASIC' ? 'Activating...' : `Redeem for ${BASIC_POINTS_COST} Points`}
+                      Pay with D17 Mobile ({geo.config.basicPrice})
                     </Button>
-                    {(user?.points ?? 0) < BASIC_POINTS_COST && (
-                      <Typography variant="caption" color="error.main" align="center" display="block" sx={{ fontWeight: 600 }}>
-                        You need {BASIC_POINTS_COST - (user?.points ?? 0)} more points to redeem this plan.
-                      </Typography>
-                    )}
-                    <Divider sx={{ my: 0.5 }}><Chip label="OR" size="small" sx={{ fontSize: '0.65rem', fontWeight: 700 }} /></Divider>
+
+                    <Divider sx={{ my: 0.5 }}>
+                      <Chip label="OR USE REWARD POINTS" size="small" sx={{ fontSize: '0.65rem', fontWeight: 700 }} />
+                    </Divider>
+
                     <Button
                       fullWidth
                       variant="outlined"
-                      size="large"
-                      onClick={handleSubscribeBasic}
-                      disabled={loading}
-                      startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <BoltRounded />}
+                      size="medium"
+                      onClick={() => handleRedeemWithPoints('BASIC')}
+                      disabled={redeemingTier === 'BASIC' || (user?.points ?? 0) < BASIC_POINTS_COST}
+                      startIcon={redeemingTier === 'BASIC' ? <CircularProgress size={18} color="inherit" /> : <MonetizationOnRounded />}
                       sx={{
                         py: 1.25,
                         fontWeight: 700,
-                        fontSize: '0.9rem',
+                        fontSize: '0.85rem',
                         borderRadius: 3,
                         borderColor: 'primary.main',
                         color: 'primary.main',
                       }}
                     >
-                      {loading ? 'Submitting...' : 'Request via Support'}
+                      {redeemingTier === 'BASIC' ? 'Activating...' : `Redeem for ${BASIC_POINTS_COST} Points`}
                     </Button>
-                    <Typography variant="caption" color="text.secondary" align="center" display="block">
-                      Our team will manually activate your plan.
-                    </Typography>
+                    {(user?.points ?? 0) < BASIC_POINTS_COST ? (
+                      <Typography variant="caption" color="text.secondary" align="center" display="block">
+                        Your balance: {user?.points ?? 0} pts (Need {BASIC_POINTS_COST - (user?.points ?? 0)} more)
+                      </Typography>
+                    ) : (
+                      <Typography variant="caption" color="success.main" align="center" display="block" sx={{ fontWeight: 700 }}>
+                        ✓ You have enough points to unlock this plan free!
+                      </Typography>
+                    )}
                   </Stack>
                 )}
               </Box>
@@ -618,17 +690,21 @@ export default function MembershipPage() {
             {/* Badge */}
             <Chip
               label={
-                user?.membershipTier === 'PREMIUM' && user?.membershipStatus === 'ACTIVE'
+                user?.membershipStatus === 'PENDING_VERIFICATION' && user?.membershipTier === 'PREMIUM'
+                  ? 'PENDING D17 VERIFICATION'
+                  : user?.membershipTier === 'PREMIUM' && user?.membershipStatus === 'ACTIVE'
                   ? 'CURRENT ACTIVE PLAN'
-                  : 'REDEEM WITH POINTS'
+                  : 'AVAILABLE NOW'
               }
               size="small"
               sx={{
                 position: 'absolute',
                 top: -14,
                 left: 28,
-                background: 'linear-gradient(135deg, #8A7CFF 0%, #6B5CEF 100%)',
-                color: '#FFFFFF',
+                background: user?.membershipStatus === 'PENDING_VERIFICATION' && user?.membershipTier === 'PREMIUM'
+                  ? '#00E676'
+                  : 'linear-gradient(135deg, #8A7CFF 0%, #6B5CEF 100%)',
+                color: user?.membershipStatus === 'PENDING_VERIFICATION' && user?.membershipTier === 'PREMIUM' ? '#000' : '#FFFFFF',
                 fontWeight: 900,
                 fontSize: '0.75rem',
                 letterSpacing: 0.5,
@@ -742,42 +818,68 @@ export default function MembershipPage() {
                     )}
                   </>
                 ) : (
-                  <>
+                  <Stack spacing={1.5}>
                     <Button
                       fullWidth
                       variant="contained"
                       size="large"
-                      onClick={() => handleRedeemWithPoints('PREMIUM')}
-                      disabled={redeemingTier === 'PREMIUM' || (user?.points ?? 0) < PREMIUM_POINTS_COST}
-                      startIcon={redeemingTier === 'PREMIUM' ? <CircularProgress size={20} color="inherit" /> : <StarRounded />}
+                      onClick={() => handleOpenD17('PREMIUM', 'Premium Plan', 99)}
+                      startIcon={
+                        <Box
+                          component="img"
+                          src="/d17-logo.webp"
+                          alt="D17"
+                          sx={{ width: 22, height: 22, borderRadius: 0.75, objectFit: 'contain' }}
+                        />
+                      }
                       sx={{
                         py: 1.5,
                         background: 'linear-gradient(135deg, #8A7CFF 0%, #6B5CEF 100%)',
                         color: '#FFFFFF',
-                        fontWeight: 800,
+                        fontWeight: 900,
                         fontSize: '0.95rem',
                         borderRadius: 3,
-                        boxShadow: '0 8px 24px rgba(138,124,255,0.3)',
+                        boxShadow: '0 8px 24px rgba(138,124,255,0.35)',
                         '&:hover': {
                           background: 'linear-gradient(135deg, #9B8FFF 0%, #7C6EFF 100%)',
                         },
-                        '&.Mui-disabled': {
-                          background: 'rgba(138,124,255,0.3)',
-                          color: 'rgba(255,255,255,0.5)',
-                        },
+                      }}
+                    >
+                      Pay with D17 Mobile ({geo.config.premiumPrice})
+                    </Button>
+
+                    <Divider sx={{ my: 0.5 }}>
+                      <Chip label="OR USE REWARD POINTS" size="small" sx={{ fontSize: '0.65rem', fontWeight: 700 }} />
+                    </Divider>
+
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      size="medium"
+                      onClick={() => handleRedeemWithPoints('PREMIUM')}
+                      disabled={redeemingTier === 'PREMIUM' || (user?.points ?? 0) < PREMIUM_POINTS_COST}
+                      startIcon={redeemingTier === 'PREMIUM' ? <CircularProgress size={18} color="inherit" /> : <StarRounded />}
+                      sx={{
+                        py: 1.25,
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                        borderRadius: 3,
+                        borderColor: '#8A7CFF',
+                        color: '#8A7CFF',
                       }}
                     >
                       {redeemingTier === 'PREMIUM' ? 'Activating...' : `Redeem for ${PREMIUM_POINTS_COST} Points`}
                     </Button>
-                    {(user?.points ?? 0) < PREMIUM_POINTS_COST && (
-                      <Typography variant="caption" color="error.main" align="center" display="block" sx={{ mt: 1, fontWeight: 600 }}>
-                        You need {PREMIUM_POINTS_COST - (user?.points ?? 0)} more points to redeem this plan.
+                    {(user?.points ?? 0) < PREMIUM_POINTS_COST ? (
+                      <Typography variant="caption" color="text.secondary" align="center" display="block">
+                        Your balance: {user?.points ?? 0} pts (Need {PREMIUM_POINTS_COST - (user?.points ?? 0)} more)
+                      </Typography>
+                    ) : (
+                      <Typography variant="caption" color="success.main" align="center" display="block" sx={{ fontWeight: 700 }}>
+                        ✓ You have enough points to unlock this plan free!
                       </Typography>
                     )}
-                    <Typography variant="caption" color="text.secondary" align="center" display="block" sx={{ mt: 1 }}>
-                      Unlocks all premium features for 30 days.
-                    </Typography>
-                  </>
+                  </Stack>
                 )}
               </Box>
             </CardContent>
@@ -938,6 +1040,16 @@ export default function MembershipPage() {
           {isAuthenticated ? 'Back to Dashboard' : 'Back to Home'}
         </Button>
       </Box>
+
+      {/* D17 Payment Modal */}
+      <D17PaymentModal
+        open={d17Modal.open}
+        onClose={() => setD17Modal((prev) => ({ ...prev, open: false }))}
+        type="SUBSCRIPTION"
+        amount={d17Modal.amount}
+        targetDetails={{ tier: d17Modal.tier, planName: d17Modal.planName }}
+        onSuccess={handleD17Success}
+      />
     </Container>
   );
 

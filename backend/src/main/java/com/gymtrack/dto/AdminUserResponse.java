@@ -30,7 +30,8 @@ public record AdminUserResponse(
         boolean isTrialActive,
         Instant membershipExpiresAt,
         Double commissionRate,
-        String storeName
+        String storeName,
+        int aiCredits
 ) {
 
     public static AdminUserResponse from(User user) {
@@ -56,6 +57,7 @@ public record AdminUserResponse(
                 user.isTrialActive(),
                 user.getMembershipExpiresAt(),
                 user.getCommissionRate(),
-                user.getStoreName());
+                user.getStoreName(),
+                user.getAiCredits());
     }
 }
