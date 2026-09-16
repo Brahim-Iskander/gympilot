@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -321,14 +322,30 @@ public class D17PaymentService {
         long slaWarnings = paymentRepo.countByStatusAndCreatedAtBefore("PENDING_VERIFICATION", threshold24h);
         long slaBreached = paymentRepo.countByStatusAndCreatedAtBefore("PENDING_VERIFICATION", threshold48h);
 
-        return Map.of(
-                "pending", pending,
-                "approved", approved,
-                "rejected", rejected,
-                "total", total,
-                "slaWarnings", slaWarnings,
-                "slaBreached", slaBreached
-        );
+        Map<String, Object> stats = new HashMap<>();
+        // Frontend camelCase properties
+        stats.put("pendingCount", pending);
+        stats.put("approvedCount", approved);
+        stats.put("rejectedCount", rejected);
+        stats.put("total", total);
+        stats.put("totalCount", total);
+        stats.put("slaWarningCount", slaWarnings);
+        stats.put("slaBreachCount", slaBreached);
+
+        // Shorthand aliases for backwards compatibility
+        stats.put("pending", pending);
+        stats.put("approved", approved);
+        stats.put("rejected", rejected);
+        stats.put("slaWarnings", slaWarnings);
+        stats.put("slaBreached", slaBreached);
+        return stats;
+    }
+
+    /**
+     * Get real-time count of pending D17 verifications for notification badges.
+     */
+    public long getPendingCount() {
+        return paymentRepo.countByStatus("PENDING_VERIFICATION");
     }
 
     /**

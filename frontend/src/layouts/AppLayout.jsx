@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 import { Outlet, useLocation, useNavigate, Link as RouterLink } from 'react-router-dom';
 
@@ -71,6 +71,8 @@ import { useCart } from '../context/CartContext';
 import { useThemeMode } from '../context/ThemeContext';
 import { useLanguage } from '../i18n';
 import { Badge } from '@mui/material';
+import { d17Service } from '../services/d17Service';
+import { adminService } from '../services/adminService';
 
 const SIDEBAR_WIDTH = 260;
 const HEADER_HEIGHT = 64;
@@ -87,6 +89,30 @@ export default function AppLayout() {
   const { user, isAdmin, isCoach, isSeller, logout } = useAuth();
   const { itemCount, openCartDrawer, toggleCartDrawer, cartDrawerOpen } = useCart();
   const { mode, toggleTheme } = useThemeMode();
+  const [adminPendingCount, setAdminPendingCount] = useState(0);
+
+  // Poll pending tickets & D17 payments for Admins in AppLayout
+  useEffect(() => {
+    if (!isAdmin) return;
+    const fetchAdminBadge = async () => {
+      try {
+        const [ticketRes, d17Res] = await Promise.allSettled([
+          adminService.getTicketUnreadCount(),
+          d17Service.getAdminStats(),
+        ]);
+        let count = 0;
+        if (ticketRes.status === 'fulfilled') count += (ticketRes.value?.unreadCount || 0);
+        if (d17Res.status === 'fulfilled') count += (d17Res.value?.pendingCount ?? d17Res.value?.pending ?? 0);
+        setAdminPendingCount(count);
+      } catch (_) {}
+    };
+
+    fetchAdminBadge();
+    const interval = setInterval(() => {
+      if (!document.hidden) fetchAdminBadge();
+    }, 20000);
+    return () => clearInterval(interval);
+  }, [isAdmin]);
 
   const NAV_ITEMS = [
     {
@@ -391,6 +417,20 @@ export default function AppLayout() {
               <ListItemText
                 primary={item.label}
               />
+              {item.badge > 0 && (
+                <Chip
+                  label={item.badge}
+                  size="small"
+                  color={item.badgeColor || 'warning'}
+                  sx={{
+                    height: 20,
+                    fontSize: '0.65rem',
+                    fontWeight: 900,
+                    ml: 'auto',
+                    boxShadow: '0 2px 8px rgba(255,167,38,0.45)',
+                  }}
+                />
+              )}
             </ListItemButton>
           </ListItem>
         );
@@ -517,6 +557,8 @@ export default function AppLayout() {
                       label: t('nav.admin'),
                       icon: <AdminPanelSettingsRounded sx={{ color: 'error.main' }} />,
                       path: '/admin',
+                      badge: adminPendingCount,
+                      badgeColor: 'warning',
                     },
                   ]
                 : isCoach
@@ -1012,6 +1054,30 @@ export default function AppLayout() {
                 <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
                   <LanguageSelector />
                 </Box>
+
+                {/* ADMIN PENDING ACTIONS BADGE */}
+                {isAdmin && adminPendingCount > 0 && (
+                  <Tooltip title={`Admin Panel (${adminPendingCount} pending action${adminPendingCount > 1 ? 's' : ''})`}>
+                    <IconButton
+                      component={RouterLink}
+                      to="/admin"
+                      sx={{
+                        color: 'warning.main',
+                        bgcolor: 'rgba(255,167,38,0.12)',
+                        border: '1px solid rgba(255,167,38,0.3)',
+                        '&:hover': {
+                          color: '#fff',
+                          bgcolor: 'warning.main',
+                        },
+                      }}
+                      aria-label="Admin pending tasks"
+                    >
+                      <Badge badgeContent={adminPendingCount} color="error">
+                        <AdminPanelSettingsRounded />
+                      </Badge>
+                    </IconButton>
+                  </Tooltip>
+                )}
 
                 {/* SHOPPING CART */}
                 <Tooltip title={cartDrawerOpen ? 'Close Cart' : 'Shopping Cart'}>

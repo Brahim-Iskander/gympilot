@@ -3,6 +3,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   AppBar,
   Avatar,
+  Badge,
   Box,
   Button,
   Chip,
@@ -140,16 +141,16 @@ export default function AdminLayout() {
   useEffect(() => {
     coachChatService.getAdminUnreadCount().then(setCoachUnread).catch(() => { });
     if (isAdmin) {
-      adminService.getTicketUnreadCount().then((res) => setTicketUnread(res.unreadCount || 0)).catch(() => { });
-      d17Service.getAdminStats().then((res) => setD17PendingCount(res.pendingCount || 0)).catch(() => { });
+      adminService.getTicketUnreadCount().then((res) => setTicketUnread(res?.unreadCount || 0)).catch(() => { });
+      d17Service.getAdminStats().then((res) => setD17PendingCount(res?.pendingCount ?? res?.pending ?? 0)).catch(() => { });
     }
 
     const interval = setInterval(() => {
       if (document.hidden) return;
       coachChatService.getAdminUnreadCount().then(setCoachUnread).catch(() => { });
       if (isAdmin) {
-        adminService.getTicketUnreadCount().then((res) => setTicketUnread(res.unreadCount || 0)).catch(() => { });
-        d17Service.getAdminStats().then((res) => setD17PendingCount(res.pendingCount || 0)).catch(() => { });
+        adminService.getTicketUnreadCount().then((res) => setTicketUnread(res?.unreadCount || 0)).catch(() => { });
+        d17Service.getAdminStats().then((res) => setD17PendingCount(res?.pendingCount ?? res?.pending ?? 0)).catch(() => { });
       }
     }, 15000);
     return () => clearInterval(interval);
@@ -244,7 +245,14 @@ export default function AdminLayout() {
                       label={unreadCount}
                       size="small"
                       color={item.isD17 ? 'warning' : 'error'}
-                      sx={{ height: 20, fontSize: '0.65rem', fontWeight: 800 }}
+                      sx={{
+                        height: 20,
+                        fontSize: '0.65rem',
+                        fontWeight: 900,
+                        boxShadow: item.isD17
+                          ? '0 2px 8px rgba(255,167,38,0.45)'
+                          : '0 2px 8px rgba(239,83,80,0.45)',
+                      }}
                     />
                   )}
                 </ListItemButton>
@@ -331,7 +339,13 @@ export default function AdminLayout() {
                 sx={{ mr: 1, color: 'text.primary' }}
                 aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
               >
-                {mobileOpen ? <CloseRounded /> : <MenuRounded />}
+                <Badge
+                  color="warning"
+                  badgeContent={d17PendingCount + ticketUnread + coachUnread}
+                  invisible={(d17PendingCount + ticketUnread + coachUnread) === 0}
+                >
+                  {mobileOpen ? <CloseRounded /> : <MenuRounded />}
+                </Badge>
               </IconButton>
             )}
 

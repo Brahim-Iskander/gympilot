@@ -572,7 +572,7 @@ export default function AdminDashboard() {
                   PENDING REVIEW
                 </Typography>
                 <Typography variant="h5" fontWeight={900} sx={{ color: 'warning.main', my: 0.25 }}>
-                  {d17Stats?.pendingCount ?? 0}
+                  {d17Stats?.pendingCount ?? d17Stats?.pending ?? 0}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
                   Awaiting verification
@@ -586,7 +586,7 @@ export default function AdminDashboard() {
                   APPROVED
                 </Typography>
                 <Typography variant="h5" fontWeight={900} sx={{ color: '#00E676', my: 0.25 }}>
-                  {d17Stats?.approvedCount ?? 0}
+                  {d17Stats?.approvedCount ?? d17Stats?.approved ?? 0}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
                   Activated plans & orders
@@ -600,7 +600,7 @@ export default function AdminDashboard() {
                   SLA WARNING (&gt;24H)
                 </Typography>
                 <Typography variant="h5" fontWeight={900} sx={{ color: '#FF9800', my: 0.25 }}>
-                  {d17Stats?.slaWarningCount ?? 0}
+                  {d17Stats?.slaWarningCount ?? d17Stats?.slaWarnings ?? 0}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
                   Tickets pending &gt; 24h
@@ -614,7 +614,7 @@ export default function AdminDashboard() {
                   SLA BREACH (&gt;48H)
                 </Typography>
                 <Typography variant="h5" fontWeight={900} sx={{ color: 'error.main', my: 0.25 }}>
-                  {d17Stats?.slaBreachCount ?? 0}
+                  {d17Stats?.slaBreachCount ?? d17Stats?.slaBreached ?? 0}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
                   Urgent verification overdue

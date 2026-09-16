@@ -134,7 +134,16 @@ export default function AdminD17Payments() {
       }
 
       setPayments(items);
-      if (statsData) setStats(statsData);
+      if (statsData) {
+        setStats({
+          pendingCount: statsData.pendingCount ?? statsData.pending ?? 0,
+          approvedCount: statsData.approvedCount ?? statsData.approved ?? 0,
+          rejectedCount: statsData.rejectedCount ?? statsData.rejected ?? 0,
+          slaWarningCount: statsData.slaWarningCount ?? statsData.slaWarnings ?? 0,
+          slaBreachCount: statsData.slaBreachCount ?? statsData.slaBreached ?? 0,
+          total: statsData.total ?? statsData.totalCount ?? 0,
+        });
+      }
       if (configData) setConfigSettings(configData);
     } catch (err) {
       console.error('Failed to load D17 payments:', err);
@@ -303,6 +312,20 @@ export default function AdminD17Payments() {
               <Typography variant="h4" sx={{ fontFamily: "'Sora', sans-serif", fontWeight: 800 }}>
                 D17 Payments Verification
               </Typography>
+              {(stats.pendingCount || stats.pending || 0) > 0 && (
+                <Chip
+                  label={`${stats.pendingCount ?? stats.pending} PENDING`}
+                  color="warning"
+                  size="small"
+                  sx={{
+                    fontWeight: 900,
+                    fontSize: '0.72rem',
+                    height: 24,
+                    letterSpacing: 0.5,
+                    boxShadow: '0 2px 8px rgba(255,167,38,0.4)',
+                  }}
+                />
+              )}
             </Stack>
             <Typography variant="body2" color="text.secondary">
               Review and triage manual Tunisian mobile payments, audit receipt screenshots, and activate subscriptions or orders.
@@ -332,14 +355,25 @@ export default function AdminD17Payments() {
         {/* KPI Stat Cards */}
         <Grid container spacing={2.5} sx={{ mb: 4 }}>
           <Grid item xs={12} sm={6} md={2.4}>
-            <Card elevation={0} sx={{ p: 2.5, borderRadius: 3, border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+            <Card
+              elevation={0}
+              sx={{
+                p: 2.5,
+                borderRadius: 3,
+                border: '1px solid',
+                borderColor: (stats.pendingCount || stats.pending || 0) > 0 ? 'warning.main' : 'divider',
+                boxShadow: (stats.pendingCount || stats.pending || 0) > 0 ? '0 4px 20px rgba(255,167,38,0.2)' : 'none',
+                bgcolor: (stats.pendingCount || stats.pending || 0) > 0 ? 'rgba(255,167,38,0.05)' : 'background.paper',
+                transition: 'all 0.25s ease',
+              }}
+            >
               <Stack direction="row" justifyContent="space-between" alignItems="center">
                 <Box>
                   <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase' }}>
                     Pending Verification
                   </Typography>
                   <Typography variant="h4" sx={{ fontWeight: 900, color: 'warning.main', mt: 0.5, fontFamily: "'Sora', sans-serif" }}>
-                    {stats.pendingCount || 0}
+                    {stats.pendingCount ?? stats.pending ?? 0}
                   </Typography>
                 </Box>
                 <Avatar sx={{ bgcolor: 'rgba(255,167,38,0.15)', color: 'warning.main', width: 44, height: 44 }}>
@@ -357,7 +391,7 @@ export default function AdminD17Payments() {
                     Approved & Active
                   </Typography>
                   <Typography variant="h4" sx={{ fontWeight: 900, color: 'success.main', mt: 0.5, fontFamily: "'Sora', sans-serif" }}>
-                    {stats.approvedCount || 0}
+                    {stats.approvedCount ?? stats.approved ?? 0}
                   </Typography>
                 </Box>
                 <Avatar sx={{ bgcolor: 'rgba(102,187,106,0.15)', color: 'success.main', width: 44, height: 44 }}>
@@ -375,7 +409,7 @@ export default function AdminD17Payments() {
                     Rejected Proofs
                   </Typography>
                   <Typography variant="h4" sx={{ fontWeight: 900, color: 'error.main', mt: 0.5, fontFamily: "'Sora', sans-serif" }}>
-                    {stats.rejectedCount || 0}
+                    {stats.rejectedCount ?? stats.rejected ?? 0}
                   </Typography>
                 </Box>
                 <Avatar sx={{ bgcolor: 'rgba(239,83,80,0.15)', color: 'error.main', width: 44, height: 44 }}>
@@ -393,7 +427,7 @@ export default function AdminD17Payments() {
                     SLA Warning (&gt;24h)
                   </Typography>
                   <Typography variant="h4" sx={{ fontWeight: 900, color: '#FFA726', mt: 0.5, fontFamily: "'Sora', sans-serif" }}>
-                    {stats.slaWarningCount || 0}
+                    {stats.slaWarningCount ?? stats.slaWarnings ?? 0}
                   </Typography>
                 </Box>
                 <Avatar sx={{ bgcolor: 'rgba(255,167,38,0.15)', color: '#FFA726', width: 44, height: 44 }}>
@@ -410,8 +444,10 @@ export default function AdminD17Payments() {
                 p: 2.5,
                 borderRadius: 3,
                 border: '1px solid',
-                borderColor: (stats.slaBreachCount || 0) > 0 ? 'error.main' : 'divider',
-                bgcolor: (stats.slaBreachCount || 0) > 0 ? 'rgba(239,83,80,0.05)' : 'background.paper',
+                borderColor: (stats.slaBreachCount || stats.slaBreached || 0) > 0 ? 'error.main' : 'divider',
+                boxShadow: (stats.slaBreachCount || stats.slaBreached || 0) > 0 ? '0 4px 20px rgba(239,83,80,0.2)' : 'none',
+                bgcolor: (stats.slaBreachCount || stats.slaBreached || 0) > 0 ? 'rgba(239,83,80,0.05)' : 'background.paper',
+                transition: 'all 0.25s ease',
               }}
             >
               <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -420,7 +456,7 @@ export default function AdminD17Payments() {
                     SLA Breached (&gt;48h)
                   </Typography>
                   <Typography variant="h4" sx={{ fontWeight: 900, color: 'error.main', mt: 0.5, fontFamily: "'Sora', sans-serif" }}>
-                    {stats.slaBreachCount || 0}
+                    {stats.slaBreachCount ?? stats.slaBreached ?? 0}
                   </Typography>
                 </Box>
                 <Avatar sx={{ bgcolor: 'rgba(239,83,80,0.15)', color: 'error.main', width: 44, height: 44 }}>
@@ -524,11 +560,31 @@ export default function AdminD17Payments() {
                   const isPending = p.status === 'PENDING_VERIFICATION';
                   const isCopied = copiedId === p.id;
                   return (
-                    <TableRow key={p.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                    <TableRow
+                      key={p.id}
+                      hover
+                      sx={{
+                        bgcolor: isPending ? 'rgba(255,167,38,0.04)' : 'transparent',
+                        '&:last-child td, &:last-child th': { border: 0 },
+                      }}
+                    >
                       {/* Ticket # and Date */}
                       <TableCell>
                         <Stack spacing={0.5}>
-                          <Stack direction="row" spacing={0.5} alignItems="center">
+                          <Stack direction="row" spacing={0.75} alignItems="center">
+                            {isPending && (
+                              <Chip
+                                label="PENDING"
+                                size="small"
+                                color="warning"
+                                sx={{
+                                  fontWeight: 900,
+                                  fontSize: '0.62rem',
+                                  height: 18,
+                                  px: 0.2,
+                                }}
+                              />
+                            )}
                             <Typography variant="body2" sx={{ fontWeight: 800, fontFamily: 'monospace' }}>
                               {p.ticketNumber}
                             </Typography>

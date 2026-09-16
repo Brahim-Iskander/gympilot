@@ -47,6 +47,14 @@ export const d17Service = {
   },
 
   /**
+   * Admin: get count of pending D17 payments for badges
+   */
+  async getPendingCount() {
+    const res = await api.get('/admin/payments/d17/pending-count');
+    return res.data?.pendingCount ?? 0;
+  },
+
+  /**
    * Admin: approve a pending payment
    */
   async approvePayment(ticketId, adminNotes = '') {

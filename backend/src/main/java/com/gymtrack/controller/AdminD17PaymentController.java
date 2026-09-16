@@ -63,6 +63,14 @@ public class AdminD17PaymentController {
     }
 
     /**
+     * Real-time pending count for admin navbar / badge.
+     */
+    @GetMapping("/pending-count")
+    public Map<String, Long> getPendingCount() {
+        return Map.of("pendingCount", paymentService.getPendingCount());
+    }
+
+    /**
      * Approve a pending payment ticket.
      */
     @PostMapping("/{id}/approve")
