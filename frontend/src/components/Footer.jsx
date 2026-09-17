@@ -26,6 +26,8 @@ import PhoneRoundedIcon from '@mui/icons-material/PhoneRounded';
 import LocationOnRoundedIcon from '@mui/icons-material/LocationOnRounded';
 import SecurityRoundedIcon from '@mui/icons-material/SecurityRounded';
 import PaymentsRoundedIcon from '@mui/icons-material/PaymentsRounded';
+import CreditCardRoundedIcon from '@mui/icons-material/CreditCardRounded';
+import VerifiedRoundedIcon from '@mui/icons-material/VerifiedRounded';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 
 import Logo from './Logo';
@@ -112,7 +114,7 @@ export default function Footer() {
             </Stack>
           </Grid>
 
-          {/* Column 2: Useful Links & Customer Care */}
+          {/* Column 2: Policies & Legal (Paddle Compliant) */}
           <Grid item xs={6} sm={6} md={2.5}>
             <Typography
               variant="subtitle2"
@@ -125,9 +127,36 @@ export default function Footer() {
                 mb: 2,
               }}
             >
-              Customer Care
+              Legal &amp; Policies
             </Typography>
             <Stack spacing={1.5}>
+              <Link
+                component={RouterLink}
+                to="/terms"
+                color="text.secondary"
+                sx={{ width: 'fit-content', fontSize: '0.875rem', '&:hover': { color: 'primary.main' } }}
+              >
+                Terms of Service
+              </Link>
+
+              <Link
+                component={RouterLink}
+                to="/privacy"
+                color="text.secondary"
+                sx={{ width: 'fit-content', fontSize: '0.875rem', '&:hover': { color: 'primary.main' } }}
+              >
+                Privacy Policy
+              </Link>
+
+              <Link
+                component={RouterLink}
+                to="/refund-policy"
+                color="text.secondary"
+                sx={{ width: 'fit-content', fontSize: '0.875rem', '&:hover': { color: 'primary.main' } }}
+              >
+                Refund &amp; Cancellation
+              </Link>
+
               <Link
                 component="button"
                 type="button"
@@ -139,26 +168,6 @@ export default function Footer() {
               </Link>
 
               <Link
-                component="button"
-                type="button"
-                onClick={() => setPolicyDialog('terms')}
-                color="text.secondary"
-                sx={{ textAlign: 'left', width: 'fit-content', fontSize: '0.875rem', '&:hover': { color: 'primary.main' } }}
-              >
-                Terms &amp; Conditions
-              </Link>
-
-              <Link
-                component="button"
-                type="button"
-                onClick={() => setPolicyDialog('about')}
-                color="text.secondary"
-                sx={{ textAlign: 'left', width: 'fit-content', fontSize: '0.875rem', '&:hover': { color: 'primary.main' } }}
-              >
-                About GymPilot
-              </Link>
-
-              <Link
                 component={RouterLink}
                 to="/support"
                 color="text.secondary"
@@ -166,19 +175,10 @@ export default function Footer() {
               >
                 Contact &amp; Support
               </Link>
-
-              <Link
-                component={RouterLink}
-                to="/seller"
-                color="text.secondary"
-                sx={{ width: 'fit-content', fontSize: '0.875rem', '&:hover': { color: 'primary.main' } }}
-              >
-                Sell on GymPilot
-              </Link>
             </Stack>
           </Grid>
 
-          {/* Column 3: Store & Navigation */}
+          {/* Column 3: Store & Plans */}
           <Grid item xs={6} sm={6} md={2.5}>
             <Typography
               variant="subtitle2"
@@ -191,9 +191,18 @@ export default function Footer() {
                 mb: 2,
               }}
             >
-              Shop &amp; App
+              Shop &amp; Plans
             </Typography>
             <Stack spacing={1.5}>
+              <Link
+                component={RouterLink}
+                to="/membership"
+                color="text.secondary"
+                sx={{ width: 'fit-content', fontSize: '0.875rem', fontWeight: 600, color: 'primary.main', '&:hover': { color: '#b3f520' } }}
+              >
+                Pricing &amp; Memberships
+              </Link>
+
               <Link
                 component={RouterLink}
                 to="/shop"
@@ -224,20 +233,11 @@ export default function Footer() {
 
               <Link
                 component={RouterLink}
-                to="/login"
+                to="/seller"
                 color="text.secondary"
                 sx={{ width: 'fit-content', fontSize: '0.875rem', '&:hover': { color: 'primary.main' } }}
               >
-                Athlete Login
-              </Link>
-
-              <Link
-                component={RouterLink}
-                to="/register"
-                color="text.secondary"
-                sx={{ width: 'fit-content', fontSize: '0.875rem', '&:hover': { color: 'primary.main' } }}
-              >
-                Create Account
+                Sell on GymPilot
               </Link>
             </Stack>
           </Grid>
@@ -308,7 +308,43 @@ export default function Footer() {
 
         <Divider sx={{ my: { xs: 4, md: 5 }, borderColor: 'divider' }} />
 
-        {/* Bottom Bar */}
+        {/* Bottom Bar: Trust Badges & Paddle Statement */}
+        <Box sx={{ mb: 2, p: 2, borderRadius: 2.5, bgcolor: 'rgba(255,255,255,0.02)', border: '1px solid', borderColor: 'divider' }}>
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={2}
+            justifyContent="space-between"
+            alignItems="center"
+            sx={{ textAlign: { xs: 'center', md: 'left' } }}
+          >
+            <Stack direction="row" spacing={1} alignItems="center">
+              <VerifiedRoundedIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.78rem' }}>
+                International payments securely processed by <strong>Paddle</strong> (Merchant of Record).
+              </Typography>
+            </Stack>
+
+            <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" justifyContent="center">
+              <Chip
+                label="Cards • PayPal • Apple Pay • iDEAL"
+                size="small"
+                icon={<CreditCardRoundedIcon sx={{ fontSize: '14px !important', color: 'primary.main' }} />}
+                sx={{ bgcolor: 'rgba(198,255,62,0.08)', color: 'text.primary', fontSize: '0.72rem', height: 24 }}
+              />
+              <Chip
+                label="D17 Mobile (Tunisia)"
+                size="small"
+                sx={{ bgcolor: 'rgba(255,255,255,0.05)', color: 'text.secondary', fontSize: '0.72rem', height: 24 }}
+              />
+              <Chip
+                label="14-Day Money-Back Guarantee"
+                size="small"
+                sx={{ bgcolor: 'rgba(255,255,255,0.05)', color: 'primary.main', fontSize: '0.72rem', height: 24, fontWeight: 700 }}
+              />
+            </Stack>
+          </Stack>
+        </Box>
+
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
           spacing={2}
@@ -317,20 +353,50 @@ export default function Footer() {
           sx={{ textAlign: { xs: 'center', sm: 'left' } }}
         >
           <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-            &copy; {new Date().getFullYear()} <strong>GymPilot</strong> . All rights reserved.
+            &copy; {new Date().getFullYear()} <strong>GymPilot</strong>. All rights reserved.
           </Typography>
 
           <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" justifyContent="center">
+            <Link
+              component={RouterLink}
+              to="/terms"
+              color="text.secondary"
+              sx={{ fontSize: '0.78rem', '&:hover': { color: 'primary.main' } }}
+            >
+              Terms
+            </Link>
+            <Typography variant="caption" color="text.disabled">•</Typography>
+            <Link
+              component={RouterLink}
+              to="/privacy"
+              color="text.secondary"
+              sx={{ fontSize: '0.78rem', '&:hover': { color: 'primary.main' } }}
+            >
+              Privacy
+            </Link>
+            <Typography variant="caption" color="text.disabled">•</Typography>
+            <Link
+              component={RouterLink}
+              to="/refund-policy"
+              color="text.secondary"
+              sx={{ fontSize: '0.78rem', '&:hover': { color: 'primary.main' } }}
+            >
+              Refund Policy
+            </Link>
+            <Typography variant="caption" color="text.disabled">•</Typography>
+            <Link
+              component={RouterLink}
+              to="/membership"
+              color="text.secondary"
+              sx={{ fontSize: '0.78rem', '&:hover': { color: 'primary.main' } }}
+            >
+              Pricing
+            </Link>
+            <Typography variant="caption" color="text.disabled">•</Typography>
             <Stack direction="row" spacing={0.5} alignItems="center">
-              <SecurityRoundedIcon sx={{ fontSize: 14, color: 'primary.main' }} />
-              <Typography variant="caption" color="text.secondary">
-                SSL 256-Bit Encrypted
-              </Typography>
-            </Stack>
-            <Stack direction="row" spacing={0.5} alignItems="center">
-              <PaymentsRoundedIcon sx={{ fontSize: 14, color: 'primary.main' }} />
-              <Typography variant="caption" color="text.secondary">
-                Cash on Delivery
+              <SecurityRoundedIcon sx={{ fontSize: 13, color: 'primary.main' }} />
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                SSL 256-Bit
               </Typography>
             </Stack>
           </Stack>

@@ -53,10 +53,24 @@ import SellerProducts from '../pages/Seller/SellerProducts';
 import SellerPacks from '../pages/Seller/SellerPacks';
 import SellerSettings from '../pages/Seller/SellerSettings';
 
+// Legal & Policy Pages (Paddle Verification & GDPR)
+import TermsOfService from '../pages/Legal/TermsOfService';
+import PrivacyPolicy from '../pages/Legal/PrivacyPolicy';
+import RefundPolicy from '../pages/Legal/RefundPolicy';
+
 export default function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
+
+      {/* ===================== LEGAL & PRICING (PADDLE VERIFICATION) ===================== */}
+      <Route path="/terms" element={<TermsOfService />} />
+      <Route path="/terms-of-service" element={<TermsOfService />} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      <Route path="/refund-policy" element={<RefundPolicy />} />
+      <Route path="/refund" element={<RefundPolicy />} />
+      <Route path="/pricing" element={<MembershipPage />} />
 
       <Route
         path="/login"
