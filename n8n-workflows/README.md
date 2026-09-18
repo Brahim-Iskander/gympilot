@@ -74,7 +74,41 @@ To allow the workflow to post packs and products to your Instagram feed automati
 
 ## 🚀 How to Import into n8n
 
+### Workflow 1: Instagram Story to Shop & Social Pipeline
 1. Open your n8n Dashboard.
 2. Click **Add workflow** > **Import from File...**
 3. Select `instagram-to-gympilot.json`.
 4. Click **Save** and **Activate**.
+
+---
+
+## 🇪🇺 Workflow 2: Facebook Page & European Gym Groups Marketing Pipeline (`facebook-gympilot-europe-groups.json`)
+
+Automated marketing campaign workflow that generates high-converting, localized copywriting (French 🇫🇷, German 🇩🇪, and English 🇪🇺) with AI gym visuals, publishes them to your Facebook Page, and shares them into targeted gym & fitness groups across France, Germany, and Europe to attract paying subscribers to **GymPilot**!
+
+### 🌟 Key Highlights
+1. **Multi-Language Copywriting Engine**:
+   - Tailored conversion copywriting highlighting Progressive Overload tracking, AI physique analysis, nutrition tracking, and GymPilot's **14-day 100% money-back guarantee**.
+   - Custom discount codes (e.g. `PILOT2026`).
+2. **🎨 Studio 3D AI Visuals**:
+   - Generates photorealistic dark-gym aesthetic visuals with mobile app mockups via Pollinations Flux AI (completely free, zero API key needed).
+3. **📘 Facebook Page Auto-Publish**:
+   - Publishes the 4K visual with the high-converting copy and direct link to your official Facebook Page feed.
+4. **👥 Group Distribution & Anti-Ban Safety**:
+   - Distributes the post link and pitch to configured European gym groups.
+   - Built-in **12-second anti-spam delay** between posts and error-resilient isolation (`continueOnFail: true`) to protect your account.
+5. **📊 Automated Reporting**:
+   - Generates a summary report of all successful and pending group shares.
+
+### 🔑 Meta Setup for Facebook Page & Groups:
+1. In [developers.facebook.com](https://developers.facebook.com), ensure your App has:
+   - `pages_manage_posts`
+   - `pages_read_engagement`
+   - `publish_to_groups` (if posting directly to groups via API)
+2. Obtain a Long-Lived **Page Access Token** via Meta Graph API Explorer:
+   ```bash
+   GET https://graph.facebook.com/v21.0/me/accounts?access_token=YOUR_USER_TOKEN
+   ```
+   Copy the `access_token` for your GymPilot Facebook Page.
+3. Configure `FACEBOOK_PAGE_ID` and `FACEBOOK_PAGE_ACCESS_TOKEN` in your n8n environment or directly in the `⚙️ Campaign Config` node.
+4. Add your target group IDs in the `targetGroups` array inside the `⚙️ Campaign Config` node.

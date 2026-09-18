@@ -55,7 +55,7 @@ import SellerSettings from '../pages/Seller/SellerSettings';
 
 // Legal & Policy Pages (Paddle Verification & GDPR)
 import TermsOfService from '../pages/Legal/TermsOfService';
-import PrivacyPolicy from '../pages/Legal/PrivacyPolicy';
+import PrivacyPolicy from '../pages/Legal/LegalPrivacy';
 import RefundPolicy from '../pages/Legal/RefundPolicy';
 
 export default function AppRoutes() {

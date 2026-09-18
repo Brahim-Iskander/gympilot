@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,6 +50,7 @@ public class D17PaymentService {
     private final MailService mailService;
     private final CloudinaryService cloudinaryService;
     private final AiCreditService aiCreditService;
+    private final PaymentConfigService paymentConfigService;
 
     public D17PaymentService(D17PaymentTicketRepository paymentRepo,
                              OrderRepository orderRepository,
@@ -61,6 +63,24 @@ public class D17PaymentService {
                              MailService mailService,
                              CloudinaryService cloudinaryService,
                              AiCreditService aiCreditService) {
+        this(paymentRepo, orderRepository, userRepository, supportTicketRepo, supportTicketService,
+                membershipService, orderService, settingService, mailService, cloudinaryService,
+                aiCreditService, null);
+    }
+
+    @Autowired
+    public D17PaymentService(D17PaymentTicketRepository paymentRepo,
+                             OrderRepository orderRepository,
+                             UserRepository userRepository,
+                             SupportTicketRepository supportTicketRepo,
+                             SupportTicketService supportTicketService,
+                             MembershipService membershipService,
+                             OrderService orderService,
+                             SystemSettingService settingService,
+                             MailService mailService,
+                             CloudinaryService cloudinaryService,
+                             AiCreditService aiCreditService,
+                             @Autowired(required = false) PaymentConfigService paymentConfigService) {
         this.paymentRepo = paymentRepo;
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
@@ -72,6 +92,7 @@ public class D17PaymentService {
         this.mailService = mailService;
         this.cloudinaryService = cloudinaryService;
         this.aiCreditService = aiCreditService;
+        this.paymentConfigService = paymentConfigService;
     }
 
     /**
@@ -88,11 +109,28 @@ public class D17PaymentService {
     }
 
     /**
-     * Submit a new D17 manual payment proof.
+     * Submit a manual payment proof (D17, USDT TRC20, BTC, ETH).
      */
     @Transactional
     public D17PaymentResponse submitPayment(User user, SubmitD17PaymentRequest req) {
-        validateImage(req.screenshotBase64(), req.screenshotType());
+        String paymentMethod = (req.paymentMethod() != null && !req.paymentMethod().isBlank())
+                ? req.paymentMethod().trim().toUpperCase()
+                : "D17";
+
+        boolean isCrypto = !"D17".equals(paymentMethod);
+
+        if (isCrypto) {
+            boolean hasScreenshot = req.screenshotBase64() != null && !req.screenshotBase64().isBlank();
+            boolean hasTxid = req.txid() != null && !req.txid().isBlank();
+            if (!hasScreenshot && !hasTxid) {
+                throw new IllegalArgumentException("For cryptocurrency payments, please provide a payment screenshot and/or transaction hash (TXID).");
+            }
+            if (hasScreenshot) {
+                validateImage(req.screenshotBase64(), req.screenshotType());
+            }
+        } else {
+            validateImage(req.screenshotBase64(), req.screenshotType());
+        }
 
         String type = req.type().trim().toUpperCase();
         if (!"SUBSCRIPTION".equals(type) && !"ORDER".equals(type) && !"AI_CREDIT".equals(type)) {
@@ -126,7 +164,7 @@ public class D17PaymentService {
             orderNumber = order.getOrderNumber();
 
             // Update order status to reflect pending payment verification
-            order.setPaymentMethod("D17");
+            order.setPaymentMethod(paymentMethod);
             order.setPaymentStatus("PENDING_VERIFICATION");
             order.setStatus("PENDING_VERIFICATION");
             orderRepository.save(order);
@@ -156,19 +194,28 @@ public class D17PaymentService {
         // 2. Generate unique human-readable ticket number
         String dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String shortId = UUID.randomUUID().toString().substring(0, 5).toUpperCase();
-        String ticketNumber = "D17-" + dateStr + "-" + shortId;
+        String prefix = "D17";
+        if ("USDT_TRC20".equals(paymentMethod) || "USDT".equals(paymentMethod)) {
+            prefix = "USDT";
+        } else if ("BTC".equals(paymentMethod)) {
+            prefix = "BTC";
+        } else if ("ETH".equals(paymentMethod)) {
+            prefix = "ETH";
+        }
+        String ticketNumber = prefix + "-" + dateStr + "-" + shortId;
 
         // 3. Optional Cloudinary upload (if configured, else keep base64)
         String screenshotUrl = null;
-        if (cloudinaryService.isConfigured() && req.screenshotBase64() != null) {
+        if (cloudinaryService.isConfigured() && req.screenshotBase64() != null && !req.screenshotBase64().isBlank()) {
             try {
-                screenshotUrl = cloudinaryService.uploadBase64Image(req.screenshotBase64(), "gympilot/d17_payments");
+                String folder = isCrypto ? "gympilot/crypto_payments" : "gympilot/d17_payments";
+                screenshotUrl = cloudinaryService.uploadBase64Image(req.screenshotBase64(), folder);
             } catch (Exception e) {
-                log.warn("Cloudinary upload failed for D17 payment, falling back to embedded data: {}", e.getMessage());
+                log.warn("Cloudinary upload failed for payment, falling back to embedded data: {}", e.getMessage());
             }
         }
 
-        // 4. Create D17 Payment Record
+        // 4. Create Payment Record
         String userFullName = (user.getFirstName() + " " + (user.getLastName() != null ? user.getLastName() : "")).trim();
         D17PaymentTicket ticket = new D17PaymentTicket(
                 ticketNumber,
@@ -186,6 +233,20 @@ public class D17PaymentService {
                 req.screenshotBase64(),
                 req.screenshotType() != null ? req.screenshotType() : "image/jpeg"
         );
+
+        ticket.setPaymentMethod(paymentMethod);
+        String currency = isCrypto ? "USD" : "TND";
+        ticket.setCurrency(currency);
+
+        if (req.txid() != null && !req.txid().isBlank()) {
+            ticket.setTxid(req.txid().trim());
+        }
+        if (req.walletAddress() != null && !req.walletAddress().isBlank()) {
+            ticket.setWalletAddress(req.walletAddress().trim());
+        }
+        if (req.cryptoAmount() != null && !req.cryptoAmount().isBlank()) {
+            ticket.setCryptoAmount(req.cryptoAmount().trim());
+        }
         if (screenshotUrl != null) {
             ticket.setScreenshotUrl(screenshotUrl);
         }
@@ -194,8 +255,9 @@ public class D17PaymentService {
         }
 
         // Add initial audit entry
+        String displayMethod = isCrypto ? paymentMethod.replace("_", " ") : "D17";
         ticket.addAuditLog(null, "PENDING_VERIFICATION", user.getId(), user.getEmail(), "SUBMITTED",
-                "Payment proof of " + req.amount() + " TND submitted by customer.");
+                "Payment proof (" + displayMethod + ") of " + req.amount() + " " + currency + " submitted by customer.");
 
         // 5. Automatically create linked SupportTicket for unified customer experience
         try {
@@ -204,11 +266,12 @@ public class D17PaymentService {
                     : ("AI_CREDIT".equals(type)
                     ? (aiCredits + " AI Credits Pack")
                     : ("Order #" + orderNumber));
-            String subject = "[D17 Payment] " + targetLabel + " - " + String.format("%.2f", req.amount()) + " TND";
+            String subject = "[" + displayMethod + " Payment] " + targetLabel + " - " + String.format("%.2f", req.amount()) + " " + currency;
 
             StringBuilder msgBuilder = new StringBuilder();
-            msgBuilder.append("D17 manual payment submitted for verification.\n\n");
+            msgBuilder.append(displayMethod).append(" manual payment submitted for verification.\n\n");
             msgBuilder.append("• Ticket Reference: ").append(ticketNumber).append("\n");
+            msgBuilder.append("• Method: ").append(displayMethod).append("\n");
             msgBuilder.append("• Type: ").append(type).append("\n");
             if ("SUBSCRIPTION".equals(type)) {
                 msgBuilder.append("• Plan: ").append(subscriptionTier).append("\n");
@@ -217,14 +280,30 @@ public class D17PaymentService {
             } else {
                 msgBuilder.append("• Order: #").append(orderNumber).append("\n");
             }
-            msgBuilder.append("• Amount: ").append(String.format("%.2f", req.amount())).append(" TND\n");
+            msgBuilder.append("• Amount: ").append(String.format("%.2f", req.amount())).append(" ").append(currency).append("\n");
+            if (ticket.getCryptoAmount() != null) {
+                msgBuilder.append("• Crypto Amount: ").append(ticket.getCryptoAmount()).append("\n");
+            }
+            if (ticket.getWalletAddress() != null) {
+                msgBuilder.append("• Receiving Address/Phone: ").append(ticket.getWalletAddress()).append("\n");
+            }
+            if (ticket.getTxid() != null) {
+                msgBuilder.append("• Transaction Hash (TXID): ").append(ticket.getTxid()).append("\n");
+                if ("USDT_TRC20".equalsIgnoreCase(paymentMethod)) {
+                    msgBuilder.append("• Explorer: https://tronscan.org/#/transaction/").append(ticket.getTxid()).append("\n");
+                } else if ("BTC".equalsIgnoreCase(paymentMethod)) {
+                    msgBuilder.append("• Explorer: https://www.blockchain.com/explorer/transactions/btc/").append(ticket.getTxid()).append("\n");
+                } else if ("ETH".equalsIgnoreCase(paymentMethod)) {
+                    msgBuilder.append("• Explorer: https://etherscan.io/tx/").append(ticket.getTxid()).append("\n");
+                }
+            }
             if (req.senderPhoneNumber() != null && !req.senderPhoneNumber().isBlank()) {
                 msgBuilder.append("• Sender Phone: ").append(req.senderPhoneNumber()).append("\n");
             }
             if (req.userNotes() != null && !req.userNotes().isBlank()) {
                 msgBuilder.append("• User Note / Ref: ").append(req.userNotes()).append("\n");
             }
-            msgBuilder.append("\nPayment screenshot is attached below. Verification turnaround is within 24-48 hours.");
+            msgBuilder.append("\nPayment verification turnaround is within 24-48 hours.");
 
             SupportTicket supportTicket = new SupportTicket(
                     user.getId(),
@@ -239,24 +318,36 @@ public class D17PaymentService {
             supportTicket = supportTicketRepo.save(supportTicket);
             ticket.setSupportTicketId(supportTicket.getId());
         } catch (Exception ex) {
-            log.error("Failed to create linked support ticket for D17 payment {}: {}", ticketNumber, ex.getMessage());
+            log.error("Failed to create linked support ticket for payment {}: {}", ticketNumber, ex.getMessage());
         }
 
         D17PaymentTicket savedTicket = paymentRepo.save(ticket);
-        log.info("D17 Payment ticket {} created for user {} (amount: {} TND, type: {})",
-                ticketNumber, user.getEmail(), req.amount(), type);
+        log.info("{} Payment ticket {} created for user {} (amount: {} {}, type: {})",
+                displayMethod, ticketNumber, user.getEmail(), req.amount(), currency, type);
 
         // 6. Send email confirmation to user
         try {
-            mailService.sendD17PaymentProofReceived(
-                    user.getEmail(),
-                    user.getFirstName(),
-                    ticketNumber,
-                    req.amount(),
-                    type
-            );
+            if (isCrypto) {
+                mailService.sendManualPaymentProofReceived(
+                        user.getEmail(),
+                        user.getFirstName(),
+                        ticketNumber,
+                        req.amount(),
+                        currency,
+                        type,
+                        displayMethod
+                );
+            } else {
+                mailService.sendD17PaymentProofReceived(
+                        user.getEmail(),
+                        user.getFirstName(),
+                        ticketNumber,
+                        req.amount(),
+                        type
+                );
+            }
         } catch (Exception ex) {
-            log.warn("Failed to send D17 confirmation email: {}", ex.getMessage());
+            log.warn("Failed to send payment confirmation email: {}", ex.getMessage());
         }
 
         return D17PaymentResponse.from(savedTicket);
@@ -272,9 +363,16 @@ public class D17PaymentService {
     }
 
     /**
-     * Admin: Filterable list of all D17 payment tickets.
+     * Admin: Filterable list of all payment tickets.
      */
     public List<D17PaymentResponse> getAdminPayments(String statusFilter, String searchQuery, String sortBy) {
+        return getAdminPayments(statusFilter, searchQuery, sortBy, null);
+    }
+
+    /**
+     * Admin: Filterable list of all payment tickets with method filtering.
+     */
+    public List<D17PaymentResponse> getAdminPayments(String statusFilter, String searchQuery, String sortBy, String methodFilter) {
         List<D17PaymentTicket> tickets;
 
         Sort sort = Sort.by(Sort.Direction.ASC, "createdAt"); // default oldest pending first for SLA triage
@@ -288,6 +386,17 @@ public class D17PaymentService {
             tickets = paymentRepo.findAll(sort);
         }
 
+        // Method filter (D17, USDT_TRC20, BTC, ETH)
+        if (methodFilter != null && !methodFilter.isBlank() && !"ALL".equalsIgnoreCase(methodFilter)) {
+            String targetMethod = methodFilter.toUpperCase();
+            tickets = tickets.stream()
+                    .filter(t -> {
+                        String m = t.getPaymentMethod() != null ? t.getPaymentMethod().toUpperCase() : "D17";
+                        return m.equalsIgnoreCase(targetMethod);
+                    })
+                    .collect(Collectors.toList());
+        }
+
         // Apply in-memory search filter if provided
         if (searchQuery != null && !searchQuery.isBlank()) {
             String q = searchQuery.toLowerCase().trim();
@@ -297,6 +406,9 @@ public class D17PaymentService {
                             || (t.getUserFullName() != null && t.getUserFullName().toLowerCase().contains(q))
                             || (t.getOrderNumber() != null && t.getOrderNumber().toLowerCase().contains(q))
                             || (t.getSenderPhoneNumber() != null && t.getSenderPhoneNumber().contains(q))
+                            || (t.getTxid() != null && t.getTxid().toLowerCase().contains(q))
+                            || (t.getWalletAddress() != null && t.getWalletAddress().toLowerCase().contains(q))
+                            || (t.getPaymentMethod() != null && t.getPaymentMethod().toLowerCase().contains(q))
                             || (t.getUserNotes() != null && t.getUserNotes().toLowerCase().contains(q)))
                     .collect(Collectors.toList());
         }
@@ -323,7 +435,6 @@ public class D17PaymentService {
         long slaBreached = paymentRepo.countByStatusAndCreatedAtBefore("PENDING_VERIFICATION", threshold48h);
 
         Map<String, Object> stats = new HashMap<>();
-        // Frontend camelCase properties
         stats.put("pendingCount", pending);
         stats.put("approvedCount", approved);
         stats.put("rejectedCount", rejected);
@@ -332,7 +443,6 @@ public class D17PaymentService {
         stats.put("slaWarningCount", slaWarnings);
         stats.put("slaBreachCount", slaBreached);
 
-        // Shorthand aliases for backwards compatibility
         stats.put("pending", pending);
         stats.put("approved", approved);
         stats.put("rejected", rejected);
@@ -342,7 +452,7 @@ public class D17PaymentService {
     }
 
     /**
-     * Get real-time count of pending D17 verifications for notification badges.
+     * Get real-time count of pending verifications for notification badges.
      */
     public long getPendingCount() {
         return paymentRepo.countByStatus("PENDING_VERIFICATION");
@@ -368,6 +478,8 @@ public class D17PaymentService {
         if (req != null && req.adminNotes() != null) {
             ticket.setAdminNotes(req.adminNotes());
         }
+
+        String displayMethod = ticket.getPaymentMethod() != null ? ticket.getPaymentMethod().replace("_", " ") : "D17";
 
         // Add Audit Log
         ticket.addAuditLog(previousStatus, "APPROVED", admin.getId(), admin.getEmail(), "APPROVED",
@@ -396,8 +508,9 @@ public class D17PaymentService {
         // Update linked support ticket with resolution message and close it
         if (ticket.getSupportTicketId() != null) {
             try {
-                String replyMsg = "Your D17 payment of " + String.format("%.2f", ticket.getAmount())
-                        + " TND has been verified and approved by admin " + admin.getFirstName() + ".\n\n"
+                String replyMsg = "Your " + displayMethod + " payment of " + String.format("%.2f", ticket.getAmount())
+                        + " " + (ticket.getCurrency() != null ? ticket.getCurrency() : "TND")
+                        + " has been verified and approved by admin " + admin.getFirstName() + ".\n\n"
                         + activationDetails + "\n\nThank you for choosing GymPilot!";
 
                 TicketReplyRequest replyReq = new TicketReplyRequest();
@@ -410,20 +523,33 @@ public class D17PaymentService {
         }
 
         D17PaymentTicket saved = paymentRepo.save(ticket);
-        log.info("D17 Payment {} approved by admin {}", ticket.getTicketNumber(), admin.getEmail());
+        log.info("{} Payment {} approved by admin {}", displayMethod, ticket.getTicketNumber(), admin.getEmail());
 
         // Send approval confirmation email
         try {
-            mailService.sendD17PaymentApproved(
-                    ticket.getUserEmail(),
-                    ticket.getUserFullName(),
-                    ticket.getTicketNumber(),
-                    ticket.getAmount(),
-                    ticket.getType(),
-                    activationDetails
-            );
+            if (!"D17".equalsIgnoreCase(ticket.getPaymentMethod())) {
+                mailService.sendManualPaymentApproved(
+                        ticket.getUserEmail(),
+                        ticket.getUserFullName(),
+                        ticket.getTicketNumber(),
+                        ticket.getAmount(),
+                        ticket.getCurrency() != null ? ticket.getCurrency() : "USD",
+                        ticket.getType(),
+                        displayMethod,
+                        activationDetails
+                );
+            } else {
+                mailService.sendD17PaymentApproved(
+                        ticket.getUserEmail(),
+                        ticket.getUserFullName(),
+                        ticket.getTicketNumber(),
+                        ticket.getAmount(),
+                        ticket.getType(),
+                        activationDetails
+                );
+            }
         } catch (Exception ex) {
-            log.warn("Failed to send approval email for D17 ticket {}: {}", ticket.getTicketNumber(), ex.getMessage());
+            log.warn("Failed to send approval email for ticket {}: {}", ticket.getTicketNumber(), ex.getMessage());
         }
 
         return D17PaymentResponse.from(saved);
@@ -440,6 +566,8 @@ public class D17PaymentService {
         if ("REJECTED".equals(ticket.getStatus())) {
             throw new IllegalStateException("Ticket " + ticket.getTicketNumber() + " has already been rejected.");
         }
+
+        String displayMethod = ticket.getPaymentMethod() != null ? ticket.getPaymentMethod().replace("_", " ") : "D17";
 
         String previousStatus = ticket.getStatus();
         ticket.setStatus("REJECTED");
@@ -468,10 +596,10 @@ public class D17PaymentService {
         // Add rejection message into linked SupportTicket
         if (ticket.getSupportTicketId() != null) {
             try {
-                String replyMsg = "Unable to verify D17 payment proof.\n\n"
+                String replyMsg = "Unable to verify " + displayMethod + " payment proof.\n\n"
                         + "Reason: " + req.reason() + "\n"
                         + (req.adminNotes() != null && !req.adminNotes().isBlank() ? "Notes: " + req.adminNotes() + "\n" : "")
-                        + "\nPlease reply to this ticket with a clear, legible payment screenshot or contact our support team.";
+                        + "\nPlease reply to this ticket with a clear payment screenshot or valid transaction hash (TXID).";
 
                 TicketReplyRequest replyReq = new TicketReplyRequest();
                 replyReq.setMessage(replyMsg);
@@ -482,19 +610,31 @@ public class D17PaymentService {
         }
 
         D17PaymentTicket saved = paymentRepo.save(ticket);
-        log.info("D17 Payment {} rejected by admin {}: {}", ticket.getTicketNumber(), admin.getEmail(), req.reason());
+        log.info("{} Payment {} rejected by admin {}: {}", displayMethod, ticket.getTicketNumber(), admin.getEmail(), req.reason());
 
         // Send rejection email to user
         try {
-            mailService.sendD17PaymentRejected(
-                    ticket.getUserEmail(),
-                    ticket.getUserFullName(),
-                    ticket.getTicketNumber(),
-                    ticket.getAmount(),
-                    req.reason()
-            );
+            if ("D17".equalsIgnoreCase(ticket.getPaymentMethod())) {
+                mailService.sendD17PaymentRejected(
+                        ticket.getUserEmail(),
+                        ticket.getUserFullName(),
+                        ticket.getTicketNumber(),
+                        ticket.getAmount(),
+                        req.reason()
+                );
+            } else {
+                mailService.sendManualPaymentRejected(
+                        ticket.getUserEmail(),
+                        ticket.getUserFullName(),
+                        ticket.getTicketNumber(),
+                        ticket.getAmount(),
+                        ticket.getCurrency() != null ? ticket.getCurrency() : "USD",
+                        displayMethod,
+                        req.reason()
+                );
+            }
         } catch (Exception ex) {
-            log.warn("Failed to send rejection email for D17 ticket {}: {}", ticket.getTicketNumber(), ex.getMessage());
+            log.warn("Failed to send rejection email for ticket {}: {}", ticket.getTicketNumber(), ex.getMessage());
         }
 
         return D17PaymentResponse.from(saved);

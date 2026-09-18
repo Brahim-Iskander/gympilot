@@ -50,8 +50,9 @@ public class AdminD17PaymentController {
     public List<D17PaymentResponse> getAllPayments(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String search,
-            @RequestParam(required = false, defaultValue = "oldest") String sort) {
-        return paymentService.getAdminPayments(status, search, sort);
+            @RequestParam(required = false, defaultValue = "oldest") String sort,
+            @RequestParam(required = false) String method) {
+        return paymentService.getAdminPayments(status, search, sort, method);
     }
 
     /**

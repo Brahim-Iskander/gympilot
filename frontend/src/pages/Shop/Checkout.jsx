@@ -41,13 +41,95 @@ import CameraAltRoundedIcon from '@mui/icons-material/CameraAltRounded';
 import VerifiedUserRoundedIcon from '@mui/icons-material/VerifiedUserRounded';
 import AccessTimeRoundedIcon from '@mui/icons-material/AccessTimeRounded';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
+import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded';
+import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
+import { QRCodeSVG } from 'qrcode.react';
 
 import SEO from '../../components/SEO';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { orderService } from '../../services/orderService';
 import { voucherService } from '../../services/voucherService';
+import { paymentService } from '../../services/paymentService';
 import { d17Service } from '../../services/d17Service';
+
+// Crypto & payment coin icon
+function CoinIcon({ code, sx = {} }) {
+  if (code === 'D17') {
+    return (
+      <Box
+        component="img"
+        src="/d17-logo.webp"
+        alt="D17"
+        sx={{ width: 24, height: 24, objectFit: 'contain', ...sx }}
+      />
+    );
+  }
+  if (code === 'USDT_TRC20' || code === 'USDT') {
+    return (
+      <Box
+        sx={{
+          width: 24,
+          height: 24,
+          borderRadius: '50%',
+          bgcolor: '#26A17B',
+          color: '#FFFFFF',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontWeight: 900,
+          fontSize: '0.75rem',
+          ...sx,
+        }}
+      >
+        ₮
+      </Box>
+    );
+  }
+  if (code === 'BTC') {
+    return (
+      <Box
+        sx={{
+          width: 24,
+          height: 24,
+          borderRadius: '50%',
+          bgcolor: '#F7931A',
+          color: '#FFFFFF',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontWeight: 900,
+          fontSize: '0.85rem',
+          ...sx,
+        }}
+      >
+        ₿
+      </Box>
+    );
+  }
+  if (code === 'ETH') {
+    return (
+      <Box
+        sx={{
+          width: 24,
+          height: 24,
+          borderRadius: '50%',
+          bgcolor: '#627EEA',
+          color: '#FFFFFF',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontWeight: 900,
+          fontSize: '0.75rem',
+          ...sx,
+        }}
+      >
+        Ξ
+      </Box>
+    );
+  }
+  return <VerifiedUserRoundedIcon sx={{ fontSize: 24, ...sx }} />;
+}
 
 export default function Checkout() {
   const { items, totals, pointsToUse, clearCart } = useCart();
@@ -79,7 +161,12 @@ export default function Checkout() {
   // Confirmation modal
   const [confirmedOrder, setConfirmedOrder] = useState(null);
 
-  // D17 payment state
+  // Dynamic active payment methods from backend
+  const [activePaymentMethods, setActivePaymentMethods] = useState([]);
+  const [cryptoTxid, setCryptoTxid] = useState('');
+  const [cryptoCopied, setCryptoCopied] = useState(false);
+
+  // D17 & Manual payment state
   const d17FileInputRef = useRef(null);
   const d17CameraInputRef = useRef(null);
   const [d17Config, setD17Config] = useState({
@@ -96,19 +183,52 @@ export default function Checkout() {
   const [d17FileType, setD17FileType] = useState('image/jpeg');
   const [d17TicketResult, setD17TicketResult] = useState(null);
 
+  const isTunisia = !shippingAddress.country ||
+    shippingAddress.country.toLowerCase() === 'tunisia' ||
+    shippingAddress.country.toUpperCase() === 'TN';
+
   useEffect(() => {
+    const country = shippingAddress.country || 'Tunisia';
+    paymentService.getActiveMethods(country)
+      .then((methods) => {
+        if (methods) {
+          setActivePaymentMethods(methods);
+          const isTn = country.toLowerCase() === 'tunisia' || country.toUpperCase() === 'TN';
+          if (isTn) {
+            if (paymentMethod !== 'CASH_ON_DELIVERY' && paymentMethod !== 'D17' && !methods.some(m => m.code === paymentMethod)) {
+              setPaymentMethod('CASH_ON_DELIVERY');
+            }
+          } else {
+            if (paymentMethod === 'CASH_ON_DELIVERY' || (paymentMethod === 'D17' && !methods.some(m => m.code === 'D17'))) {
+              if (methods.length > 0) {
+                setPaymentMethod(methods[0].code);
+              }
+            }
+          }
+        }
+      })
+      .catch((err) => console.error('Failed to load active methods for checkout:', err));
+
     d17Service.getConfig()
       .then((cfg) => {
         if (cfg) setD17Config(cfg);
       })
       .catch(() => {});
-  }, []);
+  }, [shippingAddress.country]);
 
   const handleCopyD17Phone = () => {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(d17Config.phoneNumber);
       setD17Copied(true);
       setTimeout(() => setD17Copied(false), 2500);
+    }
+  };
+
+  const handleCopyCryptoAddress = (address) => {
+    if (navigator.clipboard && address) {
+      navigator.clipboard.writeText(address);
+      setCryptoCopied(true);
+      setTimeout(() => setCryptoCopied(false), 2500);
     }
   };
 
@@ -188,8 +308,16 @@ export default function Checkout() {
       return;
     }
 
+    const isManualMethod = paymentMethod === 'D17' || activePaymentMethods.some((m) => m.code === paymentMethod);
+    const isCrypto = paymentMethod !== 'D17' && isManualMethod;
+
     if (paymentMethod === 'D17' && !d17Base64) {
       setError('Please attach your D17 payment confirmation screenshot before completing the order.');
+      return;
+    }
+
+    if (isCrypto && !d17Base64 && !cryptoTxid.trim()) {
+      setError('For cryptocurrency payments, please provide a payment screenshot and/or transaction hash (TXID).');
       return;
     }
 
@@ -211,21 +339,25 @@ export default function Checkout() {
 
       const orderResult = await orderService.createOrder(orderPayload);
 
-      // If D17, immediately submit payment proof linked to this order
-      if (paymentMethod === 'D17') {
+      // If manual/crypto payment, immediately submit payment proof linked to this order
+      if (isManualMethod) {
         try {
-          const ticket = await d17Service.submitPaymentProof({
+          const selectedConfig = activePaymentMethods.find((m) => m.code === paymentMethod);
+          const ticket = await paymentService.submitPaymentProof({
             type: 'ORDER',
             orderId: orderResult.id,
             amount: finalPayableTotal,
+            paymentMethod,
+            walletAddress: selectedConfig?.receivingAddress,
+            txid: cryptoTxid.trim() || undefined,
             senderPhoneNumber: d17SenderPhone.trim() || undefined,
             userNotes: d17Notes.trim() || undefined,
-            screenshotBase64: d17Base64,
+            screenshotBase64: d17Base64 || undefined,
             screenshotType: d17FileType,
           });
           setD17TicketResult(ticket);
         } catch (proofErr) {
-          console.error('Order created but failed to link D17 proof automatically:', proofErr);
+          console.error('Order created but failed to link payment proof automatically:', proofErr);
         }
       }
 
@@ -376,302 +508,675 @@ export default function Checkout() {
 
                   <FormControl component="fieldset" fullWidth>
                     <RadioGroup value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
-                      {/* D17 Mobile Payment Option */}
-                      <Paper
-                        elevation={0}
-                        sx={{
-                          p: 2.5,
-                          mb: 1.5,
-                          borderRadius: 2.5,
-                          border: '2px solid',
-                          borderColor: paymentMethod === 'D17' ? 'primary.main' : 'divider',
-                          bgcolor: paymentMethod === 'D17' ? 'rgba(198,255,62,0.04)' : 'transparent',
-                          transition: 'all 0.2s ease',
-                        }}
-                      >
-                        <FormControlLabel
-                          value="D17"
-                          control={<Radio sx={{ color: 'primary.main', '&.Mui-checked': { color: 'primary.main' } }} />}
-                          label={
-                            <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
-                              <Box
-                                component="img"
-                                src="/d17-logo.webp"
-                                alt="D17"
-                                sx={{
-                                  height: 28,
-                                  width: 'auto',
-                                  objectFit: 'contain',
-                                  borderRadius: 1,
-                                  bgcolor: '#fff',
-                                  p: 0.5,
-                                }}
-                              />
-                              <Box>
-                                <Stack direction="row" spacing={1} alignItems="center">
-                                  <Typography variant="body2" sx={{ fontWeight: 800 }}>
-                                    D17 Mobile Payment
-                                  </Typography>
-                                  <Box
-                                    sx={{
-                                      px: 1,
-                                      py: 0.2,
-                                      borderRadius: 1,
-                                      bgcolor: 'rgba(198,255,62,0.15)',
-                                      color: 'primary.main',
-                                      fontSize: '0.7rem',
-                                      fontWeight: 800,
-                                    }}
-                                  >
-                                    FAST VERIFICATION
-                                  </Box>
-                                </Stack>
-                                <Typography variant="caption" color="text.secondary">
-                                  Pay via D17 mobile app to {d17Config.recipientName || 'GymPilot Official'} &amp; upload payment receipt.
-                                </Typography>
-                              </Box>
-                            </Stack>
-                          }
-                          sx={{ m: 0, width: '100%' }}
-                        />
+                      {/* Dynamically active manual & crypto payment methods */}
+                      {activePaymentMethods.map((method) => {
+                        const isSelected = paymentMethod === method.code;
+                        const isD17 = method.code === 'D17';
 
-                        {/* Collapsible D17 instruction & upload panel */}
-                        {paymentMethod === 'D17' && (
-                          <Box sx={{ mt: 2.5, pt: 2, borderTop: '1px dashed', borderColor: 'divider' }}>
-                            {/* Target Payment details */}
+                        if (isD17) {
+                          return (
                             <Paper
+                              key={method.code}
                               elevation={0}
                               sx={{
-                                p: 2,
-                                mb: 2.5,
-                                borderRadius: 2,
-                                bgcolor: 'rgba(255,255,255,0.03)',
-                                border: '1px solid',
-                                borderColor: 'divider',
+                                p: 2.5,
+                                mb: 1.5,
+                                borderRadius: 2.5,
+                                border: '2px solid',
+                                borderColor: isSelected ? 'primary.main' : 'divider',
+                                bgcolor: isSelected ? 'rgba(198,255,62,0.04)' : 'transparent',
+                                transition: 'all 0.2s ease',
                               }}
                             >
-                              <Grid container spacing={2} alignItems="center">
-                                <Grid item xs={12} sm={6}>
-                                  <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700, letterSpacing: 0.5 }}>
-                                    Amount to Send
-                                  </Typography>
-                                  <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.main' }}>
-                                    TND {finalPayableTotal.toFixed(2)}
-                                  </Typography>
-                                </Grid>
-                                <Grid item xs={12} sm={6}>
-                                  <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700, letterSpacing: 0.5 }}>
-                                    D17 Recipient Phone ({d17Config.recipientName || 'GymPilot Official'})
-                                  </Typography>
-                                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.5 }}>
-                                    <Typography variant="body1" sx={{ fontWeight: 800, fontFamily: 'monospace', letterSpacing: 0.5 }}>
-                                      {d17Config.phoneNumber}
-                                    </Typography>
-                                    <Tooltip title={d17Copied ? 'Copied!' : 'Copy number'}>
-                                      <Button
-                                        size="small"
-                                        variant="outlined"
-                                        onClick={handleCopyD17Phone}
-                                        startIcon={d17Copied ? <CheckRoundedIcon /> : <ContentCopyRoundedIcon />}
-                                        sx={{
-                                          minWidth: 0,
-                                          px: 1.5,
-                                          py: 0.25,
-                                          fontSize: '0.75rem',
-                                          fontWeight: 700,
-                                          color: d17Copied ? 'success.main' : 'text.primary',
-                                          borderColor: d17Copied ? 'success.main' : 'divider',
-                                        }}
-                                      >
-                                        {d17Copied ? 'Copied' : 'Copy'}
-                                      </Button>
-                                    </Tooltip>
-                                  </Stack>
-                                </Grid>
-                              </Grid>
-                            </Paper>
-
-                            {/* Step instructions */}
-                            <Stack spacing={1} sx={{ mb: 2.5 }}>
-                              <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase' }}>
-                                Instructions:
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                1. Open your <strong>D17</strong> app on your mobile device.
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                2. Transfer exactly <strong>TND {finalPayableTotal.toFixed(2)}</strong> to phone number <strong>{d17Config.phoneNumber}</strong> ({d17Config.recipientName || 'GymPilot Official'}).
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                3. Take a clear screenshot of the completed transfer confirmation screen.
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                4. Attach the screenshot below and click &quot;Place Order&quot;.
-                              </Typography>
-                            </Stack>
-
-                            {/* Screenshot Upload / Capture Box */}
-                            <Box sx={{ mb: 2 }}>
-                              <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.secondary', display: 'block', mb: 1 }}>
-                                Payment Confirmation Screenshot *
-                              </Typography>
-
-                              <input
-                                ref={d17FileInputRef}
-                                type="file"
-                                accept="image/png,image/jpeg,image/webp,image/jpg"
-                                style={{ display: 'none' }}
-                                onChange={handleD17FileChange}
-                              />
-                              <input
-                                ref={d17CameraInputRef}
-                                type="file"
-                                accept="image/*"
-                                capture="environment"
-                                style={{ display: 'none' }}
-                                onChange={handleD17FileChange}
-                              />
-
-                              {!d17Preview ? (
-                                <Paper
-                                  variant="outlined"
-                                  onClick={() => d17FileInputRef.current?.click()}
-                                  sx={{
-                                    p: 3,
-                                    border: '2px dashed',
-                                    borderColor: 'divider',
-                                    borderRadius: 2.5,
-                                    bgcolor: 'rgba(255,255,255,0.01)',
-                                    textAlign: 'center',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s ease',
-                                    '&:hover': {
-                                      borderColor: 'primary.main',
-                                      bgcolor: 'rgba(198,255,62,0.04)',
-                                    },
-                                  }}
-                                >
-                                  <CloudUploadRoundedIcon sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
-                                  <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                                    Click or Drag &amp; Drop screenshot here
-                                  </Typography>
-                                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-                                    PNG, JPG, or WebP (up to 5MB)
-                                  </Typography>
-                                  <Stack direction="row" spacing={1.5} justifyContent="center" onClick={(e) => e.stopPropagation()}>
-                                    <Button
-                                      size="small"
-                                      variant="outlined"
-                                      startIcon={<CloudUploadRoundedIcon />}
-                                      onClick={() => d17FileInputRef.current?.click()}
-                                      sx={{ borderRadius: 2, fontWeight: 700 }}
-                                    >
-                                      Choose File
-                                    </Button>
-                                    <Button
-                                      size="small"
-                                      variant="outlined"
-                                      startIcon={<CameraAltRoundedIcon />}
-                                      onClick={() => d17CameraInputRef.current?.click()}
-                                      sx={{ borderRadius: 2, fontWeight: 700 }}
-                                    >
-                                      Take Photo
-                                    </Button>
-                                  </Stack>
-                                </Paper>
-                              ) : (
-                                <Paper
-                                  variant="outlined"
-                                  sx={{
-                                    p: 2,
-                                    borderRadius: 2.5,
-                                    borderColor: 'primary.main',
-                                    bgcolor: 'rgba(198,255,62,0.02)',
-                                  }}
-                                >
-                                  <Stack direction="row" spacing={2} alignItems="center">
+                              <FormControlLabel
+                                value="D17"
+                                control={<Radio sx={{ color: 'primary.main', '&.Mui-checked': { color: 'primary.main' } }} />}
+                                label={
+                                  <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
                                     <Box
                                       component="img"
-                                      src={d17Preview}
-                                      alt="Screenshot preview"
+                                      src="/d17-logo.webp"
+                                      alt="D17"
                                       sx={{
-                                        width: 80,
-                                        height: 80,
-                                        objectFit: 'cover',
-                                        borderRadius: 2,
-                                        border: '1px solid',
-                                        borderColor: 'divider',
+                                        height: 28,
+                                        width: 'auto',
+                                        objectFit: 'contain',
+                                        borderRadius: 1,
+                                        bgcolor: '#fff',
+                                        p: 0.5,
                                       }}
                                     />
-                                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                                    <Box>
                                       <Stack direction="row" spacing={1} alignItems="center">
-                                        <CheckRoundedIcon sx={{ color: 'success.main', fontSize: 18 }} />
                                         <Typography variant="body2" sx={{ fontWeight: 800 }}>
-                                          Screenshot Attached
+                                          D17 Mobile Payment
                                         </Typography>
+                                        <Box
+                                          sx={{
+                                            px: 1,
+                                            py: 0.2,
+                                            borderRadius: 1,
+                                            bgcolor: 'rgba(198,255,62,0.15)',
+                                            color: 'primary.main',
+                                            fontSize: '0.7rem',
+                                            fontWeight: 800,
+                                          }}
+                                        >
+                                          FAST VERIFICATION
+                                        </Box>
                                       </Stack>
-                                      <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block', mt: 0.5 }}>
-                                        {d17File?.name || 'receipt_screenshot.png'} ({((d17File?.size || 0) / 1024).toFixed(0)} KB)
+                                      <Typography variant="caption" color="text.secondary">
+                                        Pay via D17 mobile app to {method.recipientName || d17Config.recipientName || 'GymPilot Official'} &amp; upload payment receipt.
                                       </Typography>
                                     </Box>
-                                    <Button
-                                      size="small"
-                                      color="error"
-                                      variant="outlined"
-                                      startIcon={<DeleteOutlineRoundedIcon />}
-                                      onClick={handleRemoveD17Image}
-                                      sx={{ borderRadius: 2, fontWeight: 700 }}
-                                    >
-                                      Remove
-                                    </Button>
                                   </Stack>
-                                </Paper>
+                                }
+                                sx={{ m: 0, width: '100%' }}
+                              />
+
+                              {/* Collapsible D17 instruction & upload panel */}
+                              {isSelected && (
+                                <Box sx={{ mt: 2.5, pt: 2, borderTop: '1px dashed', borderColor: 'divider' }}>
+                                  {/* Target Payment details */}
+                                  <Paper
+                                    elevation={0}
+                                    sx={{
+                                      p: 2,
+                                      mb: 2.5,
+                                      borderRadius: 2,
+                                      bgcolor: 'rgba(255,255,255,0.03)',
+                                      border: '1px solid',
+                                      borderColor: 'divider',
+                                    }}
+                                  >
+                                    <Grid container spacing={2} alignItems="center">
+                                      <Grid item xs={12} sm={6}>
+                                        <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700, letterSpacing: 0.5 }}>
+                                          Amount to Send
+                                        </Typography>
+                                        <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.main' }}>
+                                          TND {finalPayableTotal.toFixed(2)}
+                                        </Typography>
+                                      </Grid>
+                                      <Grid item xs={12} sm={6}>
+                                        <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700, letterSpacing: 0.5 }}>
+                                          D17 Recipient Phone ({method.recipientName || d17Config.recipientName || 'GymPilot Official'})
+                                        </Typography>
+                                        <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.5 }}>
+                                          <Typography variant="body1" sx={{ fontWeight: 800, fontFamily: 'monospace', letterSpacing: 0.5 }}>
+                                            {method.receivingAddress || d17Config.phoneNumber}
+                                          </Typography>
+                                          <Tooltip title={d17Copied ? 'Copied!' : 'Copy number'}>
+                                            <Button
+                                              size="small"
+                                              variant="outlined"
+                                              onClick={handleCopyD17Phone}
+                                              startIcon={d17Copied ? <CheckRoundedIcon /> : <ContentCopyRoundedIcon />}
+                                              sx={{
+                                                minWidth: 0,
+                                                px: 1.5,
+                                                py: 0.25,
+                                                fontSize: '0.75rem',
+                                                fontWeight: 700,
+                                                color: d17Copied ? 'success.main' : 'text.primary',
+                                                borderColor: d17Copied ? 'success.main' : 'divider',
+                                              }}
+                                            >
+                                              {d17Copied ? 'Copied' : 'Copy'}
+                                            </Button>
+                                          </Tooltip>
+                                        </Stack>
+                                      </Grid>
+                                    </Grid>
+                                  </Paper>
+
+                                  {/* Step instructions */}
+                                  <Stack spacing={1} sx={{ mb: 2.5 }}>
+                                    <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase' }}>
+                                      Instructions:
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                      1. Open your <strong>D17</strong> app on your mobile device.
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                      2. Transfer exactly <strong>TND {finalPayableTotal.toFixed(2)}</strong> to phone number <strong>{method.receivingAddress || d17Config.phoneNumber}</strong> ({method.recipientName || d17Config.recipientName || 'GymPilot Official'}).
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                      3. Take a clear screenshot of the completed transfer confirmation screen.
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                      4. Attach the screenshot below and click &quot;Submit D17 Order&quot;.
+                                    </Typography>
+                                  </Stack>
+
+                                  {/* Screenshot Upload / Capture Box */}
+                                  <Box sx={{ mb: 2 }}>
+                                    <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.secondary', display: 'block', mb: 1 }}>
+                                      Payment Confirmation Screenshot *
+                                    </Typography>
+
+                                    <input
+                                      ref={d17FileInputRef}
+                                      type="file"
+                                      accept="image/png,image/jpeg,image/webp,image/jpg"
+                                      style={{ display: 'none' }}
+                                      onChange={handleD17FileChange}
+                                    />
+                                    <input
+                                      ref={d17CameraInputRef}
+                                      type="file"
+                                      accept="image/*"
+                                      capture="environment"
+                                      style={{ display: 'none' }}
+                                      onChange={handleD17FileChange}
+                                    />
+
+                                    {!d17Preview ? (
+                                      <Paper
+                                        variant="outlined"
+                                        onClick={() => d17FileInputRef.current?.click()}
+                                        sx={{
+                                          p: 3,
+                                          border: '2px dashed',
+                                          borderColor: 'divider',
+                                          borderRadius: 2.5,
+                                          bgcolor: 'rgba(255,255,255,0.01)',
+                                          textAlign: 'center',
+                                          cursor: 'pointer',
+                                          transition: 'all 0.2s ease',
+                                          '&:hover': {
+                                            borderColor: 'primary.main',
+                                            bgcolor: 'rgba(198,255,62,0.04)',
+                                          },
+                                        }}
+                                      >
+                                        <CloudUploadRoundedIcon sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
+                                        <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                                          Click or Drag &amp; Drop screenshot here
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+                                          PNG, JPG, or WebP (up to 5MB)
+                                        </Typography>
+                                        <Stack direction="row" spacing={1.5} justifyContent="center" onClick={(e) => e.stopPropagation()}>
+                                          <Button
+                                            size="small"
+                                            variant="outlined"
+                                            startIcon={<CloudUploadRoundedIcon />}
+                                            onClick={() => d17FileInputRef.current?.click()}
+                                            sx={{ borderRadius: 2, fontWeight: 700 }}
+                                          >
+                                            Choose File
+                                          </Button>
+                                          <Button
+                                            size="small"
+                                            variant="outlined"
+                                            startIcon={<CameraAltRoundedIcon />}
+                                            onClick={() => d17CameraInputRef.current?.click()}
+                                            sx={{ borderRadius: 2, fontWeight: 700 }}
+                                          >
+                                            Take Photo
+                                          </Button>
+                                        </Stack>
+                                      </Paper>
+                                    ) : (
+                                      <Paper
+                                        variant="outlined"
+                                        sx={{
+                                          p: 2,
+                                          borderRadius: 2.5,
+                                          borderColor: 'primary.main',
+                                          bgcolor: 'rgba(198,255,62,0.02)',
+                                        }}
+                                      >
+                                        <Stack direction="row" spacing={2} alignItems="center">
+                                          <Box
+                                            component="img"
+                                            src={d17Preview}
+                                            alt="Screenshot preview"
+                                            sx={{
+                                              width: 80,
+                                              height: 80,
+                                              objectFit: 'cover',
+                                              borderRadius: 2,
+                                              border: '1px solid',
+                                              borderColor: 'divider',
+                                            }}
+                                          />
+                                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                                            <Stack direction="row" spacing={1} alignItems="center">
+                                              <CheckRoundedIcon sx={{ color: 'success.main', fontSize: 18 }} />
+                                              <Typography variant="body2" sx={{ fontWeight: 800 }}>
+                                                Screenshot Attached
+                                              </Typography>
+                                            </Stack>
+                                            <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block', mt: 0.5 }}>
+                                              {d17File?.name || 'receipt_screenshot.png'} ({((d17File?.size || 0) / 1024).toFixed(0)} KB)
+                                            </Typography>
+                                          </Box>
+                                          <Button
+                                            size="small"
+                                            color="error"
+                                            variant="outlined"
+                                            startIcon={<DeleteOutlineRoundedIcon />}
+                                            onClick={handleRemoveD17Image}
+                                            sx={{ borderRadius: 2, fontWeight: 700 }}
+                                          >
+                                            Remove
+                                          </Button>
+                                        </Stack>
+                                      </Paper>
+                                    )}
+                                  </Box>
+
+                                  {/* Additional Details: Sender Phone & Notes */}
+                                  <Grid container spacing={2} sx={{ mb: 1.5 }}>
+                                    <Grid item xs={12} sm={6}>
+                                      <TextField
+                                        size="small"
+                                        fullWidth
+                                        label="Your D17 Phone Number (Optional)"
+                                        placeholder="+216 XX XXX XXX"
+                                        value={d17SenderPhone}
+                                        onChange={(e) => setD17SenderPhone(e.target.value)}
+                                        helperText="Helps our team match your payment faster"
+                                      />
+                                    </Grid>
+                                    <Grid item xs={12} sm={6}>
+                                      <TextField
+                                        size="small"
+                                        fullWidth
+                                        label="Payment Reference / Note (Optional)"
+                                        placeholder="e.g., Transaction ID or name on app"
+                                        value={d17Notes}
+                                        onChange={(e) => setD17Notes(e.target.value)}
+                                      />
+                                    </Grid>
+                                  </Grid>
+
+                                  {/* SLA Notice */}
+                                  <Alert
+                                    severity="info"
+                                    icon={<AccessTimeRoundedIcon fontSize="small" />}
+                                    sx={{
+                                      py: 0.5,
+                                      px: 1.5,
+                                      borderRadius: 2,
+                                      fontSize: '0.8rem',
+                                      '& .MuiAlert-message': { py: 0.5 },
+                                    }}
+                                  >
+                                    <strong>Verification SLA:</strong> Orders paid via D17 are verified by our team within <strong>24 to 48 hours</strong>. You&apos;ll receive instant email updates.
+                                  </Alert>
+                                </Box>
                               )}
-                            </Box>
+                            </Paper>
+                          );
+                        }
 
-                            {/* Additional Details: Sender Phone & Notes */}
-                            <Grid container spacing={2} sx={{ mb: 1.5 }}>
-                              <Grid item xs={12} sm={6}>
-                                <TextField
-                                  size="small"
-                                  fullWidth
-                                  label="Your D17 Phone Number (Optional)"
-                                  placeholder="+216 XX XXX XXX"
-                                  value={d17SenderPhone}
-                                  onChange={(e) => setD17SenderPhone(e.target.value)}
-                                  helperText="Helps our team match your payment faster"
-                                />
-                              </Grid>
-                              <Grid item xs={12} sm={6}>
-                                <TextField
-                                  size="small"
-                                  fullWidth
-                                  label="Payment Reference / Note (Optional)"
-                                  placeholder="e.g., Transaction ID or name on app"
-                                  value={d17Notes}
-                                  onChange={(e) => setD17Notes(e.target.value)}
-                                />
-                              </Grid>
-                            </Grid>
+                        // Crypto Payment Method Card
+                        return (
+                          <Paper
+                            key={method.code}
+                            elevation={0}
+                            sx={{
+                              p: 2.5,
+                              mb: 1.5,
+                              borderRadius: 2.5,
+                              border: '2px solid',
+                              borderColor: isSelected ? 'primary.main' : 'divider',
+                              bgcolor: isSelected ? 'rgba(198,255,62,0.04)' : 'transparent',
+                              transition: 'all 0.2s ease',
+                            }}
+                          >
+                            <FormControlLabel
+                              value={method.code}
+                              control={<Radio sx={{ color: 'primary.main', '&.Mui-checked': { color: 'primary.main' } }} />}
+                              label={
+                                <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+                                  <CoinIcon code={method.code} />
+                                  <Box>
+                                    <Stack direction="row" spacing={1} alignItems="center">
+                                      <Typography variant="body2" sx={{ fontWeight: 800 }}>
+                                        {method.name}
+                                      </Typography>
+                                      {method.network && (
+                                        <Box
+                                          sx={{
+                                            px: 1,
+                                            py: 0.2,
+                                            borderRadius: 1,
+                                            bgcolor: 'rgba(255,255,255,0.08)',
+                                            color: 'primary.main',
+                                            fontSize: '0.7rem',
+                                            fontWeight: 800,
+                                            border: '1px solid',
+                                            borderColor: 'divider',
+                                          }}
+                                        >
+                                          {method.network}
+                                        </Box>
+                                      )}
+                                      <Box
+                                        sx={{
+                                          px: 1,
+                                          py: 0.2,
+                                          borderRadius: 1,
+                                          bgcolor: 'rgba(198,255,62,0.15)',
+                                          color: 'primary.main',
+                                          fontSize: '0.7rem',
+                                          fontWeight: 800,
+                                        }}
+                                      >
+                                        CRYPTO MANUAL
+                                      </Box>
+                                    </Stack>
+                                    <Typography variant="caption" color="text.secondary">
+                                      Send to GymPilot official receiving address &amp; provide TXID / receipt.
+                                    </Typography>
+                                  </Box>
+                                </Stack>
+                              }
+                              sx={{ m: 0, width: '100%' }}
+                            />
 
-                            {/* SLA Notice */}
-                            <Alert
-                              severity="info"
-                              icon={<AccessTimeRoundedIcon fontSize="small" />}
-                              sx={{
-                                py: 0.5,
-                                px: 1.5,
-                                borderRadius: 2,
-                                fontSize: '0.8rem',
-                                '& .MuiAlert-message': { py: 0.5 },
-                              }}
-                            >
-                              <strong>Verification SLA:</strong> Orders paid via D17 are verified by our team within <strong>24 to 48 hours</strong>. You&apos;ll receive instant email updates.
-                            </Alert>
-                          </Box>
-                        )}
-                      </Paper>
+                            {/* Collapsible Crypto details & upload panel */}
+                            {isSelected && (
+                              <Box sx={{ mt: 2.5, pt: 2, borderTop: '1px dashed', borderColor: 'divider' }}>
+                                {/* Network Warning Banner */}
+                                {method.warningNotice && (
+                                  <Alert
+                                    severity="warning"
+                                    icon={<WarningAmberRoundedIcon fontSize="small" />}
+                                    sx={{
+                                      mb: 2.5,
+                                      borderRadius: 2,
+                                      fontSize: '0.82rem',
+                                      bgcolor: 'rgba(255,152,0,0.1)',
+                                      border: '1px solid rgba(255,152,0,0.3)',
+                                    }}
+                                  >
+                                    {method.warningNotice}
+                                  </Alert>
+                                )}
 
+                                {/* Target Payment details with QR code & Copy */}
+                                <Paper
+                                  elevation={0}
+                                  sx={{
+                                    p: 2.5,
+                                    mb: 2.5,
+                                    borderRadius: 2,
+                                    bgcolor: 'rgba(255,255,255,0.03)',
+                                    border: '1px solid',
+                                    borderColor: 'divider',
+                                  }}
+                                >
+                                  <Grid container spacing={2.5} alignItems="center">
+                                    {method.receivingAddress && (
+                                      <Grid item xs={12} sm="auto">
+                                        <Box
+                                          sx={{
+                                            p: 1.2,
+                                            bgcolor: '#FFFFFF',
+                                            borderRadius: 2,
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                                          }}
+                                        >
+                                          <QRCodeSVG
+                                            value={method.receivingAddress}
+                                            size={105}
+                                            level="M"
+                                            includeMargin={false}
+                                          />
+                                        </Box>
+                                      </Grid>
+                                    )}
+
+                                    <Grid item xs={12} sm>
+                                      <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700, letterSpacing: 0.5 }}>
+                                        Amount to Send
+                                      </Typography>
+                                      <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.main', mb: 1 }}>
+                                        TND {finalPayableTotal.toFixed(2)}{' '}
+                                        <Typography component="span" variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                                          (send equivalent value in {method.name})
+                                        </Typography>
+                                      </Typography>
+
+                                      <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700, letterSpacing: 0.5 }}>
+                                        GymPilot Official Receiving Address ({method.network || 'Mainnet'})
+                                      </Typography>
+                                      <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.5, flexWrap: 'wrap', gap: 1 }}>
+                                        <Typography
+                                          variant="body2"
+                                          sx={{
+                                            fontWeight: 800,
+                                            fontFamily: 'monospace',
+                                            letterSpacing: 0.5,
+                                            wordBreak: 'break-all',
+                                            bgcolor: 'rgba(0,0,0,0.3)',
+                                            p: 0.8,
+                                            borderRadius: 1.5,
+                                            border: '1px solid',
+                                            borderColor: 'divider',
+                                            flex: 1,
+                                            minWidth: 200,
+                                          }}
+                                        >
+                                          {method.receivingAddress}
+                                        </Typography>
+                                        <Tooltip title={cryptoCopied ? 'Copied to clipboard!' : 'Copy wallet address'}>
+                                          <Button
+                                            size="small"
+                                            variant="outlined"
+                                            onClick={() => handleCopyCryptoAddress(method.receivingAddress)}
+                                            startIcon={cryptoCopied ? <CheckRoundedIcon /> : <ContentCopyRoundedIcon />}
+                                            sx={{
+                                              minWidth: 0,
+                                              px: 1.5,
+                                              py: 0.6,
+                                              fontSize: '0.75rem',
+                                              fontWeight: 700,
+                                              color: cryptoCopied ? 'success.main' : 'text.primary',
+                                              borderColor: cryptoCopied ? 'success.main' : 'divider',
+                                            }}
+                                          >
+                                            {cryptoCopied ? 'Copied' : 'Copy'}
+                                          </Button>
+                                        </Tooltip>
+                                      </Stack>
+                                    </Grid>
+                                  </Grid>
+                                </Paper>
+
+                                {/* Step instructions */}
+                                <Stack spacing={1} sx={{ mb: 2.5 }}>
+                                  <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase' }}>
+                                    Instructions:
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    1. Open your crypto wallet or exchange ({method.network || 'appropriate network'}).
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    2. Transfer equivalent of <strong>TND {finalPayableTotal.toFixed(2)}</strong> to the address above.
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    3. Paste the transaction hash (TXID) and/or upload a screenshot below.
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    4. Click &quot;Submit Order&quot; to place your order.
+                                  </Typography>
+                                </Stack>
+
+                                {/* TXID Input */}
+                                <Box sx={{ mb: 2 }}>
+                                  <TextField
+                                    size="small"
+                                    fullWidth
+                                    label="Transaction Hash / TXID"
+                                    placeholder="e.g. 8f6b12a... or 0x4d9e..."
+                                    value={cryptoTxid}
+                                    onChange={(e) => setCryptoTxid(e.target.value)}
+                                    helperText="Paste your blockchain transaction hash here for faster verification"
+                                    inputProps={{ style: { fontFamily: 'monospace' } }}
+                                  />
+                                </Box>
+
+                                {/* Screenshot Upload / Capture Box */}
+                                <Box sx={{ mb: 2 }}>
+                                  <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.secondary', display: 'block', mb: 1 }}>
+                                    Payment Screenshot (Optional if TXID provided)
+                                  </Typography>
+
+                                  <input
+                                    ref={d17FileInputRef}
+                                    type="file"
+                                    accept="image/png,image/jpeg,image/webp,image/jpg"
+                                    style={{ display: 'none' }}
+                                    onChange={handleD17FileChange}
+                                  />
+                                  <input
+                                    ref={d17CameraInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    capture="environment"
+                                    style={{ display: 'none' }}
+                                    onChange={handleD17FileChange}
+                                  />
+
+                                  {!d17Preview ? (
+                                    <Paper
+                                      variant="outlined"
+                                      onClick={() => d17FileInputRef.current?.click()}
+                                      sx={{
+                                        p: 3,
+                                        border: '2px dashed',
+                                        borderColor: 'divider',
+                                        borderRadius: 2.5,
+                                        bgcolor: 'rgba(255,255,255,0.01)',
+                                        textAlign: 'center',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease',
+                                        '&:hover': {
+                                          borderColor: 'primary.main',
+                                          bgcolor: 'rgba(198,255,62,0.04)',
+                                        },
+                                      }}
+                                    >
+                                      <CloudUploadRoundedIcon sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
+                                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                                        Click or Drag &amp; Drop screenshot here
+                                      </Typography>
+                                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+                                        PNG, JPG, or WebP (up to 5MB)
+                                      </Typography>
+                                      <Stack direction="row" spacing={1.5} justifyContent="center" onClick={(e) => e.stopPropagation()}>
+                                        <Button
+                                          size="small"
+                                          variant="outlined"
+                                          startIcon={<CloudUploadRoundedIcon />}
+                                          onClick={() => d17FileInputRef.current?.click()}
+                                          sx={{ borderRadius: 2, fontWeight: 700 }}
+                                        >
+                                          Choose File
+                                        </Button>
+                                        <Button
+                                          size="small"
+                                          variant="outlined"
+                                          startIcon={<CameraAltRoundedIcon />}
+                                          onClick={() => d17CameraInputRef.current?.click()}
+                                          sx={{ borderRadius: 2, fontWeight: 700 }}
+                                        >
+                                          Take Photo
+                                        </Button>
+                                      </Stack>
+                                    </Paper>
+                                  ) : (
+                                    <Paper
+                                      variant="outlined"
+                                      sx={{
+                                        p: 2,
+                                        borderRadius: 2.5,
+                                        borderColor: 'primary.main',
+                                        bgcolor: 'rgba(198,255,62,0.02)',
+                                      }}
+                                    >
+                                      <Stack direction="row" spacing={2} alignItems="center">
+                                        <Box
+                                          component="img"
+                                          src={d17Preview}
+                                          alt="Screenshot preview"
+                                          sx={{
+                                            width: 80,
+                                            height: 80,
+                                            objectFit: 'cover',
+                                            borderRadius: 2,
+                                            border: '1px solid',
+                                            borderColor: 'divider',
+                                          }}
+                                        />
+                                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                                          <Stack direction="row" spacing={1} alignItems="center">
+                                            <CheckRoundedIcon sx={{ color: 'success.main', fontSize: 18 }} />
+                                            <Typography variant="body2" sx={{ fontWeight: 800 }}>
+                                              Screenshot Attached
+                                            </Typography>
+                                          </Stack>
+                                          <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block', mt: 0.5 }}>
+                                            {d17File?.name || 'receipt_screenshot.png'} ({((d17File?.size || 0) / 1024).toFixed(0)} KB)
+                                          </Typography>
+                                        </Box>
+                                        <Button
+                                          size="small"
+                                          color="error"
+                                          variant="outlined"
+                                          startIcon={<DeleteOutlineRoundedIcon />}
+                                          onClick={handleRemoveD17Image}
+                                          sx={{ borderRadius: 2, fontWeight: 700 }}
+                                        >
+                                          Remove
+                                        </Button>
+                                      </Stack>
+                                    </Paper>
+                                  )}
+                                </Box>
+
+                                {/* Additional Details: Notes */}
+                                <Box sx={{ mb: 1.5 }}>
+                                  <TextField
+                                    size="small"
+                                    fullWidth
+                                    label="Payment Reference / Note (Optional)"
+                                    placeholder="e.g., Sender wallet address or exchange used"
+                                    value={d17Notes}
+                                    onChange={(e) => setD17Notes(e.target.value)}
+                                  />
+                                </Box>
+
+                                {/* SLA Notice */}
+                                <Alert
+                                  severity="info"
+                                  icon={<AccessTimeRoundedIcon fontSize="small" />}
+                                  sx={{
+                                    py: 0.5,
+                                    px: 1.5,
+                                    borderRadius: 2,
+                                    fontSize: '0.8rem',
+                                    '& .MuiAlert-message': { py: 0.5 },
+                                  }}
+                                >
+                                  <strong>Verification SLA:</strong> Crypto payments are verified by our team on the blockchain within <strong>24 to 48 hours</strong>. You&apos;ll receive instant email updates.
+                                </Alert>
+                              </Box>
+                            )}
+                          </Paper>
+                        );
+                      })}
+
+                      {/* Cash on Delivery Option */}
                       <Paper
                         elevation={0}
                         sx={{
@@ -681,20 +1186,46 @@ export default function Checkout() {
                           border: '1px solid',
                           borderColor: paymentMethod === 'CASH_ON_DELIVERY' ? 'primary.main' : 'divider',
                           bgcolor: paymentMethod === 'CASH_ON_DELIVERY' ? 'rgba(198,255,62,0.04)' : 'transparent',
+                          opacity: isTunisia ? 1 : 0.6,
                         }}
                       >
                         <FormControlLabel
                           value="CASH_ON_DELIVERY"
+                          disabled={!isTunisia}
                           control={<Radio sx={{ color: 'primary.main', '&.Mui-checked': { color: 'primary.main' } }} />}
                           label={
                             <Box>
-                              <Typography variant="body2" sx={{ fontWeight: 700 }}>Cash on Delivery / Pay on Hand</Typography>
-                              <Typography variant="caption" color="text.secondary">Pay with cash or card upon delivery to your address.</Typography>
+                              <Stack direction="row" spacing={1} alignItems="center">
+                                <Typography variant="body2" sx={{ fontWeight: 700, color: isTunisia ? 'text.primary' : 'text.disabled' }}>
+                                  Cash on Delivery / Pay on Hand
+                                </Typography>
+                                {!isTunisia && (
+                                  <Box
+                                    sx={{
+                                      px: 0.8,
+                                      py: 0.2,
+                                      borderRadius: 1,
+                                      bgcolor: 'rgba(255,255,255,0.08)',
+                                      fontSize: '0.68rem',
+                                      fontWeight: 700,
+                                      color: 'text.disabled',
+                                    }}
+                                  >
+                                    Tunisia Only
+                                  </Box>
+                                )}
+                              </Stack>
+                              <Typography variant="caption" color="text.secondary">
+                                {isTunisia
+                                  ? 'Pay with cash or card upon delivery to your address.'
+                                  : 'Cash on delivery is only available for deliveries within Tunisia.'}
+                              </Typography>
                             </Box>
                           }
                         />
                       </Paper>
 
+                      {/* Credit Card Option (Disabled) */}
                       <Paper
                         elevation={0}
                         sx={{
@@ -926,7 +1457,11 @@ export default function Checkout() {
                   title={
                     submitting
                       ? 'Securely transmitting your order...'
-                      : `Confirm and place your order for TND ${finalPayableTotal.toFixed(2)} (Cash on Delivery)`
+                      : (paymentMethod === 'D17'
+                        ? `Submit D17 payment proof for TND ${finalPayableTotal.toFixed(2)}`
+                        : paymentMethod !== 'CASH_ON_DELIVERY' && paymentMethod !== 'CREDIT_CARD'
+                        ? `Submit crypto payment proof for TND ${finalPayableTotal.toFixed(2)}`
+                        : `Confirm and place your order for TND ${finalPayableTotal.toFixed(2)} (Cash on Delivery)`)
                   }
                   arrow
                   placement="top"
@@ -949,14 +1484,22 @@ export default function Checkout() {
                   >
                     <Typography component="span" sx={{ fontWeight: 800, fontSize: '1rem', lineHeight: 1.2 }}>
                       {submitting
-                        ? (paymentMethod === 'D17' ? 'Submitting D17 Proof...' : 'Confirming Order...')
+                        ? (paymentMethod === 'D17'
+                          ? 'Submitting D17 Proof...'
+                          : paymentMethod !== 'CASH_ON_DELIVERY' && paymentMethod !== 'CREDIT_CARD'
+                          ? 'Submitting Crypto Payment...'
+                          : 'Confirming Order...')
                         : (paymentMethod === 'D17'
                           ? `Submit D17 Order (TND ${finalPayableTotal.toFixed(2)})`
+                          : paymentMethod !== 'CASH_ON_DELIVERY' && paymentMethod !== 'CREDIT_CARD'
+                          ? `Submit ${activePaymentMethods.find((m) => m.code === paymentMethod)?.name || 'Crypto'} Order (TND ${finalPayableTotal.toFixed(2)})`
                           : `Place Order (TND ${finalPayableTotal.toFixed(2)})`)}
                     </Typography>
                     <Typography component="span" sx={{ fontSize: '0.72rem', opacity: 0.85, fontWeight: 600, textTransform: 'none' }}>
                       {paymentMethod === 'D17'
                         ? 'D17 Mobile Payment · Verification within 24–48h'
+                        : paymentMethod !== 'CASH_ON_DELIVERY' && paymentMethod !== 'CREDIT_CARD'
+                        ? 'Cryptocurrency · Blockchain verification within 24–48h'
                         : 'Cash on Delivery · Standard 7 TND / Free ≥ 150 TND'}
                     </Typography>
                   </Button>
@@ -979,7 +1522,11 @@ export default function Checkout() {
             sx: {
               borderRadius: 4,
               border: '1px solid',
-              borderColor: confirmedOrder?.paymentMethod === 'D17' ? 'info.main' : 'primary.main',
+              borderColor:
+                confirmedOrder?.paymentMethod === 'D17' ||
+                (confirmedOrder?.paymentMethod && confirmedOrder?.paymentMethod !== 'CASH_ON_DELIVERY' && confirmedOrder?.paymentMethod !== 'CREDIT_CARD')
+                  ? 'info.main'
+                  : 'primary.main',
               bgcolor: 'background.paper',
               backgroundImage: 'none',
               p: 2,
@@ -993,8 +1540,16 @@ export default function Checkout() {
                 width: 72,
                 height: 72,
                 borderRadius: '50%',
-                bgcolor: confirmedOrder?.paymentMethod === 'D17' ? 'rgba(2,136,209,0.15)' : 'rgba(198,255,62,0.15)',
-                color: confirmedOrder?.paymentMethod === 'D17' ? 'info.main' : 'primary.main',
+                bgcolor:
+                  confirmedOrder?.paymentMethod === 'D17' ||
+                  (confirmedOrder?.paymentMethod && confirmedOrder?.paymentMethod !== 'CASH_ON_DELIVERY' && confirmedOrder?.paymentMethod !== 'CREDIT_CARD')
+                    ? 'rgba(2,136,209,0.15)'
+                    : 'rgba(198,255,62,0.15)',
+                color:
+                  confirmedOrder?.paymentMethod === 'D17' ||
+                  (confirmedOrder?.paymentMethod && confirmedOrder?.paymentMethod !== 'CASH_ON_DELIVERY' && confirmedOrder?.paymentMethod !== 'CREDIT_CARD')
+                    ? 'info.main'
+                    : 'primary.main',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -1002,14 +1557,19 @@ export default function Checkout() {
                 mb: 2,
               }}
             >
-              {confirmedOrder?.paymentMethod === 'D17' ? (
+              {confirmedOrder?.paymentMethod === 'D17' ||
+              (confirmedOrder?.paymentMethod && confirmedOrder?.paymentMethod !== 'CASH_ON_DELIVERY' && confirmedOrder?.paymentMethod !== 'CREDIT_CARD') ? (
                 <AccessTimeRoundedIcon sx={{ fontSize: 44 }} />
               ) : (
                 <CheckCircleOutlineRoundedIcon sx={{ fontSize: 44 }} />
               )}
             </Box>
             <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: "'Sora', sans-serif" }}>
-              {confirmedOrder?.paymentMethod === 'D17' ? 'Payment Proof Submitted!' : 'Order Confirmed!'}
+              {confirmedOrder?.paymentMethod === 'D17'
+                ? 'Payment Proof Submitted!'
+                : confirmedOrder?.paymentMethod && confirmedOrder?.paymentMethod !== 'CASH_ON_DELIVERY' && confirmedOrder?.paymentMethod !== 'CREDIT_CARD'
+                ? 'Crypto Payment Submitted!'
+                : 'Order Confirmed!'}
             </Typography>
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
               Order Reference #{confirmedOrder?.orderNumber}
@@ -1023,6 +1583,15 @@ export default function Checkout() {
                 <strong>D17 Verification in Progress:</strong> We received your payment screenshot. Our team verifies transfers to <strong>{d17Config.recipientName || 'GymPilot Official'}</strong> within <strong>24 to 48 hours</strong>. Once approved, your order will be immediately prepared for dispatch.
               </Alert>
             )}
+
+            {confirmedOrder?.paymentMethod &&
+              confirmedOrder?.paymentMethod !== 'D17' &&
+              confirmedOrder?.paymentMethod !== 'CASH_ON_DELIVERY' &&
+              confirmedOrder?.paymentMethod !== 'CREDIT_CARD' && (
+                <Alert severity="info" sx={{ mb: 2.5, textAlign: 'left', borderRadius: 2.5 }}>
+                  <strong>Crypto Verification in Progress:</strong> We received your transaction details. Our team verifies blockchain transfers within <strong>24 to 48 hours</strong>. Once confirmed, your order will be prepared for dispatch.
+                </Alert>
+              )}
 
             <Paper elevation={0} sx={{ p: 2.5, my: 1, bgcolor: 'rgba(255,255,255,0.02)', border: '1px solid', borderColor: 'divider', borderRadius: 2.5, textAlign: 'left' }}>
               <Stack spacing={1}>
@@ -1043,15 +1612,65 @@ export default function Checkout() {
                 <Stack direction="row" justifyContent="space-between">
                   <Typography variant="body2" color="text.secondary">Payment Method:</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                    {confirmedOrder?.paymentMethod === 'D17' ? 'D17 Mobile Payment' : (confirmedOrder?.paymentMethod === 'CASH_ON_DELIVERY' ? 'Cash on Delivery' : 'Card Payment')}
+                    {confirmedOrder?.paymentMethod === 'D17'
+                      ? 'D17 Mobile Payment'
+                      : confirmedOrder?.paymentMethod === 'USDT_TRC20'
+                      ? 'USDT (TRC20 Network)'
+                      : confirmedOrder?.paymentMethod === 'BTC'
+                      ? 'Bitcoin (BTC)'
+                      : confirmedOrder?.paymentMethod === 'ETH'
+                      ? 'Ethereum (ETH)'
+                      : confirmedOrder?.paymentMethod === 'CASH_ON_DELIVERY'
+                      ? 'Cash on Delivery'
+                      : confirmedOrder?.paymentMethod}
                   </Typography>
                 </Stack>
                 <Stack direction="row" justifyContent="space-between">
                   <Typography variant="body2" color="text.secondary">Payment Status:</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 800, color: confirmedOrder?.paymentMethod === 'D17' ? 'warning.main' : 'info.main' }}>
-                    {confirmedOrder?.paymentMethod === 'D17' ? 'Pending Verification' : 'Pending Delivery'}
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontWeight: 800,
+                      color:
+                        confirmedOrder?.paymentMethod === 'D17' ||
+                        (confirmedOrder?.paymentMethod && confirmedOrder?.paymentMethod !== 'CASH_ON_DELIVERY' && confirmedOrder?.paymentMethod !== 'CREDIT_CARD')
+                          ? 'warning.main'
+                          : 'info.main',
+                    }}
+                  >
+                    {confirmedOrder?.paymentMethod === 'D17' ||
+                    (confirmedOrder?.paymentMethod && confirmedOrder?.paymentMethod !== 'CASH_ON_DELIVERY' && confirmedOrder?.paymentMethod !== 'CREDIT_CARD')
+                      ? 'Pending Verification (24–48h)'
+                      : 'Pending Delivery'}
                   </Typography>
                 </Stack>
+
+                {/* Crypto TXID display & link */}
+                {(d17TicketResult?.txid || cryptoTxid) && (
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Typography variant="body2" color="text.secondary">Transaction Hash (TXID):</Typography>
+                    <Stack direction="row" spacing={0.5} alignItems="center">
+                      <Typography variant="caption" sx={{ fontWeight: 800, fontFamily: 'monospace' }}>
+                        {(d17TicketResult?.txid || cryptoTxid).slice(0, 10)}...{(d17TicketResult?.txid || cryptoTxid).slice(-8)}
+                      </Typography>
+                      {d17TicketResult?.explorerUrl && (
+                        <Tooltip title="View on Blockchain Explorer">
+                          <Button
+                            size="small"
+                            component="a"
+                            href={d17TicketResult.explorerUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            sx={{ minWidth: 0, p: 0.5 }}
+                          >
+                            <OpenInNewRoundedIcon sx={{ fontSize: 16 }} />
+                          </Button>
+                        </Tooltip>
+                      )}
+                    </Stack>
+                  </Stack>
+                )}
+
                 <Stack direction="row" justifyContent="space-between">
                   <Typography variant="body2" color="text.secondary">Estimated Delivery:</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 700 }}>2 - 4 Business Days</Typography>

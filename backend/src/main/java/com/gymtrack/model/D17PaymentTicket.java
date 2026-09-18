@@ -47,6 +47,20 @@ public class D17PaymentTicket {
     private double amount;
     private String currency = "TND";
 
+    /** D17, USDT_TRC20, BTC, ETH */
+    @Indexed
+    private String paymentMethod = "D17";
+
+    /** Blockchain Transaction ID / hash */
+    @Indexed(sparse = true)
+    private String txid;
+
+    /** Receiving wallet address or phone number */
+    private String walletAddress;
+
+    /** Formatted crypto amount (e.g., 49.00 USDT) */
+    private String cryptoAmount;
+
     private String senderPhoneNumber; // phone number user used to transfer
     private String userNotes; // optional notes or reference code from user
 
@@ -245,4 +259,16 @@ public class D17PaymentTicket {
 
     public int getAiCredits() { return aiCredits; }
     public void setAiCredits(int aiCredits) { this.aiCredits = aiCredits; }
+
+    public String getPaymentMethod() { return paymentMethod != null ? paymentMethod : "D17"; }
+    public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
+
+    public String getTxid() { return txid; }
+    public void setTxid(String txid) { this.txid = txid; }
+
+    public String getWalletAddress() { return walletAddress; }
+    public void setWalletAddress(String walletAddress) { this.walletAddress = walletAddress; }
+
+    public String getCryptoAmount() { return cryptoAmount; }
+    public void setCryptoAmount(String cryptoAmount) { this.cryptoAmount = cryptoAmount; }
 }

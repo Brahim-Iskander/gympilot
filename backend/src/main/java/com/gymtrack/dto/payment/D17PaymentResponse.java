@@ -20,6 +20,11 @@ public record D17PaymentResponse(
         int aiCredits,
         double amount,
         String currency,
+        String paymentMethod,
+        String txid,
+        String walletAddress,
+        String cryptoAmount,
+        String explorerUrl,
         String senderPhoneNumber,
         String userNotes,
         String screenshotBase64,
@@ -39,6 +44,10 @@ public record D17PaymentResponse(
         Instant updatedAt
 ) {
     public static D17PaymentResponse from(D17PaymentTicket ticket) {
+        return from(ticket, null);
+    }
+
+    public static D17PaymentResponse from(D17PaymentTicket ticket, String customExplorerBaseUrl) {
         long elapsedHours = 0;
         String slaStatus = "WITHIN_SLA";
 
@@ -58,6 +67,24 @@ public record D17PaymentResponse(
             }
         }
 
+        String method = ticket.getPaymentMethod() != null ? ticket.getPaymentMethod() : "D17";
+        String explorerUrl = null;
+        String txid = ticket.getTxid();
+        if (txid != null && !txid.isBlank()) {
+            String trimmedTxid = txid.trim();
+            if (customExplorerBaseUrl != null && !customExplorerBaseUrl.isBlank()) {
+                explorerUrl = customExplorerBaseUrl.endsWith("/")
+                        ? customExplorerBaseUrl + trimmedTxid
+                        : customExplorerBaseUrl + "/" + trimmedTxid;
+            } else if ("USDT_TRC20".equalsIgnoreCase(method) || "USDT".equalsIgnoreCase(method)) {
+                explorerUrl = "https://tronscan.org/#/transaction/" + trimmedTxid;
+            } else if ("BTC".equalsIgnoreCase(method)) {
+                explorerUrl = "https://www.blockchain.com/explorer/transactions/btc/" + trimmedTxid;
+            } else if ("ETH".equalsIgnoreCase(method)) {
+                explorerUrl = "https://etherscan.io/tx/" + trimmedTxid;
+            }
+        }
+
         return new D17PaymentResponse(
                 ticket.getId(),
                 ticket.getTicketNumber(),
@@ -72,6 +99,11 @@ public record D17PaymentResponse(
                 ticket.getAiCredits(),
                 ticket.getAmount(),
                 ticket.getCurrency() != null ? ticket.getCurrency() : "TND",
+                method,
+                txid,
+                ticket.getWalletAddress(),
+                ticket.getCryptoAmount(),
+                explorerUrl,
                 ticket.getSenderPhoneNumber(),
                 ticket.getUserNotes(),
                 ticket.getScreenshotBase64(),

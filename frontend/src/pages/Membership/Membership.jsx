@@ -55,6 +55,7 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import { useGeoCurrency } from '../../utils/geoCurrency';
 import D17PaymentModal from '../../components/D17PaymentModal';
+import { paymentService } from '../../services/paymentService';
 
 export default function MembershipPage() {
   const { t } = useLanguage();
@@ -73,15 +74,31 @@ export default function MembershipPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [confirmationOpen, setConfirmationOpen] = useState(false);
 
-  // D17 manual payment modal state
+  // Active payment methods for user region
+  const [activePaymentMethods, setActivePaymentMethods] = useState([]);
+
+  useEffect(() => {
+    const country = geo?.countryCode || localStorage.getItem('gympilot_geo_country') || 'TN';
+    paymentService.getActiveMethods(country)
+      .then((methods) => {
+        if (methods) setActivePaymentMethods(methods);
+      })
+      .catch((err) => console.error('Failed to load active methods for membership:', err));
+  }, [geo?.countryCode]);
+
+  const hasD17 = activePaymentMethods.some((m) => m.code === 'D17');
+  const hasCrypto = activePaymentMethods.some((m) => m.code !== 'D17');
+
+  // Manual payment modal state
   const [d17Modal, setD17Modal] = useState({
     open: false,
     tier: 'BASIC',
     planName: 'Basic Plan',
     amount: 49,
+    selectedMethod: 'D17',
   });
 
-  const handleOpenD17 = (tier, planName, defaultAmount) => {
+  const handleOpenD17 = (tier, planName, defaultAmount, selectedMethod = 'D17') => {
     if (!user) {
       navigate('/login?redirect=/membership');
       return;
@@ -95,6 +112,7 @@ export default function MembershipPage() {
       tier,
       planName,
       amount,
+      selectedMethod: selectedMethod || (hasD17 ? 'D17' : 'USDT_TRC20'),
     });
   };
 
@@ -599,34 +617,78 @@ export default function MembershipPage() {
                   </>
                 ) : (
                   <Stack spacing={1.5}>
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      size="large"
-                      onClick={() => handleOpenD17('BASIC', 'Basic Plan', 49)}
-                      startIcon={
-                        <Box
-                          component="img"
-                          src="/d17-logo.webp"
-                          alt="D17"
-                          sx={{ width: 22, height: 22, borderRadius: 0.75, objectFit: 'contain' }}
-                        />
-                      }
-                      sx={{
-                        py: 1.5,
-                        bgcolor: 'primary.main',
-                        color: '#000',
-                        fontWeight: 900,
-                        fontSize: '0.95rem',
-                        borderRadius: 3,
-                        boxShadow: '0 8px 24px rgba(198,255,62,0.35)',
-                        '&:hover': {
-                          bgcolor: '#b3f520',
-                        },
-                      }}
-                    >
-                      Pay with D17 Mobile ({geo.config.basicPrice})
-                    </Button>
+                    {hasD17 && (
+                      <Button
+                        fullWidth
+                        variant="contained"
+                        size="large"
+                        onClick={() => handleOpenD17('BASIC', 'Basic Plan', 49, 'D17')}
+                        startIcon={
+                          <Box
+                            component="img"
+                            src="/d17-logo.webp"
+                            alt="D17"
+                            sx={{ width: 22, height: 22, borderRadius: 0.75, objectFit: 'contain' }}
+                          />
+                        }
+                        sx={{
+                          py: 1.5,
+                          bgcolor: 'primary.main',
+                          color: '#000',
+                          fontWeight: 900,
+                          fontSize: '0.95rem',
+                          borderRadius: 3,
+                          boxShadow: '0 8px 24px rgba(198,255,62,0.35)',
+                          '&:hover': {
+                            bgcolor: '#b3f520',
+                          },
+                        }}
+                      >
+                        Pay with D17 Mobile ({geo.config.basicPrice})
+                      </Button>
+                    )}
+
+                    {hasCrypto && (
+                      <Button
+                        fullWidth
+                        variant={hasD17 ? 'outlined' : 'contained'}
+                        size="large"
+                        onClick={() => handleOpenD17('BASIC', 'Basic Plan', 49, 'USDT_TRC20')}
+                        startIcon={
+                          <Box
+                            sx={{
+                              width: 22,
+                              height: 22,
+                              borderRadius: '50%',
+                              bgcolor: '#26A17B',
+                              color: '#FFF',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: 900,
+                              fontSize: '0.75rem',
+                            }}
+                          >
+                            ₮
+                          </Box>
+                        }
+                        sx={{
+                          py: 1.5,
+                          bgcolor: hasD17 ? 'transparent' : 'primary.main',
+                          color: hasD17 ? 'text.primary' : '#000',
+                          borderColor: hasD17 ? 'divider' : 'transparent',
+                          fontWeight: 800,
+                          fontSize: '0.9rem',
+                          borderRadius: 3,
+                          '&:hover': {
+                            borderColor: 'primary.main',
+                            bgcolor: hasD17 ? 'rgba(198,255,62,0.06)' : '#b3f520',
+                          },
+                        }}
+                      >
+                        Pay with Crypto (USDT, BTC, ETH)
+                      </Button>
+                    )}
 
                     <Divider sx={{ my: 0.5 }}>
                       <Chip label="OR USE REWARD POINTS" size="small" sx={{ fontSize: '0.65rem', fontWeight: 700 }} />
@@ -819,34 +881,78 @@ export default function MembershipPage() {
                   </>
                 ) : (
                   <Stack spacing={1.5}>
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      size="large"
-                      onClick={() => handleOpenD17('PREMIUM', 'Premium Plan', 99)}
-                      startIcon={
-                        <Box
-                          component="img"
-                          src="/d17-logo.webp"
-                          alt="D17"
-                          sx={{ width: 22, height: 22, borderRadius: 0.75, objectFit: 'contain' }}
-                        />
-                      }
-                      sx={{
-                        py: 1.5,
-                        background: 'linear-gradient(135deg, #8A7CFF 0%, #6B5CEF 100%)',
-                        color: '#FFFFFF',
-                        fontWeight: 900,
-                        fontSize: '0.95rem',
-                        borderRadius: 3,
-                        boxShadow: '0 8px 24px rgba(138,124,255,0.35)',
-                        '&:hover': {
-                          background: 'linear-gradient(135deg, #9B8FFF 0%, #7C6EFF 100%)',
-                        },
-                      }}
-                    >
-                      Pay with D17 Mobile ({geo.config.premiumPrice})
-                    </Button>
+                    {hasD17 && (
+                      <Button
+                        fullWidth
+                        variant="contained"
+                        size="large"
+                        onClick={() => handleOpenD17('PREMIUM', 'Premium Plan', 99, 'D17')}
+                        startIcon={
+                          <Box
+                            component="img"
+                            src="/d17-logo.webp"
+                            alt="D17"
+                            sx={{ width: 22, height: 22, borderRadius: 0.75, objectFit: 'contain' }}
+                          />
+                        }
+                        sx={{
+                          py: 1.5,
+                          background: 'linear-gradient(135deg, #8A7CFF 0%, #6B5CEF 100%)',
+                          color: '#FFFFFF',
+                          fontWeight: 900,
+                          fontSize: '0.95rem',
+                          borderRadius: 3,
+                          boxShadow: '0 8px 24px rgba(138,124,255,0.35)',
+                          '&:hover': {
+                            background: 'linear-gradient(135deg, #9B8FFF 0%, #7C6EFF 100%)',
+                          },
+                        }}
+                      >
+                        Pay with D17 Mobile ({geo.config.premiumPrice})
+                      </Button>
+                    )}
+
+                    {hasCrypto && (
+                      <Button
+                        fullWidth
+                        variant={hasD17 ? 'outlined' : 'contained'}
+                        size="large"
+                        onClick={() => handleOpenD17('PREMIUM', 'Premium Plan', 99, 'USDT_TRC20')}
+                        startIcon={
+                          <Box
+                            sx={{
+                              width: 22,
+                              height: 22,
+                              borderRadius: '50%',
+                              bgcolor: '#26A17B',
+                              color: '#FFF',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: 900,
+                              fontSize: '0.75rem',
+                            }}
+                          >
+                            ₮
+                          </Box>
+                        }
+                        sx={{
+                          py: 1.5,
+                          bgcolor: hasD17 ? 'transparent' : 'linear-gradient(135deg, #8A7CFF 0%, #6B5CEF 100%)',
+                          color: '#FFFFFF',
+                          borderColor: hasD17 ? 'rgba(138,124,255,0.4)' : 'transparent',
+                          fontWeight: 800,
+                          fontSize: '0.9rem',
+                          borderRadius: 3,
+                          '&:hover': {
+                            borderColor: '#8A7CFF',
+                            bgcolor: hasD17 ? 'rgba(138,124,255,0.1)' : '#7C6EFF',
+                          },
+                        }}
+                      >
+                        Pay with Crypto (USDT, BTC, ETH)
+                      </Button>
+                    )}
 
                     <Divider sx={{ my: 0.5 }}>
                       <Chip label="OR USE REWARD POINTS" size="small" sx={{ fontSize: '0.65rem', fontWeight: 700 }} />
@@ -1041,13 +1147,15 @@ export default function MembershipPage() {
         </Button>
       </Box>
 
-      {/* D17 Payment Modal */}
+      {/* Manual Payment Modal (D17 & Crypto) */}
       <D17PaymentModal
         open={d17Modal.open}
         onClose={() => setD17Modal((prev) => ({ ...prev, open: false }))}
         type="SUBSCRIPTION"
         amount={d17Modal.amount}
+        currency={geo.currency}
         targetDetails={{ tier: d17Modal.tier, planName: d17Modal.planName }}
+        selectedMethod={d17Modal.selectedMethod}
         onSuccess={handleD17Success}
       />
     </Container>

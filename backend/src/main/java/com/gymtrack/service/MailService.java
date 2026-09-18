@@ -911,11 +911,16 @@ public class MailService {
     /**
      * Sends confirmation that a D17 payment proof was received and is pending verification.
      */
+    /**
+     * Sends confirmation that a manual payment proof (D17 or Crypto) was received and is pending verification.
+     */
     @Async
-    public void sendD17PaymentProofReceived(String to, String userName, String referenceNumber, double amount, String type) {
-        String subject = "Payment Proof Received — Ticket #" + referenceNumber + " (GymPilot D17)";
+    public void sendManualPaymentProofReceived(String to, String userName, String referenceNumber, double amount, String currency, String type, String paymentMethod) {
+        String methodLabel = paymentMethod != null ? paymentMethod.replace("_", " ") : "D17";
+        String subject = "Payment Proof Received — Ticket #" + referenceNumber + " (GymPilot " + methodLabel + ")";
         String greeting = userName != null && !userName.isBlank() ? "Hi " + userName : "Hello";
         String typeLabel = "SUBSCRIPTION".equalsIgnoreCase(type) ? "Membership Subscription" : "Marketplace Order";
+        String curr = currency != null ? currency : "TND";
 
         String template = """
             <!DOCTYPE html>
@@ -936,41 +941,51 @@ public class MailService {
                 <div class="card">
                   %s
                   <div style="text-align: center; margin-bottom: 24px;">
-                    <span class="badge">D17 PAYMENT PROOF RECEIVED</span>
+                    <span class="badge">%s PAYMENT PROOF RECEIVED</span>
                     <h2 style="font-size: 24px; font-weight: 800; margin: 16px 0 8px 0; color: #FFFFFF;">Verification in Progress</h2>
                     <p style="color: #94A3B8; font-size: 14px; margin: 0;">Ticket Reference: <strong style="color: #C6FF3E;">%s</strong></p>
                   </div>
                   <p style="font-size: 15px; color: #D1D5DB; line-height: 1.6;">%s,</p>
                   <p style="font-size: 15px; color: #D1D5DB; line-height: 1.6;">
-                    We have successfully received your D17 payment screenshot proof for your <strong>%s</strong> in the amount of <strong style="color: #C6FF3E;">%.2f TND</strong>.
+                    We have successfully received your %s payment proof for your <strong>%s</strong> in the amount of <strong style="color: #C6FF3E;">%.2f %s</strong>.
                   </p>
                   <div class="box">
                     <p style="margin: 0 0 8px 0; font-size: 14px; color: #94A3B8;"><strong>What happens next?</strong></p>
                     <p style="margin: 0; font-size: 14px; color: #E2E8F0; line-height: 1.6;">
-                      Our finance &amp; operations team verifies manual D17 transfers within <strong>24 to 48 hours</strong>. Once confirmed, your subscription or order will be automatically activated and you will receive an instant confirmation.
+                      Our finance &amp; operations team verifies manual %s transfers within <strong>24 to 48 hours</strong>. Once confirmed, your subscription or order will be automatically activated and you will receive an instant confirmation.
                     </p>
                   </div>
                   <p style="font-size: 14px; color: #94A3B8; line-height: 1.6;">
                     You can track your support ticket conversation anytime by logging into your GymPilot account under <strong>Support Tickets</strong>.
                   </p>
                 </div>
-                <div class="footer">&copy; %d GymPilot Tunisia. All rights reserved.</div>
+                <div class="footer">&copy; %d GymPilot. All rights reserved.</div>
               </div>
             </body>
             </html>
             """;
 
-        String html = template.formatted(getLogoHtml(), referenceNumber, greeting, typeLabel, amount, java.time.Year.now().getValue());
+        String html = template.formatted(getLogoHtml(), methodLabel.toUpperCase(), referenceNumber, greeting, methodLabel, typeLabel, amount, curr, methodLabel, java.time.Year.now().getValue());
         sendAdminEmail(to, subject, html, true);
     }
 
     /**
-     * Sends notification that D17 payment was approved and activated.
+     * Backward-compatible D17 payment proof received email.
      */
     @Async
-    public void sendD17PaymentApproved(String to, String userName, String referenceNumber, double amount, String type, String details) {
-        String subject = "Payment Confirmed! Your " + ("SUBSCRIPTION".equalsIgnoreCase(type) ? "Subscription is Active" : "Order is Processing") + " (GymPilot D17)";
+    public void sendD17PaymentProofReceived(String to, String userName, String referenceNumber, double amount, String type) {
+        sendManualPaymentProofReceived(to, userName, referenceNumber, amount, "TND", type, "D17");
+    }
+
+    /**
+     * Sends notification that manual payment was approved and activated.
+     */
+    @Async
+    public void sendManualPaymentApproved(String to, String userName, String referenceNumber, double amount, String currency, String type, String paymentMethod, String details) {
+        String methodLabel = paymentMethod != null ? paymentMethod.replace("_", " ") : "D17";
+        String subject = "Payment Confirmed! Your " + ("SUBSCRIPTION".equalsIgnoreCase(type) ? "Subscription is Active" : "Order is Processing") + " (GymPilot " + methodLabel + ")";
         String greeting = userName != null && !userName.isBlank() ? "Hi " + userName : "Hello";
+        String curr = currency != null ? currency : "TND";
 
         String template = """
             <!DOCTYPE html>
@@ -993,12 +1008,12 @@ public class MailService {
                   %s
                   <div style="text-align: center; margin-bottom: 24px;">
                     <span class="badge">PAYMENT CONFIRMED</span>
-                    <h2 style="font-size: 24px; font-weight: 800; margin: 16px 0 8px 0; color: #FFFFFF;">Your D17 Payment Has Been Approved!</h2>
+                    <h2 style="font-size: 24px; font-weight: 800; margin: 16px 0 8px 0; color: #FFFFFF;">Your %s Payment Has Been Approved!</h2>
                     <p style="color: #94A3B8; font-size: 14px; margin: 0;">Ticket: <strong style="color: #00E676;">%s</strong></p>
                   </div>
                   <p style="font-size: 15px; color: #D1D5DB; line-height: 1.6;">%s,</p>
                   <p style="font-size: 15px; color: #D1D5DB; line-height: 1.6;">
-                    Great news! Your manual D17 payment of <strong style="color: #00E676;">%.2f TND</strong> has been verified and confirmed by our team.
+                    Great news! Your manual %s payment of <strong style="color: #00E676;">%.2f %s</strong> has been verified and confirmed by our team.
                   </p>
                   <div class="box">
                     <p style="margin: 0 0 6px 0; font-size: 14px; color: #00E676; font-weight: 700;">Status: ACTIVATED</p>
@@ -1008,25 +1023,35 @@ public class MailService {
                     <a href="%s/dashboard" class="btn">Open GymPilot Dashboard</a>
                   </div>
                 </div>
-                <div class="footer">&copy; %d GymPilot Tunisia. All rights reserved.</div>
+                <div class="footer">&copy; %d GymPilot. All rights reserved.</div>
               </div>
             </body>
             </html>
             """;
 
-        String html = template.formatted(getLogoHtml(), referenceNumber, greeting, amount,
+        String html = template.formatted(getLogoHtml(), methodLabel, referenceNumber, greeting, methodLabel, amount, curr,
                 details != null ? details : "Your purchase is now fully active.",
                 frontendUrl, java.time.Year.now().getValue());
         sendAdminEmail(to, subject, html, true);
     }
 
     /**
-     * Sends notification when a D17 payment proof was rejected.
+     * Backward-compatible D17 payment approval email.
      */
     @Async
-    public void sendD17PaymentRejected(String to, String userName, String referenceNumber, double amount, String reason) {
-        String subject = "Action Required: D17 Payment Verification — Ticket #" + referenceNumber;
+    public void sendD17PaymentApproved(String to, String userName, String referenceNumber, double amount, String type, String details) {
+        sendManualPaymentApproved(to, userName, referenceNumber, amount, "TND", type, "D17", details);
+    }
+
+    /**
+     * Sends notification when a manual payment proof was rejected.
+     */
+    @Async
+    public void sendManualPaymentRejected(String to, String userName, String referenceNumber, double amount, String currency, String paymentMethod, String reason) {
+        String methodLabel = paymentMethod != null ? paymentMethod.replace("_", " ") : "D17";
+        String subject = "Action Required: " + methodLabel + " Payment Verification — Ticket #" + referenceNumber;
         String greeting = userName != null && !userName.isBlank() ? "Hi " + userName : "Hello";
+        String curr = currency != null ? currency : "TND";
 
         String template = """
             <!DOCTYPE html>
@@ -1049,32 +1074,40 @@ public class MailService {
                   %s
                   <div style="text-align: center; margin-bottom: 24px;">
                     <span class="badge">VERIFICATION UNSUCCESSFUL</span>
-                    <h2 style="font-size: 24px; font-weight: 800; margin: 16px 0 8px 0; color: #FFFFFF;">Unable to Verify D17 Payment</h2>
+                    <h2 style="font-size: 24px; font-weight: 800; margin: 16px 0 8px 0; color: #FFFFFF;">Unable to Verify %s Payment</h2>
                     <p style="color: #94A3B8; font-size: 14px; margin: 0;">Ticket: <strong style="color: #FF5252;">%s</strong></p>
                   </div>
                   <p style="font-size: 15px; color: #D1D5DB; line-height: 1.6;">%s,</p>
                   <p style="font-size: 15px; color: #D1D5DB; line-height: 1.6;">
-                    Our team was unable to verify your D17 payment of <strong style="color: #FF5252;">%.2f TND</strong> for the following reason:
+                    Our team was unable to verify your %s payment of <strong style="color: #FF5252;">%.2f %s</strong> for the following reason:
                   </p>
                   <div class="box">
                     <p style="margin: 0; font-size: 14px; color: #FFCDD2; line-height: 1.6;"><strong>Reason:</strong> %s</p>
                   </div>
                   <p style="font-size: 14px; color: #94A3B8; line-height: 1.6;">
-                    Please reply directly to your support ticket with a clear, readable screenshot, or retry the payment flow. If you have questions, our support desk is ready to help.
+                    Please reply directly to your support ticket with a clear, readable screenshot or valid transaction hash (TXID), or retry the payment flow. If you have questions, our support desk is ready to help.
                   </p>
                   <div style="text-align: center;">
                     <a href="%s/support" class="btn">View Ticket &amp; Reply</a>
                   </div>
                 </div>
-                <div class="footer">&copy; %d GymPilot Tunisia. All rights reserved.</div>
+                <div class="footer">&copy; %d GymPilot. All rights reserved.</div>
               </div>
             </body>
             </html>
             """;
 
-        String html = template.formatted(getLogoHtml(), referenceNumber, greeting, amount,
+        String html = template.formatted(getLogoHtml(), methodLabel, referenceNumber, greeting, methodLabel, amount, curr,
                 reason != null ? reason : "Payment details could not be matched.",
                 frontendUrl, java.time.Year.now().getValue());
         sendAdminEmail(to, subject, html, true);
+    }
+
+    /**
+     * Backward-compatible D17 payment rejection email.
+     */
+    @Async
+    public void sendD17PaymentRejected(String to, String userName, String referenceNumber, double amount, String reason) {
+        sendManualPaymentRejected(to, userName, referenceNumber, amount, "TND", "D17", reason);
     }
 }

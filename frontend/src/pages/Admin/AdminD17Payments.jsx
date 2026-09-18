@@ -35,6 +35,8 @@ import {
   Tabs,
   Tab,
   Divider,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
@@ -53,18 +55,103 @@ import CardMembershipRoundedIcon from '@mui/icons-material/CardMembershipRounded
 import ContentCopyRoundedIcon from '@mui/icons-material/ContentCopyRounded';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded';
+import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded';
+import PublicRoundedIcon from '@mui/icons-material/PublicRounded';
+import FlagRoundedIcon from '@mui/icons-material/FlagRounded';
+import AccountBalanceWalletRoundedIcon from '@mui/icons-material/AccountBalanceWalletRounded';
 
 import SEO from '../../components/SEO';
 import { d17Service } from '../../services/d17Service';
+import { paymentService } from '../../services/paymentService';
 import { useAuth } from '../../context/AuthContext';
 
+function CoinIcon({ code, sx = {} }) {
+  if (code === 'D17') {
+    return (
+      <Box
+        component="img"
+        src="/d17-logo.webp"
+        alt="D17"
+        sx={{ width: 22, height: 22, objectFit: 'contain', ...sx }}
+      />
+    );
+  }
+  if (code === 'USDT_TRC20' || code === 'USDT') {
+    return (
+      <Box
+        sx={{
+          width: 22,
+          height: 22,
+          borderRadius: '50%',
+          bgcolor: '#26A17B',
+          color: '#FFFFFF',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontWeight: 900,
+          fontSize: '0.7rem',
+          ...sx,
+        }}
+      >
+        ₮
+      </Box>
+    );
+  }
+  if (code === 'BTC') {
+    return (
+      <Box
+        sx={{
+          width: 22,
+          height: 22,
+          borderRadius: '50%',
+          bgcolor: '#F7931A',
+          color: '#FFFFFF',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontWeight: 900,
+          fontSize: '0.75rem',
+          ...sx,
+        }}
+      >
+        ₿
+      </Box>
+    );
+  }
+  if (code === 'ETH') {
+    return (
+      <Box
+        sx={{
+          width: 22,
+          height: 22,
+          borderRadius: '50%',
+          bgcolor: '#627EEA',
+          color: '#FFFFFF',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontWeight: 900,
+          fontSize: '0.7rem',
+          ...sx,
+        }}
+      >
+        Ξ
+      </Box>
+    );
+  }
+  return <AccountBalanceWalletRoundedIcon sx={{ fontSize: 20, ...sx }} />;
+}
+
 const REJECTION_REASONS = [
+  'Transaction hash (TXID) not found on blockchain',
+  'Incorrect crypto network used (e.g. not TRC20)',
+  'Crypto transfer amount less than required amount',
   'Unclear or cropped screenshot proof',
   'Transfer amount does not match payable total',
-  'Payment not received in GymPilot D17 account',
+  'Payment not received in GymPilot wallet / D17 account',
   'Transaction timestamp is older than order creation',
-  'Duplicate receipt submission',
-  'Invalid recipient phone number',
+  'Duplicate receipt or TXID submission',
+  'Invalid recipient phone number / wallet address',
   'Other / Unverified transaction',
 ];
 
@@ -82,7 +169,8 @@ export default function AdminD17Payments() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL'); // ALL, PENDING_VERIFICATION, APPROVED, REJECTED, SLA_WARNINGS
-  const [typeFilter, setTypeFilter] = useState('ALL'); // ALL, SUBSCRIPTION, ORDER
+  const [typeFilter, setTypeFilter] = useState('ALL'); // ALL, SUBSCRIPTION, ORDER, AI_CREDIT
+  const [methodFilter, setMethodFilter] = useState('ALL'); // ALL, D17, USDT_TRC20, BTC, ETH
 
   // Lightbox modal for full screenshot preview
   const [previewImage, setPreviewImage] = useState(null);
@@ -100,14 +188,12 @@ export default function AdminD17Payments() {
   // Audit log dialog
   const [auditLogPayment, setAuditLogPayment] = useState(null);
 
-  // Settings dialog
+  // Payment Methods & Regional Routing Configuration Dialog
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [configSettings, setConfigSettings] = useState({
-    phoneNumber: '+216 21 214 512',
-    recipientName: 'GymPilot Official',
-    instructions: 'Send the exact amount to this number via D17, then take a screenshot of the payment confirmation.',
-  });
-  const [savingSettings, setSavingSettings] = useState(false);
+  const [adminMethods, setAdminMethods] = useState([]);
+  const [loadingMethods, setLoadingMethods] = useState(false);
+  const [selectedMethodTab, setSelectedMethodTab] = useState('D17');
+  const [savingMethodCode, setSavingMethodCode] = useState(null);
 
   // Toast notifications
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
@@ -116,13 +202,13 @@ export default function AdminD17Payments() {
   const fetchPayments = useCallback(async () => {
     try {
       setLoading(true);
-      const [paymentsData, statsData, configData] = await Promise.all([
-        d17Service.getAdminPayments({
+      const [paymentsData, statsData] = await Promise.all([
+        paymentService.getAdminPayments({
           status: statusFilter === 'SLA_WARNINGS' ? 'PENDING_VERIFICATION' : statusFilter,
           search: searchQuery.trim() || undefined,
+          method: methodFilter !== 'ALL' ? methodFilter : undefined,
         }),
-        d17Service.getAdminStats().catch(() => null),
-        d17Service.getConfig().catch(() => null),
+        paymentService.getAdminStats().catch(() => null),
       ]);
 
       let items = paymentsData || [];
@@ -144,24 +230,83 @@ export default function AdminD17Payments() {
           total: statsData.total ?? statsData.totalCount ?? 0,
         });
       }
-      if (configData) setConfigSettings(configData);
     } catch (err) {
-      console.error('Failed to load D17 payments:', err);
+      console.error('Failed to load manual & crypto payments:', err);
       setToast({ open: true, message: 'Failed to load payments data', severity: 'error' });
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, searchQuery, typeFilter]);
+  }, [statusFilter, searchQuery, typeFilter, methodFilter]);
+
+  const fetchAdminMethods = useCallback(async () => {
+    try {
+      setLoadingMethods(true);
+      const data = await paymentService.getAdminMethods();
+      if (data) {
+        setAdminMethods(data);
+        if (data.length > 0 && !data.some((m) => m.code === selectedMethodTab)) {
+          setSelectedMethodTab(data[0].code);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load admin payment methods:', err);
+    } finally {
+      setLoadingMethods(false);
+    }
+  }, [selectedMethodTab]);
 
   useEffect(() => {
     fetchPayments();
   }, [fetchPayments]);
+
+  useEffect(() => {
+    if (settingsOpen) {
+      fetchAdminMethods();
+    }
+  }, [settingsOpen, fetchAdminMethods]);
 
   const handleCopy = (text, id) => {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(text);
       setCopiedId(id);
       setTimeout(() => setCopiedId(null), 2000);
+    }
+  };
+
+  const handleUpdateMethodField = (code, field, value) => {
+    setAdminMethods((prev) =>
+      prev.map((m) => (m.code === code ? { ...m, [field]: value } : m))
+    );
+  };
+
+  const handleSaveMethod = async (method) => {
+    if (!method) return;
+    try {
+      setSavingMethodCode(method.code);
+      await paymentService.updateMethod(method.code, {
+        isActiveGlobal: method.isActiveGlobal,
+        isActiveTunisia: method.isActiveTunisia,
+        isActiveInternational: method.isActiveInternational,
+        receivingAddress: method.receivingAddress,
+        recipientName: method.recipientName,
+        instructions: method.instructions,
+        warningNotice: method.warningNotice,
+        explorerUrlPrefix: method.explorerUrlPrefix,
+      });
+      setToast({
+        open: true,
+        message: `${method.name} configuration saved successfully!`,
+        severity: 'success',
+      });
+      fetchAdminMethods();
+    } catch (err) {
+      setToast({
+        open: true,
+        message: err.response?.data?.message || err.message || 'Failed to update payment method.',
+        severity: 'error',
+      });
+    } finally {
+      setSavingMethodCode(null);
     }
   };
 
@@ -211,23 +356,6 @@ export default function AdminD17Payments() {
       });
     } finally {
       setActionSubmitting(false);
-    }
-  };
-
-  const handleSaveSettings = async () => {
-    try {
-      setSavingSettings(true);
-      await d17Service.updateConfig(configSettings);
-      setToast({ open: true, message: 'D17 payment settings updated successfully!', severity: 'success' });
-      setSettingsOpen(false);
-    } catch (err) {
-      setToast({
-        open: true,
-        message: err.response?.data?.message || err.message || 'Failed to update settings.',
-        severity: 'error',
-      });
-    } finally {
-      setSavingSettings(false);
     }
   };
 
@@ -296,7 +424,7 @@ export default function AdminD17Payments() {
 
   return (
     <>
-      <SEO title="D17 Mobile Payments Triage — GymPilot Admin" description="Manual verification portal for D17 payments." path="/admin/d17-payments" noIndex />
+      <SEO title="Manual & Crypto Payments Hub — GymPilot Admin" description="Manual verification portal for D17 and Cryptocurrency payments." path="/admin/d17-payments" noIndex />
 
       <Container maxWidth="xl" sx={{ py: 4 }}>
         {/* Header */}
@@ -310,7 +438,7 @@ export default function AdminD17Payments() {
                 sx={{ height: 32, width: 'auto', bgcolor: '#fff', p: 0.5, borderRadius: 1 }}
               />
               <Typography variant="h4" sx={{ fontFamily: "'Sora', sans-serif", fontWeight: 800 }}>
-                D17 Payments Verification
+                Manual &amp; Crypto Payments
               </Typography>
               {(stats.pendingCount || stats.pending || 0) > 0 && (
                 <Chip
@@ -328,7 +456,7 @@ export default function AdminD17Payments() {
               )}
             </Stack>
             <Typography variant="body2" color="text.secondary">
-              Review and triage manual Tunisian mobile payments, audit receipt screenshots, and activate subscriptions or orders.
+              Review and triage manual payments (D17, USDT TRC20, BTC, ETH), verify receipt proofs &amp; blockchain hashes, and activate subscriptions or orders.
             </Typography>
           </Box>
 
@@ -339,7 +467,7 @@ export default function AdminD17Payments() {
               onClick={() => setSettingsOpen(true)}
               sx={{ fontWeight: 700, borderRadius: 2 }}
             >
-              D17 Settings
+              Payment Methods &amp; Routing
             </Button>
             <Button
               variant="contained"
@@ -388,7 +516,7 @@ export default function AdminD17Payments() {
               <Stack direction="row" justifyContent="space-between" alignItems="center">
                 <Box>
                   <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase' }}>
-                    Approved & Active
+                    Approved &amp; Active
                   </Typography>
                   <Typography variant="h4" sx={{ fontWeight: 900, color: 'success.main', mt: 0.5, fontFamily: "'Sora', sans-serif" }}>
                     {stats.approvedCount ?? stats.approved ?? 0}
@@ -470,11 +598,11 @@ export default function AdminD17Payments() {
         {/* Filter and Search Bar */}
         <Paper elevation={0} sx={{ p: 2, mb: 3, borderRadius: 3, border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={5}>
+            <Grid item xs={12} md={4}>
               <TextField
                 size="small"
                 fullWidth
-                placeholder="Search ticket #, user name, email, order ID..."
+                placeholder="Search ticket #, user, email, TXID..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 InputProps={{
@@ -487,7 +615,7 @@ export default function AdminD17Payments() {
               />
             </Grid>
 
-            <Grid item xs={12} sm={6} md={3.5}>
+            <Grid item xs={12} sm={6} md={3.2}>
               <Tabs
                 value={statusFilter}
                 onChange={(_, val) => setStatusFilter(val)}
@@ -512,14 +640,27 @@ export default function AdminD17Payments() {
               </Tabs>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={3.5}>
+            <Grid item xs={12} sm={6} md={2.4}>
               <FormControl size="small" fullWidth>
-                <InputLabel>Payment Category</InputLabel>
-                <Select value={typeFilter} label="Payment Category" onChange={(e) => setTypeFilter(e.target.value)}>
+                <InputLabel>Category</InputLabel>
+                <Select value={typeFilter} label="Category" onChange={(e) => setTypeFilter(e.target.value)}>
                   <MenuItem value="ALL">All Categories</MenuItem>
                   <MenuItem value="SUBSCRIPTION">GymPilot Subscription</MenuItem>
                   <MenuItem value="AI_CREDIT">AI Credit Pack</MenuItem>
                   <MenuItem value="ORDER">Shop Marketplace Order</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={2.4}>
+              <FormControl size="small" fullWidth>
+                <InputLabel>Method</InputLabel>
+                <Select value={methodFilter} label="Method" onChange={(e) => setMethodFilter(e.target.value)}>
+                  <MenuItem value="ALL">All Methods</MenuItem>
+                  <MenuItem value="D17">D17 Mobile</MenuItem>
+                  <MenuItem value="USDT_TRC20">USDT (TRC20)</MenuItem>
+                  <MenuItem value="BTC">Bitcoin (BTC)</MenuItem>
+                  <MenuItem value="ETH">Ethereum (ETH)</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -528,14 +669,15 @@ export default function AdminD17Payments() {
 
         {/* Table of Submissions */}
         <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
-          <Table sx={{ minWidth: 950 }}>
+          <Table sx={{ minWidth: 1050 }}>
             <TableHead sx={{ bgcolor: 'rgba(255,255,255,0.02)' }}>
               <TableRow>
                 <TableCell sx={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase' }}>Ticket # &amp; Date</TableCell>
                 <TableCell sx={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase' }}>Athlete Details</TableCell>
                 <TableCell sx={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase' }}>Target</TableCell>
+                <TableCell sx={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase' }}>Method</TableCell>
                 <TableCell sx={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase' }}>Amount</TableCell>
-                <TableCell sx={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase' }}>Proof Screenshot</TableCell>
+                <TableCell sx={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase' }}>Proof / TXID</TableCell>
                 <TableCell sx={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase' }}>SLA / Status</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase' }}>Actions</TableCell>
               </TableRow>
@@ -543,16 +685,16 @@ export default function AdminD17Payments() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
+                  <TableCell colSpan={8} align="center" sx={{ py: 8 }}>
                     <CircularProgress size={36} sx={{ color: 'primary.main', mb: 2 }} />
                     <Typography variant="body2" color="text.secondary">Loading verification queue...</Typography>
                   </TableCell>
                 </TableRow>
               ) : payments.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
+                  <TableCell colSpan={8} align="center" sx={{ py: 8 }}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 0.5 }}>No payments found</Typography>
-                    <Typography variant="body2" color="text.secondary">No D17 payments match the selected criteria.</Typography>
+                    <Typography variant="body2" color="text.secondary">No payment tickets match the selected criteria.</Typography>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -648,60 +790,135 @@ export default function AdminD17Payments() {
                         )}
                       </TableCell>
 
+                      {/* Payment Method */}
+                      <TableCell>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <CoinIcon code={p.paymentMethod || 'D17'} />
+                          <Box>
+                            <Typography variant="body2" sx={{ fontWeight: 800 }}>
+                              {p.paymentMethod === 'USDT_TRC20'
+                                ? 'USDT'
+                                : p.paymentMethod === 'BTC'
+                                ? 'BTC'
+                                : p.paymentMethod === 'ETH'
+                                ? 'ETH'
+                                : 'D17'}
+                            </Typography>
+                            {p.paymentMethod === 'USDT_TRC20' && (
+                              <Chip
+                                label="TRC20"
+                                size="small"
+                                sx={{ fontSize: '0.62rem', height: 16, fontWeight: 800, bgcolor: 'rgba(38,161,123,0.15)', color: '#26A17B' }}
+                              />
+                            )}
+                          </Box>
+                        </Stack>
+                      </TableCell>
+
                       {/* Amount */}
                       <TableCell>
                         <Typography variant="body2" sx={{ fontWeight: 900, color: 'primary.main', fontFamily: "'Sora', sans-serif" }}>
                           {Number(p.amount || 0).toFixed(2)} TND
                         </Typography>
+                        {p.cryptoAmount && (
+                          <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', fontWeight: 700 }}>
+                            ~{p.cryptoAmount} {p.paymentMethod?.replace('_TRC20', '')}
+                          </Typography>
+                        )}
                         {p.userNotes && (
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', maxWidth: 150 }} noWrap title={p.userNotes}>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', maxWidth: 140 }} noWrap title={p.userNotes}>
                             Note: {p.userNotes}
                           </Typography>
                         )}
                       </TableCell>
 
-                      {/* Proof Screenshot */}
+                      {/* Proof Screenshot / TXID */}
                       <TableCell>
-                        {p.screenshotBase64 ? (
-                          <Box
-                            sx={{
-                              position: 'relative',
-                              width: 52,
-                              height: 52,
-                              borderRadius: 1.5,
-                              overflow: 'hidden',
-                              border: '1px solid',
-                              borderColor: 'divider',
-                              cursor: 'pointer',
-                              '&:hover .zoom-overlay': { opacity: 1 },
-                            }}
-                            onClick={() => setPreviewImage(p.screenshotBase64)}
-                          >
+                        <Stack spacing={0.75} alignItems="flex-start">
+                          {p.screenshotBase64 && (
                             <Box
-                              component="img"
-                              src={p.screenshotBase64}
-                              alt="Receipt proof"
-                              sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                            />
-                            <Box
-                              className="zoom-overlay"
                               sx={{
-                                position: 'absolute',
-                                inset: 0,
-                                bgcolor: 'rgba(0,0,0,0.6)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                opacity: 0,
-                                transition: 'opacity 0.2s',
+                                position: 'relative',
+                                width: 48,
+                                height: 48,
+                                borderRadius: 1.5,
+                                overflow: 'hidden',
+                                border: '1px solid',
+                                borderColor: 'divider',
+                                cursor: 'pointer',
+                                '&:hover .zoom-overlay': { opacity: 1 },
                               }}
+                              onClick={() => setPreviewImage(p.screenshotBase64)}
                             >
-                              <ZoomInRoundedIcon sx={{ color: '#fff', fontSize: 20 }} />
+                              <Box
+                                component="img"
+                                src={p.screenshotBase64}
+                                alt="Receipt proof"
+                                sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              />
+                              <Box
+                                className="zoom-overlay"
+                                sx={{
+                                  position: 'absolute',
+                                  inset: 0,
+                                  bgcolor: 'rgba(0,0,0,0.6)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  opacity: 0,
+                                  transition: 'opacity 0.2s',
+                                }}
+                              >
+                                <ZoomInRoundedIcon sx={{ color: '#fff', fontSize: 18 }} />
+                              </Box>
                             </Box>
-                          </Box>
-                        ) : (
-                          <Typography variant="caption" color="text.secondary">No proof</Typography>
-                        )}
+                          )}
+
+                          {p.txid ? (
+                            <Stack direction="row" spacing={0.5} alignItems="center">
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  fontFamily: 'monospace',
+                                  fontWeight: 800,
+                                  bgcolor: 'rgba(255,255,255,0.05)',
+                                  px: 0.8,
+                                  py: 0.2,
+                                  borderRadius: 1,
+                                  border: '1px solid',
+                                  borderColor: 'divider',
+                                  fontSize: '0.68rem',
+                                }}
+                              >
+                                TX: {p.txid.slice(0, 6)}...{p.txid.slice(-4)}
+                              </Typography>
+                              <Tooltip title={copiedId === `txid-${p.id}` ? 'Copied' : 'Copy TXID'}>
+                                <IconButton size="small" onClick={() => handleCopy(p.txid, `txid-${p.id}`)}>
+                                  {copiedId === `txid-${p.id}` ? (
+                                    <CheckRoundedIcon sx={{ fontSize: 13, color: 'success.main' }} />
+                                  ) : (
+                                    <ContentCopyRoundedIcon sx={{ fontSize: 13 }} />
+                                  )}
+                                </IconButton>
+                              </Tooltip>
+                              {p.explorerUrl && (
+                                <Tooltip title="Verify on Blockchain Explorer">
+                                  <IconButton
+                                    size="small"
+                                    component="a"
+                                    href={p.explorerUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <OpenInNewRoundedIcon sx={{ fontSize: 14, color: 'primary.main' }} />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                            </Stack>
+                          ) : !p.screenshotBase64 ? (
+                            <Typography variant="caption" color="text.secondary">No proof</Typography>
+                          ) : null}
+                        </Stack>
                       </TableCell>
 
                       {/* SLA / Status */}
@@ -840,13 +1057,42 @@ export default function AdminD17Payments() {
                       <Typography variant="body2" sx={{ fontWeight: 700 }}>{approvingPayment.userName} ({approvingPayment.userEmail})</Typography>
                     </Stack>
                     <Stack direction="row" justifyContent="space-between">
+                      <Typography variant="body2" color="text.secondary">Payment Method:</Typography>
+                      <Stack direction="row" spacing={0.75} alignItems="center">
+                        <CoinIcon code={approvingPayment.paymentMethod || 'D17'} sx={{ width: 18, height: 18 }} />
+                        <Typography variant="body2" sx={{ fontWeight: 800 }}>
+                          {approvingPayment.paymentMethod || 'D17'}
+                        </Typography>
+                      </Stack>
+                    </Stack>
+                    <Stack direction="row" justifyContent="space-between">
                       <Typography variant="body2" color="text.secondary">Transfer Amount:</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 800, color: 'primary.main' }}>{Number(approvingPayment.amount).toFixed(2)} TND</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 800, color: 'primary.main' }}>
+                        {Number(approvingPayment.amount).toFixed(2)} TND
+                        {approvingPayment.cryptoAmount && ` (~${approvingPayment.cryptoAmount} ${approvingPayment.paymentMethod?.replace('_TRC20', '')})`}
+                      </Typography>
                     </Stack>
                     {approvingPayment.senderPhoneNumber && (
                       <Stack direction="row" justifyContent="space-between">
                         <Typography variant="body2" color="text.secondary">Sender Phone:</Typography>
                         <Typography variant="body2" sx={{ fontWeight: 700 }}>{approvingPayment.senderPhoneNumber}</Typography>
+                      </Stack>
+                    )}
+                    {approvingPayment.txid && (
+                      <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        <Typography variant="body2" color="text.secondary">Transaction Hash (TXID):</Typography>
+                        <Stack direction="row" spacing={0.5} alignItems="center">
+                          <Typography variant="caption" sx={{ fontFamily: 'monospace', fontWeight: 800 }}>
+                            {approvingPayment.txid.slice(0, 10)}...{approvingPayment.txid.slice(-8)}
+                          </Typography>
+                          {approvingPayment.explorerUrl && (
+                            <Tooltip title="View on Blockchain Explorer">
+                              <IconButton size="small" component="a" href={approvingPayment.explorerUrl} target="_blank" rel="noopener noreferrer">
+                                <OpenInNewRoundedIcon sx={{ fontSize: 15, color: 'primary.main' }} />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                        </Stack>
                       </Stack>
                     )}
                   </Stack>
@@ -856,7 +1102,7 @@ export default function AdminD17Payments() {
                   fullWidth
                   size="small"
                   label="Internal Admin Notes (Optional)"
-                  placeholder="e.g., Matched in D17 bank portal with ref #49281"
+                  placeholder="e.g., Matched in bank / blockchain explorer"
                   value={approveNote}
                   onChange={(e) => setApproveNote(e.target.value)}
                 />
@@ -919,7 +1165,7 @@ export default function AdminD17Payments() {
                   rows={3}
                   size="small"
                   label="Detailed Explanation for Athlete (Included in Email)"
-                  placeholder="e.g., The screenshot provided does not display the transaction reference or amount clearly. Please capture the full receipt from your D17 app."
+                  placeholder="e.g., The screenshot provided does not display the transaction reference clearly, or the TXID could not be found on the blockchain."
                   value={rejectCustomNote}
                   onChange={(e) => setRejectCustomNote(e.target.value)}
                 />
@@ -1009,64 +1255,228 @@ export default function AdminD17Payments() {
           </DialogActions>
         </Dialog>
 
-        {/* Settings Dialog */}
+        {/* Payment Methods & Regional Routing Configuration Dialog */}
         <Dialog
           open={settingsOpen}
-          onClose={() => !savingSettings && setSettingsOpen(false)}
-          maxWidth="sm"
+          onClose={() => !savingMethodCode && setSettingsOpen(false)}
+          maxWidth="md"
           fullWidth
-          PaperProps={{ sx: { borderRadius: 3, p: 2 } }}
+          PaperProps={{ sx: { borderRadius: 3.5, p: 2 } }}
         >
           <DialogTitle sx={{ fontWeight: 800, fontFamily: "'Sora', sans-serif" }}>
-            D17 Payment Configuration
+            Payment Methods &amp; Regional Routing
           </DialogTitle>
           <DialogContent>
             <Stack spacing={2.5} sx={{ mt: 1 }}>
-              <Alert severity="info">
-                These settings directly configure what athletes see on both the Membership checkout and Shop checkout pages.
+              <Alert severity="info" sx={{ borderRadius: 2 }}>
+                Configure receiving wallet addresses, phone numbers, instructions, and geographical availability (Tunisia vs. International) for all payment methods. These settings apply immediately to both <strong>Membership Checkout</strong> and <strong>Shop Checkout</strong>.
               </Alert>
 
-              <TextField
-                fullWidth
-                size="small"
-                label="Receiving Phone Number *"
-                value={configSettings.phoneNumber}
-                onChange={(e) => setConfigSettings((prev) => ({ ...prev, phoneNumber: e.target.value }))}
-                helperText="Tunisian mobile number linked to GymPilot's D17 account"
-              />
+              {loadingMethods ? (
+                <Box sx={{ textAlign: 'center', py: 6 }}>
+                  <CircularProgress size={32} sx={{ color: 'primary.main', mb: 1.5 }} />
+                  <Typography variant="body2" color="text.secondary">Loading payment configurations...</Typography>
+                </Box>
+              ) : (
+                <>
+                  {/* Method Switch Tabs */}
+                  <Tabs
+                    value={selectedMethodTab}
+                    onChange={(_, val) => setSelectedMethodTab(val)}
+                    variant="scrollable"
+                    scrollButtons="auto"
+                    sx={{
+                      borderBottom: '1px solid',
+                      borderColor: 'divider',
+                      '& .MuiTab-root': {
+                        fontWeight: 800,
+                        textTransform: 'none',
+                        minHeight: 48,
+                      },
+                    }}
+                  >
+                    {adminMethods.map((m) => (
+                      <Tab
+                        key={m.code}
+                        value={m.code}
+                        icon={<CoinIcon code={m.code} sx={{ mr: 1 }} />}
+                        iconPosition="start"
+                        label={m.name}
+                      />
+                    ))}
+                  </Tabs>
 
-              <TextField
-                fullWidth
-                size="small"
-                label="Recipient Name / Label *"
-                value={configSettings.recipientName}
-                onChange={(e) => setConfigSettings((prev) => ({ ...prev, recipientName: e.target.value }))}
-                helperText="e.g., GymPilot Official"
-              />
+                  {/* Active Tab Configuration Panel */}
+                  {(() => {
+                    const current = adminMethods.find((m) => m.code === selectedMethodTab);
+                    if (!current) return null;
+                    const isSaving = savingMethodCode === current.code;
 
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                size="small"
-                label="Athlete Instructions *"
-                value={configSettings.instructions}
-                onChange={(e) => setConfigSettings((prev) => ({ ...prev, instructions: e.target.value }))}
-              />
+                    return (
+                      <Stack spacing={2.5} sx={{ pt: 1 }}>
+                        {/* Master Global Toggle */}
+                        <Paper variant="outlined" sx={{ p: 2, borderRadius: 2.5, bgcolor: 'rgba(255,255,255,0.02)' }}>
+                          <FormControlLabel
+                            control={
+                              <Switch
+                                checked={current.isActiveGlobal ?? true}
+                                onChange={(e) => handleUpdateMethodField(current.code, 'isActiveGlobal', e.target.checked)}
+                                color="success"
+                              />
+                            }
+                            label={
+                              <Box>
+                                <Typography variant="body2" sx={{ fontWeight: 800 }}>
+                                  Active Globally (Master Switch)
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  Enable or disable this payment method entirely across GymPilot.
+                                </Typography>
+                              </Box>
+                            }
+                          />
+                        </Paper>
+
+                        {/* Regional Routing Controls */}
+                        <Paper variant="outlined" sx={{ p: 2, borderRadius: 2.5, bgcolor: 'rgba(255,255,255,0.02)' }}>
+                          <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary', display: 'block', mb: 1.5, letterSpacing: 0.5 }}>
+                            Regional Availability Routing
+                          </Typography>
+                          <Grid container spacing={2}>
+                            <Grid item xs={12} sm={6}>
+                              <FormControlLabel
+                                control={
+                                  <Switch
+                                    checked={current.isActiveTunisia ?? true}
+                                    onChange={(e) => handleUpdateMethodField(current.code, 'isActiveTunisia', e.target.checked)}
+                                    color="primary"
+                                  />
+                                }
+                                label={
+                                  <Box>
+                                    <Stack direction="row" spacing={0.5} alignItems="center">
+                                      <FlagRoundedIcon fontSize="small" sx={{ color: 'error.main' }} />
+                                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                                        Tunisia (Local Athletes)
+                                      </Typography>
+                                    </Stack>
+                                    <Typography variant="caption" color="text.secondary">
+                                      Available to users inside Tunisia.
+                                    </Typography>
+                                  </Box>
+                                }
+                              />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                              <FormControlLabel
+                                control={
+                                  <Switch
+                                    checked={current.isActiveInternational ?? true}
+                                    onChange={(e) => handleUpdateMethodField(current.code, 'isActiveInternational', e.target.checked)}
+                                    color="primary"
+                                  />
+                                }
+                                label={
+                                  <Box>
+                                    <Stack direction="row" spacing={0.5} alignItems="center">
+                                      <PublicRoundedIcon fontSize="small" sx={{ color: 'info.main' }} />
+                                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                                        International (Outside Tunisia)
+                                      </Typography>
+                                    </Stack>
+                                    <Typography variant="caption" color="text.secondary">
+                                      Available to worldwide athletes outside Tunisia.
+                                    </Typography>
+                                  </Box>
+                                }
+                              />
+                            </Grid>
+                          </Grid>
+                        </Paper>
+
+                        {/* Receiving Address / Phone */}
+                        <TextField
+                          fullWidth
+                          size="small"
+                          label={current.category === 'CRYPTO' ? 'Official Receiving Wallet Address *' : 'Receiving Phone Number *'}
+                          value={current.receivingAddress || ''}
+                          onChange={(e) => handleUpdateMethodField(current.code, 'receivingAddress', e.target.value)}
+                          helperText={
+                            current.category === 'CRYPTO'
+                              ? `Official GymPilot wallet address where athletes send ${current.name} payments.`
+                              : 'Tunisian mobile phone number linked to D17.'
+                          }
+                          inputProps={{ style: current.category === 'CRYPTO' ? { fontFamily: 'monospace' } : {} }}
+                        />
+
+                        {/* Recipient Name */}
+                        <TextField
+                          fullWidth
+                          size="small"
+                          label="Recipient Name / Label *"
+                          value={current.recipientName || ''}
+                          onChange={(e) => handleUpdateMethodField(current.code, 'recipientName', e.target.value)}
+                          helperText="e.g., GymPilot Official"
+                        />
+
+                        {/* Network Warning Banner */}
+                        {current.category === 'CRYPTO' && (
+                          <TextField
+                            fullWidth
+                            size="small"
+                            label="Network Warning / Alert Notice"
+                            value={current.warningNotice || ''}
+                            onChange={(e) => handleUpdateMethodField(current.code, 'warningNotice', e.target.value)}
+                            helperText="High-visibility warning banner shown to athletes before making payment."
+                          />
+                        )}
+
+                        {/* Instructions */}
+                        <TextField
+                          fullWidth
+                          multiline
+                          rows={3}
+                          size="small"
+                          label="Athlete Instructions *"
+                          value={current.instructions || ''}
+                          onChange={(e) => handleUpdateMethodField(current.code, 'instructions', e.target.value)}
+                          helperText="Step-by-step instructions shown to athlete during checkout."
+                        />
+
+                        {/* Explorer URL Prefix */}
+                        {current.category === 'CRYPTO' && (
+                          <TextField
+                            fullWidth
+                            size="small"
+                            label="Blockchain Explorer URL Prefix"
+                            value={current.explorerUrlPrefix || ''}
+                            onChange={(e) => handleUpdateMethodField(current.code, 'explorerUrlPrefix', e.target.value)}
+                            helperText="e.g., https://tronscan.org/#/transaction/ (used to generate clickable 1-click explorer verification links)"
+                            inputProps={{ style: { fontFamily: 'monospace' } }}
+                          />
+                        )}
+
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 1 }}>
+                          <Button
+                            variant="contained"
+                            disabled={isSaving}
+                            onClick={() => handleSaveMethod(current)}
+                            startIcon={isSaving ? <CircularProgress size={16} color="inherit" /> : <CheckCircleRoundedIcon />}
+                            sx={{ fontWeight: 800, borderRadius: 2, px: 3 }}
+                          >
+                            {isSaving ? 'Saving...' : `Save ${current.name} Settings`}
+                          </Button>
+                        </Box>
+                      </Stack>
+                    );
+                  })()}
+                </>
+              )}
             </Stack>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
-            <Button disabled={savingSettings} onClick={() => setSettingsOpen(false)} sx={{ fontWeight: 700 }}>
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              disabled={savingSettings}
-              onClick={handleSaveSettings}
-              startIcon={savingSettings ? <CircularProgress size={16} color="inherit" /> : <CheckCircleRoundedIcon />}
-              sx={{ fontWeight: 800, borderRadius: 2, px: 3 }}
-            >
-              {savingSettings ? 'Saving...' : 'Save Settings'}
+            <Button disabled={!!savingMethodCode} onClick={() => setSettingsOpen(false)} sx={{ fontWeight: 700 }}>
+              Close
             </Button>
           </DialogActions>
         </Dialog>

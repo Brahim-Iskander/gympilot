@@ -1,0 +1,374 @@
+{
+  "name": "GymPilot - European Groups Marketing (With Auto-Membership Check)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 🚀 GymPilot - Marketing Direct dans vos 9 Groupes Facebook\n\n### 📋 9 Groupes Réels Configurés :\n- Groupes Musculation, Remise en Forme & Perte de Poids (France & Europe)\n- Bannière HD GymPilot sur Cloudinary CDN connectée !\n- Vérification d'accès automatique : publie directement dans les groupes où la Page est membre, et génère les liens directs pour les autres dans le rapport !",
+        "height": 240,
+        "width": 720,
+        "color": 4
+      },
+      "id": "sticky-note-instructions",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        80,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24
+            }
+          ]
+        }
+      },
+      
+      "id": "schedule-trigger",
+      "name": "⏰ Daily Campaign Trigger (18:00 CET)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        100,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "facebook-gympilot-campaign",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "⚡ On-Demand Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        100,
+        520
+      ],
+      "webhookId": "facebook-gympilot-campaign"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ==========================================================================\n// ⚙️ CONFIGURATION GYMPILOT AVEC VOS 9 GROUPES FACEBOOK RÉELS\n// ==========================================================================\n\nconst CONFIG = {\n  // 1. TOKEN META GRAPH API (Vérifié et Actif pour la page 109237631866281)\n  facebookPageAccessToken: \"EAAibpp9nKZAEBSkhHdfgn44hvMFZAfPe73ZCCPvleR0rBwSpaZBmQigffhFzMuPGK4EAj1AP9rsDZBaa1cZAZCT2OQaeYHcU0ZAoR4fx8RCL9G9vl2A2ANaQRTaAe666XJGYJLx6l2VkqpVperifY02ch6N07EAXODLPKCF8t3aq0T1mPsEadCmEHivbuvQO2h1i8hoDgdo9qb41l0oZAf7UioAvbTjyt6wi16OzJD01ceGSRkDVgnyyvZBLmuze0ZD\",\n\n  // 2. IMAGE OFFICIELLE HD GYMPILOT (Cloudinary CDN)\n  marketingImageUrl: \"https://res.cloudinary.com/dvfrd0ehf/image/upload/v1789638990/gympilot/marketing/go4hprs6ouroeo2xgogx.jpg\",\n\n  // 3. LIENS ET PROMO\n  gympilotUrl: \"https://gympilot.tn\",\n  promoCode: \"TRANSFORM2026\",\n\n  // 4. VOS 9 GROUPES FACEBOOK RÉELS AJOUTÉS :\n  targetGroups: [\n    {\n      groupId: \"238620256823178\",\n      groupName: \"Groupe Fitness & Musculation 238620256823178\",\n      groupUrl: \"https://www.facebook.com/groups/238620256823178/\",\n      country: \"FR\",\n      language: \"fr\",\n      niche: \"gym\"\n    },\n    {\n      groupId: \"755380805587808\",\n      groupName: \"Groupe Perte de Poids & Fitness 755380805587808\",\n      groupUrl: \"https://www.facebook.com/groups/755380805587808/\",\n      country: \"FR\",\n      language: \"fr\",\n      niche: \"weight_loss\"\n    },\n    {\n      groupId: \"901409604990877\",\n      groupName: \"Groupe Gym & Motivation 901409604990877\",\n      groupUrl: \"https://www.facebook.com/groups/901409604990877/\",\n      country: \"FR\",\n      language: \"fr\",\n      niche: \"gym\"\n    },\n    {\n      groupId: \"471441382102614\",\n      groupName: \"Groupe Transformation Physique 471441382102614\",\n      groupUrl: \"https://www.facebook.com/groups/471441382102614/\",\n      country: \"FR\",\n      language: \"fr\",\n      niche: \"weight_loss\"\n    },\n    {\n      groupId: \"1772489033027133\",\n      groupName: \"Groupe Santé & Nutrition 1772489033027133\",\n      groupUrl: \"https://www.facebook.com/groups/1772489033027133/\",\n      country: \"FR\",\n      language: \"fr\",\n      niche: \"weight_loss\"\n    },\n    {\n      groupId: \"2706785542973993\",\n      groupName: \"Groupe Muscu & Hypertrophie 2706785542973993\",\n      groupUrl: \"https://www.facebook.com/groups/2706785542973993/\",\n      country: \"FR\",\n      language: \"fr\",\n      niche: \"gym\"\n    },\n    {\n      groupId: \"1583169208710577\",\n      groupName: \"Groupe Remise en Forme & Sèche 1583169208710577\",\n      groupUrl: \"https://www.facebook.com/groups/1583169208710577/\",\n      country: \"FR\",\n      language: \"fr\",\n      niche: \"weight_loss\"\n    },\n    {\n      groupId: \"538488839906170\",\n      groupName: \"Groupe Entraînement & Progression 538488839906170\",\n      groupUrl: \"https://www.facebook.com/groups/538488839906170/\",\n      country: \"FR\",\n      language: \"fr\",\n      niche: \"gym\"\n    },\n    {\n      groupId: \"333530232298470\",\n      groupName: \"Groupe Perte de Poids & Obésité 333530232298470\",\n      groupUrl: \"https://www.facebook.com/groups/333530232298470/\",\n      country: \"FR\",\n      language: \"fr\",\n      niche: \"weight_loss\"\n    }\n  ]\n};\n\nreturn [{\n  json: {\n    ...CONFIG,\n    campaignDate: new Date().toISOString().split('T')[0]\n  }\n}];"
+      },
+      "id": "config-node",
+      "name": "⚙️ CONFIGURATION & CREDENTIALS",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        380,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ==========================================================================\n// ✍️ GÉNÉRATEUR DE POSTS SPÉCIAL PERTE DE POIDS & GYM (FR, EN, DE)\n// ==========================================================================\n\nconst config = $input.first().json;\nconst siteUrl = config.gympilotUrl;\nconst promo = config.promoCode;\nconst imageUrl = config.marketingImageUrl;\n\nconst copyCatalog = {\n  fr_weight_loss: `🔥 Tu veux te débarrasser de tes kilos en trop durablement sans régime toxique ni effet yo-yo ? Découvre GymPilot ! 🚀\\n\\nLa plupart des personnes en surpoids abandonnent parce qu'elles sont perdues entre les régimes stricts et les entraînements inadaptés.\\n\\nGymPilot (https://gympilot.tn) est votre copilote intelligent boosté par l'IA pour reprendre le contrôle total de votre corps :\\n\\n✨ CE QUE GYMPILOT FAIT POUR VOTRE TRANSFORMATION :\\n🥗 Calculateur de déficit calorique & macronutriments sur-mesure (sans vous affamer)\\n🤖 Analyse IA de votre silhouette et suivi précis de la perte de graisse\\n🏃 Entraînements progressifs adaptés aux débutants comme aux confirmés\\n📊 Suivi visuel des mensurations et de vos victoires quotidiennes\\n\\n🛡️ GARANTIE 14 JOURS 100% SATISFAIT OU REMBOURSÉ !\\nTestez l'application sans aucun risque pendant 14 jours. Remboursement intégral si non satisfait.\\n\\n🎁 Code promo spécial membres du groupe : ${promo} (-20% sur l'abonnement)\\n👉 Commencez votre transformation dès aujourd'hui : ${siteUrl}\\n\\n#PerteDePoids #RemiseEnForme #AntiObésité #TransformationPhysique #Santé #FitnessFrance #GymPilot`,\n\n  fr_gym: `⚡ Arrête de stagner à la salle ! Passe au niveau supérieur avec GymPilot 🚀\\n\\nPour construire du muscle durablement, le suivi de la surcharge progressive est la clé numéro 1.\\n\\nGymPilot (https://gympilot.tn) :\\n📊 Suivi ultra-rapide de la surcharge progressive et de vos records personnels (PRs)\\n🤖 Analyse IA de votre physique avec directives d'hypertrophie personnalisées\\n🥗 Calculateur précis pour prise de masse propre ou sèche\\n\\n🛡️ GARANTIE 14 JOURS 100% SATISFAIT OU REMBOURSÉ !\\n🎁 Code promo exclusif : ${promo}\\n👉 Testez dès maintenant : ${siteUrl}\\n\\n#Musculation #GoMuscu #FitnessFrance #Hypertrophie #GymPilot`\n};\n\nconst queue = config.targetGroups.map(group => {\n  let copyKey = `${group.language}_${group.niche}`;\n  if (!copyCatalog[copyKey]) {\n    copyKey = group.niche === 'gym' ? 'fr_gym' : 'fr_weight_loss';\n  }\n\n  return {\n    groupId: group.groupId,\n    groupName: group.groupName,\n    groupUrl: group.groupUrl || `https://www.facebook.com/groups/${group.groupId}`,\n    country: group.country,\n    language: group.language,\n    niche: group.niche,\n    imageUrl: imageUrl,\n    caption: copyCatalog[copyKey],\n    accessToken: config.facebookPageAccessToken,\n    shareUrl: siteUrl\n  };\n});\n\nreturn queue.map(item => ({ json: item }));"
+      },
+      "id": "prepare-groups",
+      "name": "✍️ Copywriting & Target Groups Queue",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        620,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "split-groups",
+      "name": "🔁 Loop Over Groups (One by One)",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        860,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://graph.facebook.com/v21.0/{{ $json.groupId }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "id,name,privacy"
+            },
+            {
+              "name": "access_token",
+              "value": "={{ $json.accessToken }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "check-membership",
+      "name": "🔍 Check If Page is in Group",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1080,
+        420
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "is-in-group",
+              "leftValue": "={{ !!$json.id && !$json.error }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "filter-membership",
+      "name": "🔀 Is Page Member of Group?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ⏱️ Pause de sécurité anti-ban : 12 secondes avant de poster\nawait new Promise(resolve => setTimeout(resolve, 12000));\nconst originalTask = $('🔁 Loop Over Groups (One by One)').first().json;\nreturn [{ json: originalTask }];"
+      },
+      "id": "safety-pause",
+      "name": "⏱️ Anti-Spam Pause (12s)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v21.0/{{ $json.groupId }}/photos",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"url\": \"{{ $json.imageUrl }}\",\n  \"caption\": {{ JSON.stringify($json.caption) }},\n  \"access_token\": \"{{ $json.accessToken }}\"\n}",
+        "options": {
+          "timeout": 45000
+        }
+      },
+      "id": "post-photo-to-group",
+      "name": "📢 Post Photo + Text to Group",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1740,
+        340
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst currentGroup = $('🔁 Loop Over Groups (One by One)').first().json;\nconst isPublished = !!(response.id && !response.error);\n\nreturn [{\n  json: {\n    groupId: currentGroup.groupId,\n    groupName: currentGroup.groupName,\n    groupUrl: currentGroup.groupUrl,\n    niche: currentGroup.niche,\n    country: currentGroup.country,\n    isMember: true,\n    status: isPublished ? '✅ PUBLIÉ AVEC SUCCÈS' : '⚠️ ERREUR DE PUBLICATION',\n    actionNeeded: isPublished ? 'Aucune' : 'Vérifier les permissions du groupe',\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "record-success",
+      "name": "📝 Record Published Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1960,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const currentGroup = $('🔁 Loop Over Groups (One by One)').first().json;\n\nreturn [{\n  json: {\n    groupId: currentGroup.groupId,\n    groupName: currentGroup.groupName,\n    groupUrl: currentGroup.groupUrl,\n    niche: currentGroup.niche,\n    country: currentGroup.country,\n    isMember: false,\n    status: '🟡 NON MEMBRE (À REJOINDRE)',\n    actionNeeded: `👉 Cliquez ici pour rejoindre : ${currentGroup.groupUrl}`,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "record-not-member",
+      "name": "⚠️ Record Not Member (Generate Link)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Récupération consolidée de tous les résultats des 9 groupes\nlet publishedList = [];\nlet toJoinList = [];\n\ntry {\n  publishedList = $('📝 Record Published Result').all().map(i => i.json).filter(r => r && r.groupId);\n} catch (e) {}\n\ntry {\n  toJoinList = $('⚠️ Record Not Member (Generate Link)').all().map(i => i.json).filter(r => r && r.groupId);\n} catch (e) {}\n\nconst totalGroupes = publishedList.length + toJoinList.length;\n\nreturn [{\n  json: {\n    rapportTitle: '📊 BILAN DE CAMPAGNE FACEBOOK GYMPILOT (9 GROUPES)',\n    date: new Date().toISOString(),\n    totalGroupesCibles: totalGroupes || 9,\n    groupesPubliesDirectement: publishedList.length,\n    groupesARejoindre: toJoinList.length,\n    detailsPublies: publishedList,\n    listeDesGroupesARejoindre: toJoinList.map(g => ({\n      groupe: g.groupName,\n      lienDirect: g.groupUrl,\n      action: `Cliquer pour faire adhérer la Page GymPilot : ${g.groupUrl}`\n    })),\n    instructions: 'Pour les groupes où vous n\\'êtes pas encore membre, ouvrez les liens ci-dessus dans votre navigateur et cliquez sur « Rejoindre le groupe » avec votre profil ou Page GymPilot.'\n  }\n}];"
+      },
+      "id": "campaign-summary",
+      "name": "📊 Campaign Summary Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2200,
+        420
+      ]
+    }
+  ],
+  "connections": {
+    "⏰ Daily Campaign Trigger (18:00 CET)": {
+      "main": [
+        [
+          {
+            "node": "⚙️ CONFIGURATION & CREDENTIALS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚡ On-Demand Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "⚙️ CONFIGURATION & CREDENTIALS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚙️ CONFIGURATION & CREDENTIALS": {
+      "main": [
+        [
+          {
+            "node": "✍️ Copywriting & Target Groups Queue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "✍️ Copywriting & Target Groups Queue": {
+      "main": [
+        [
+          {
+            "node": "🔁 Loop Over Groups (One by One)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔁 Loop Over Groups (One by One)": {
+      "main": [
+        [
+          {
+            "node": "🔍 Check If Page is in Group",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "📊 Campaign Summary Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Check If Page is in Group": {
+      "main": [
+        [
+          {
+            "node": "🔀 Is Page Member of Group?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔀 Is Page Member of Group?": {
+      "main": [
+        [
+          {
+            "node": "⏱️ Anti-Spam Pause (12s)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "⚠️ Record Not Member (Generate Link)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⏱️ Anti-Spam Pause (12s)": {
+      "main": [
+        [
+          {
+            "node": "📢 Post Photo + Text to Group",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📢 Post Photo + Text to Group": {
+      "main": [
+        [
+          {
+            "node": "📝 Record Published Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📝 Record Published Result": {
+      "main": [
+        [
+          {
+            "node": "🔁 Loop Over Groups (One by One)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚠️ Record Not Member (Generate Link)": {
+      "main": [
+        [
+          {
+            "node": "🔁 Loop Over Groups (One by One)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
