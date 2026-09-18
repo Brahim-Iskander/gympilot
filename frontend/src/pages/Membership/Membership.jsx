@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -44,6 +44,7 @@ import {
   MonetizationOnRounded,
   StarRounded,
   PhoneAndroidRounded,
+  CreditCardRounded,
 } from '@mui/icons-material';
 
 import { ticketService } from '../../services/ticketService';
@@ -67,6 +68,28 @@ export default function MembershipPage() {
   const BASIC_POINTS_COST = 250;
   const PREMIUM_POINTS_COST = 500;
 
+  // Polar checkout links (card / Apple Pay / Google Pay)
+  const POLAR_CHECKOUT_LINKS = {
+    BASIC: 'https://buy.polar.sh/polar_cl_TJcxijtkaRjkU2jhop2QWcssZW9A6pWKnMMWw3Nb4m6',
+    PREMIUM: 'https://buy.polar.sh/polar_cl_ZSBForqGWkSaPKSc44vJVH5M6lvjwUg9KtBLb3LEobE',
+  };
+
+  const handlePolarCheckout = (tier) => {
+    if (!user) {
+      navigate('/login?redirect=/membership');
+      return;
+    }
+    const baseUrl = tier === 'PREMIUM' ? POLAR_CHECKOUT_LINKS.PREMIUM : POLAR_CHECKOUT_LINKS.BASIC;
+    const origin = window.location.origin;
+    const planName = tier === 'PREMIUM' ? 'GymPilot Premium Plan' : 'GymPilot Basic Plan';
+    const params = new URLSearchParams({
+      theme: 'dark',
+      return_url: `${origin}/payment/failure?reason=cancelled&plan=${encodeURIComponent(planName)}`,
+    });
+    if (user?.email) params.set('customer_email', user.email);
+    window.open(`${baseUrl}?${params.toString()}`, '_blank', 'noopener,noreferrer');
+  };
+
   const [loading, setLoading] = useState(false);
   const [redeemingTier, setRedeemingTier] = useState(null);
   const [successTicket, setSuccessTicket] = useState(null);
@@ -74,20 +97,47 @@ export default function MembershipPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [confirmationOpen, setConfirmationOpen] = useState(false);
 
+  // Region state: Default strictly to Tunisia ('TN') so credit card is hidden by default
+  const [selectedRegion, setSelectedRegion] = useState(() => {
+    const saved = localStorage.getItem('gympilot_selected_region');
+    if (saved === 'INTERNATIONAL') return 'INTERNATIONAL';
+    return 'TN';
+  });
+
+  const isTunisia = selectedRegion === 'TN';
+
+  const handleSelectRegion = (region) => {
+    setSelectedRegion(region);
+    localStorage.setItem('gympilot_selected_region', region);
+    if (region === 'TN') {
+      geo.changeCurrency('TND');
+    } else {
+      geo.changeCurrency('EUR');
+    }
+  };
+
+  // Sync currency whenever region changes or on first mount
+  useEffect(() => {
+    if (selectedRegion === 'TN' && geo.currency !== 'TND') {
+      geo.changeCurrency('TND');
+    }
+  }, [selectedRegion, geo.currency]);
+
   // Active payment methods for user region
   const [activePaymentMethods, setActivePaymentMethods] = useState([]);
 
   useEffect(() => {
-    const country = geo?.countryCode || localStorage.getItem('gympilot_geo_country') || 'TN';
+    const country = isTunisia ? 'TN' : (geo?.detectedCountry || 'FR');
     paymentService.getActiveMethods(country)
       .then((methods) => {
         if (methods) setActivePaymentMethods(methods);
       })
       .catch((err) => console.error('Failed to load active methods for membership:', err));
-  }, [geo?.countryCode]);
+  }, [isTunisia, geo?.detectedCountry]);
 
-  const hasD17 = activePaymentMethods.some((m) => m.code === 'D17');
-  const hasCrypto = activePaymentMethods.some((m) => m.code !== 'D17');
+  const hasD17 = isTunisia || activePaymentMethods.some((m) => m.code === 'D17');
+  // Crypto (USDT, BTC, ETH) is always supported globally
+  const hasCrypto = true;
 
   // Manual payment modal state
   const [d17Modal, setD17Modal] = useState({
@@ -297,6 +347,65 @@ export default function MembershipPage() {
         >
           {t('membership.subtitle')}
         </Typography>
+
+        {/* Region Selector Toggle (Tunisia vs International) */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, mb: 1 }}>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 0.5,
+              borderRadius: 4,
+              bgcolor: 'rgba(255,255,255,0.04)',
+              border: '1px solid',
+              borderColor: 'divider',
+              display: 'inline-flex',
+              gap: 0.5,
+            }}
+          >
+            <Button
+              size="small"
+              onClick={() => handleSelectRegion('TN')}
+              sx={{
+                px: 2.5,
+                py: 0.8,
+                borderRadius: 3.5,
+                fontWeight: 800,
+                fontSize: '0.85rem',
+                textTransform: 'none',
+                bgcolor: isTunisia ? 'primary.main' : 'transparent',
+                color: isTunisia ? '#000' : 'text.secondary',
+                boxShadow: isTunisia ? '0 4px 14px rgba(198,255,62,0.3)' : 'none',
+                '&:hover': {
+                  bgcolor: isTunisia ? '#b3f520' : 'rgba(255,255,255,0.06)',
+                  color: isTunisia ? '#000' : 'text.primary',
+                },
+              }}
+            >
+              🇹🇳 Tunisie (D17 Mobile • TND)
+            </Button>
+            <Button
+              size="small"
+              onClick={() => handleSelectRegion('INTERNATIONAL')}
+              sx={{
+                px: 2.5,
+                py: 0.8,
+                borderRadius: 3.5,
+                fontWeight: 800,
+                fontSize: '0.85rem',
+                textTransform: 'none',
+                bgcolor: !isTunisia ? 'primary.main' : 'transparent',
+                color: !isTunisia ? '#000' : 'text.secondary',
+                boxShadow: !isTunisia ? '0 4px 14px rgba(198,255,62,0.3)' : 'none',
+                '&:hover': {
+                  bgcolor: !isTunisia ? '#b3f520' : 'rgba(255,255,255,0.06)',
+                  color: !isTunisia ? '#000' : 'text.primary',
+                },
+              }}
+            >
+              🌍 International (Carte • EUR / USD)
+            </Button>
+          </Paper>
+        </Box>
       </Box>
 
       {/* Guest Welcome Banner */}
@@ -617,41 +726,90 @@ export default function MembershipPage() {
                   </>
                 ) : (
                   <Stack spacing={1.5}>
-                    {hasD17 && (
-                      <Button
-                        fullWidth
-                        variant="contained"
-                        size="large"
-                        onClick={() => handleOpenD17('BASIC', 'Basic Plan', 49, 'D17')}
-                        startIcon={
-                          <Box
-                            component="img"
-                            src="/d17-logo.webp"
-                            alt="D17"
-                            sx={{ width: 22, height: 22, borderRadius: 0.75, objectFit: 'contain' }}
-                          />
-                        }
-                        sx={{
-                          py: 1.5,
-                          bgcolor: 'primary.main',
-                          color: '#000',
-                          fontWeight: 900,
-                          fontSize: '0.95rem',
-                          borderRadius: 3,
-                          boxShadow: '0 8px 24px rgba(198,255,62,0.35)',
-                          '&:hover': {
-                            bgcolor: '#b3f520',
-                          },
-                        }}
-                      >
-                        Pay with D17 Mobile ({geo.config.basicPrice})
-                      </Button>
+                    {isTunisia ? (
+                      /* Tunisia Payment Options: D17 Mobile (Primary) */
+                      <>
+                        <Button
+                          fullWidth
+                          variant="contained"
+                          size="large"
+                          onClick={() => handleOpenD17('BASIC', 'Basic Plan', 49, 'D17')}
+                          startIcon={
+                            <Box
+                              component="img"
+                              src="/d17-logo.webp"
+                              alt="D17"
+                              sx={{ width: 22, height: 22, borderRadius: 0.75, objectFit: 'contain' }}
+                            />
+                          }
+                          endIcon={<ArrowForwardRounded sx={{ fontSize: 18, transition: 'transform 0.2s', '.MuiButton-root:hover &': { transform: 'translateX(3px)' } }} />}
+                          sx={{
+                            py: 1.6,
+                            px: 3,
+                            bgcolor: 'primary.main',
+                            color: '#000',
+                            fontWeight: 800,
+                            fontSize: '0.95rem',
+                            letterSpacing: '0.01em',
+                            borderRadius: 3,
+                            boxShadow: '0 8px 24px rgba(198,255,62,0.3)',
+                            transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                            '&:hover': {
+                              bgcolor: '#b3f520',
+                              transform: 'translateY(-2px)',
+                              boxShadow: '0 12px 28px rgba(198,255,62,0.45)',
+                            },
+                          }}
+                        >
+                          Pay with D17 Mobile ({geo.config.basicPrice})
+                        </Button>
+                        <Typography variant="caption" color="text.secondary" align="center" display="block" sx={{ mt: -0.5, fontSize: '0.72rem' }}>
+                          National Post D17 transfer • Verification within 24h
+                        </Typography>
+                      </>
+                    ) : (
+                      /* International Payment Options: Card / Apple Pay (Primary) */
+                      <>
+                        <Button
+                          fullWidth
+                          variant="contained"
+                          size="large"
+                          onClick={() => handlePolarCheckout('BASIC')}
+                          startIcon={<CreditCardRounded sx={{ fontSize: 20 }} />}
+                          endIcon={<ArrowForwardRounded sx={{ fontSize: 18, transition: 'transform 0.2s', '.MuiButton-root:hover &': { transform: 'translateX(3px)' } }} />}
+                          sx={{
+                            py: 1.6,
+                            px: 3,
+                            bgcolor: 'primary.main',
+                            color: '#000',
+                            fontWeight: 800,
+                            fontSize: '0.95rem',
+                            letterSpacing: '0.01em',
+                            borderRadius: 3,
+                            boxShadow: '0 8px 24px rgba(198,255,62,0.3)',
+                            transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                            '&:hover': {
+                              bgcolor: '#b3f520',
+                              transform: 'translateY(-2px)',
+                              boxShadow: '0 12px 28px rgba(198,255,62,0.45)',
+                            },
+                          }}
+                        >
+                          Pay with Card / Apple Pay
+                        </Button>
+                        <Stack direction="row" spacing={0.75} alignItems="center" justifyContent="center" sx={{ mt: -0.5 }}>
+                          <LockRounded sx={{ fontSize: 13, color: 'text.secondary', opacity: 0.8 }} />
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.72rem', fontWeight: 600 }}>
+                            Secure checkout • Visa, Mastercard, Apple Pay, Google Pay
+                          </Typography>
+                        </Stack>
+                      </>
                     )}
 
                     {hasCrypto && (
                       <Button
                         fullWidth
-                        variant={hasD17 ? 'outlined' : 'contained'}
+                        variant="outlined"
                         size="large"
                         onClick={() => handleOpenD17('BASIC', 'Basic Plan', 49, 'USDT_TRC20')}
                         startIcon={
@@ -673,16 +831,16 @@ export default function MembershipPage() {
                           </Box>
                         }
                         sx={{
-                          py: 1.5,
-                          bgcolor: hasD17 ? 'transparent' : 'primary.main',
-                          color: hasD17 ? 'text.primary' : '#000',
-                          borderColor: hasD17 ? 'divider' : 'transparent',
+                          py: 1.4,
+                          color: 'text.primary',
+                          borderColor: 'divider',
                           fontWeight: 800,
                           fontSize: '0.9rem',
                           borderRadius: 3,
+                          transition: 'all 0.2s ease',
                           '&:hover': {
                             borderColor: 'primary.main',
-                            bgcolor: hasD17 ? 'rgba(198,255,62,0.06)' : '#b3f520',
+                            bgcolor: 'rgba(198,255,62,0.06)',
                           },
                         }}
                       >
@@ -881,41 +1039,90 @@ export default function MembershipPage() {
                   </>
                 ) : (
                   <Stack spacing={1.5}>
-                    {hasD17 && (
-                      <Button
-                        fullWidth
-                        variant="contained"
-                        size="large"
-                        onClick={() => handleOpenD17('PREMIUM', 'Premium Plan', 99, 'D17')}
-                        startIcon={
-                          <Box
-                            component="img"
-                            src="/d17-logo.webp"
-                            alt="D17"
-                            sx={{ width: 22, height: 22, borderRadius: 0.75, objectFit: 'contain' }}
-                          />
-                        }
-                        sx={{
-                          py: 1.5,
-                          background: 'linear-gradient(135deg, #8A7CFF 0%, #6B5CEF 100%)',
-                          color: '#FFFFFF',
-                          fontWeight: 900,
-                          fontSize: '0.95rem',
-                          borderRadius: 3,
-                          boxShadow: '0 8px 24px rgba(138,124,255,0.35)',
-                          '&:hover': {
-                            background: 'linear-gradient(135deg, #9B8FFF 0%, #7C6EFF 100%)',
-                          },
-                        }}
-                      >
-                        Pay with D17 Mobile ({geo.config.premiumPrice})
-                      </Button>
+                    {isTunisia ? (
+                      /* Tunisia Payment Options: D17 Mobile (Primary) */
+                      <>
+                        <Button
+                          fullWidth
+                          variant="contained"
+                          size="large"
+                          onClick={() => handleOpenD17('PREMIUM', 'Premium Plan', 99, 'D17')}
+                          startIcon={
+                            <Box
+                              component="img"
+                              src="/d17-logo.webp"
+                              alt="D17"
+                              sx={{ width: 22, height: 22, borderRadius: 0.75, objectFit: 'contain' }}
+                            />
+                          }
+                          endIcon={<ArrowForwardRounded sx={{ fontSize: 18, transition: 'transform 0.2s', '.MuiButton-root:hover &': { transform: 'translateX(3px)' } }} />}
+                          sx={{
+                            py: 1.6,
+                            px: 3,
+                            background: 'linear-gradient(135deg, #8A7CFF 0%, #6355E6 100%)',
+                            color: '#FFFFFF',
+                            fontWeight: 800,
+                            fontSize: '0.95rem',
+                            letterSpacing: '0.01em',
+                            borderRadius: 3,
+                            boxShadow: '0 8px 24px rgba(138,124,255,0.35)',
+                            transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                            '&:hover': {
+                              background: 'linear-gradient(135deg, #9B8FFF 0%, #7567F6 100%)',
+                              transform: 'translateY(-2px)',
+                              boxShadow: '0 12px 28px rgba(138,124,255,0.5)',
+                            },
+                          }}
+                        >
+                          Pay with D17 Mobile ({geo.config.premiumPrice})
+                        </Button>
+                        <Typography variant="caption" color="text.secondary" align="center" display="block" sx={{ mt: -0.5, fontSize: '0.72rem' }}>
+                          National Post D17 transfer • Verification within 24h
+                        </Typography>
+                      </>
+                    ) : (
+                      /* International Payment Options: Card / Apple Pay (Primary) */
+                      <>
+                        <Button
+                          fullWidth
+                          variant="contained"
+                          size="large"
+                          onClick={() => handlePolarCheckout('PREMIUM')}
+                          startIcon={<CreditCardRounded sx={{ fontSize: 20 }} />}
+                          endIcon={<ArrowForwardRounded sx={{ fontSize: 18, transition: 'transform 0.2s', '.MuiButton-root:hover &': { transform: 'translateX(3px)' } }} />}
+                          sx={{
+                            py: 1.6,
+                            px: 3,
+                            background: 'linear-gradient(135deg, #8A7CFF 0%, #6355E6 100%)',
+                            color: '#FFFFFF',
+                            fontWeight: 800,
+                            fontSize: '0.95rem',
+                            letterSpacing: '0.01em',
+                            borderRadius: 3,
+                            boxShadow: '0 8px 24px rgba(138,124,255,0.35)',
+                            transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                            '&:hover': {
+                              background: 'linear-gradient(135deg, #9B8FFF 0%, #7567F6 100%)',
+                              transform: 'translateY(-2px)',
+                              boxShadow: '0 12px 28px rgba(138,124,255,0.5)',
+                            },
+                          }}
+                        >
+                          Pay with Card / Apple Pay
+                        </Button>
+                        <Stack direction="row" spacing={0.75} alignItems="center" justifyContent="center" sx={{ mt: -0.5 }}>
+                          <LockRounded sx={{ fontSize: 13, color: 'text.secondary', opacity: 0.8 }} />
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.72rem', fontWeight: 600 }}>
+                            Secure checkout • Visa, Mastercard, Apple Pay, Google Pay
+                          </Typography>
+                        </Stack>
+                      </>
                     )}
 
                     {hasCrypto && (
                       <Button
                         fullWidth
-                        variant={hasD17 ? 'outlined' : 'contained'}
+                        variant="outlined"
                         size="large"
                         onClick={() => handleOpenD17('PREMIUM', 'Premium Plan', 99, 'USDT_TRC20')}
                         startIcon={
@@ -937,16 +1144,16 @@ export default function MembershipPage() {
                           </Box>
                         }
                         sx={{
-                          py: 1.5,
-                          bgcolor: hasD17 ? 'transparent' : 'linear-gradient(135deg, #8A7CFF 0%, #6B5CEF 100%)',
+                          py: 1.4,
                           color: '#FFFFFF',
-                          borderColor: hasD17 ? 'rgba(138,124,255,0.4)' : 'transparent',
+                          borderColor: 'rgba(138,124,255,0.4)',
                           fontWeight: 800,
                           fontSize: '0.9rem',
                           borderRadius: 3,
+                          transition: 'all 0.2s ease',
                           '&:hover': {
                             borderColor: '#8A7CFF',
-                            bgcolor: hasD17 ? 'rgba(138,124,255,0.1)' : '#7C6EFF',
+                            bgcolor: 'rgba(138,124,255,0.1)',
                           },
                         }}
                       >

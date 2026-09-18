@@ -58,6 +58,10 @@ import TermsOfService from '../pages/Legal/TermsOfService';
 import PrivacyPolicy from '../pages/Legal/LegalPrivacy';
 import RefundPolicy from '../pages/Legal/RefundPolicy';
 
+// Payment result pages (Polar card checkout)
+import PaymentSuccess from '../pages/Payment/PaymentSuccess';
+import PaymentFailure from '../pages/Payment/PaymentFailure';
+
 export default function AppRoutes() {
   return (
     <Routes>
@@ -71,6 +75,10 @@ export default function AppRoutes() {
       <Route path="/refund-policy" element={<RefundPolicy />} />
       <Route path="/refund" element={<RefundPolicy />} />
       <Route path="/pricing" element={<MembershipPage />} />
+
+      {/* ===================== PAYMENT RESULT PAGES ===================== */}
+      <Route path="/payment/success" element={<PaymentSuccess />} />
+      <Route path="/payment/failure" element={<PaymentFailure />} />
 
       <Route
         path="/login"
