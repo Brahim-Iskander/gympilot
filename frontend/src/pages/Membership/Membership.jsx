@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -97,47 +97,54 @@ export default function MembershipPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [confirmationOpen, setConfirmationOpen] = useState(false);
 
-  // Region state: Default strictly to Tunisia ('TN') so credit card is hidden by default
-  const [selectedRegion, setSelectedRegion] = useState(() => {
-    const saved = localStorage.getItem('gympilot_selected_region');
-    if (saved === 'INTERNATIONAL') return 'INTERNATIONAL';
-    return 'TN';
-  });
+  // Automatic location detection: Tunisia vs International
+  const isTunisia = useMemo(() => {
+    if (user?.country) {
+      const u = user.country.toUpperCase();
+      if (u === 'TN' || u === 'TUNISIA') return true;
+    }
+    if (geo?.detectedCountry) {
+      const c = geo.detectedCountry.toUpperCase();
+      if (c === 'TN' || c === 'TUNISIA') return true;
+      if (c !== 'UNKNOWN') return false;
+    }
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+      if (tz.includes('Tunis') || tz.includes('Tripoli')) return true;
+      if (tz.startsWith('Europe/') || tz.startsWith('America/') || tz.startsWith('US/')) return false;
+    } catch (e) {}
+    return geo?.currency === 'TND';
+  }, [user?.country, geo?.detectedCountry, geo?.currency]);
 
-  const isTunisia = selectedRegion === 'TN';
-
-  const handleSelectRegion = (region) => {
-    setSelectedRegion(region);
-    localStorage.setItem('gympilot_selected_region', region);
-    if (region === 'TN') {
+  // Automatic currency synchronization
+  useEffect(() => {
+    if (isTunisia && geo.currency !== 'TND') {
       geo.changeCurrency('TND');
-    } else {
+    } else if (!isTunisia && geo.currency === 'TND') {
       geo.changeCurrency('EUR');
     }
-  };
+  }, [isTunisia, geo.currency]);
 
-  // Sync currency whenever region changes or on first mount
-  useEffect(() => {
-    if (selectedRegion === 'TN' && geo.currency !== 'TND') {
-      geo.changeCurrency('TND');
-    }
-  }, [selectedRegion, geo.currency]);
-
-  // Active payment methods for user region
+  // Active payment methods for user region loaded dynamically from Admin configuration
   const [activePaymentMethods, setActivePaymentMethods] = useState([]);
 
   useEffect(() => {
-    const country = isTunisia ? 'TN' : (geo?.detectedCountry || 'FR');
-    paymentService.getActiveMethods(country)
+    const countryCode = isTunisia ? 'TN' : (geo?.detectedCountry || 'FR');
+    paymentService.getActiveMethods(countryCode)
       .then((methods) => {
         if (methods) setActivePaymentMethods(methods);
       })
       .catch((err) => console.error('Failed to load active methods for membership:', err));
   }, [isTunisia, geo?.detectedCountry]);
 
-  const hasD17 = isTunisia || activePaymentMethods.some((m) => m.code === 'D17');
-  // Crypto (USDT, BTC, ETH) is always supported globally
-  const hasCrypto = true;
+  // Payment methods availability dynamically controlled 100% by Admin panel
+  const hasD17 = activePaymentMethods.length === 0
+    ? isTunisia
+    : activePaymentMethods.some((m) => m.code === 'D17');
+
+  const hasCard = activePaymentMethods.length === 0
+    ? !isTunisia
+    : activePaymentMethods.some((m) => m.code === 'CARD' || m.code === 'POLAR');
 
   // Manual payment modal state
   const [d17Modal, setD17Modal] = useState({
@@ -162,7 +169,7 @@ export default function MembershipPage() {
       tier,
       planName,
       amount,
-      selectedMethod: selectedMethod || (hasD17 ? 'D17' : 'USDT_TRC20'),
+      selectedMethod: 'D17',
     });
   };
 
@@ -347,65 +354,6 @@ export default function MembershipPage() {
         >
           {t('membership.subtitle')}
         </Typography>
-
-        {/* Region Selector Toggle (Tunisia vs International) */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, mb: 1 }}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 0.5,
-              borderRadius: 4,
-              bgcolor: 'rgba(255,255,255,0.04)',
-              border: '1px solid',
-              borderColor: 'divider',
-              display: 'inline-flex',
-              gap: 0.5,
-            }}
-          >
-            <Button
-              size="small"
-              onClick={() => handleSelectRegion('TN')}
-              sx={{
-                px: 2.5,
-                py: 0.8,
-                borderRadius: 3.5,
-                fontWeight: 800,
-                fontSize: '0.85rem',
-                textTransform: 'none',
-                bgcolor: isTunisia ? 'primary.main' : 'transparent',
-                color: isTunisia ? '#000' : 'text.secondary',
-                boxShadow: isTunisia ? '0 4px 14px rgba(198,255,62,0.3)' : 'none',
-                '&:hover': {
-                  bgcolor: isTunisia ? '#b3f520' : 'rgba(255,255,255,0.06)',
-                  color: isTunisia ? '#000' : 'text.primary',
-                },
-              }}
-            >
-              🇹🇳 Tunisie (D17 Mobile • TND)
-            </Button>
-            <Button
-              size="small"
-              onClick={() => handleSelectRegion('INTERNATIONAL')}
-              sx={{
-                px: 2.5,
-                py: 0.8,
-                borderRadius: 3.5,
-                fontWeight: 800,
-                fontSize: '0.85rem',
-                textTransform: 'none',
-                bgcolor: !isTunisia ? 'primary.main' : 'transparent',
-                color: !isTunisia ? '#000' : 'text.secondary',
-                boxShadow: !isTunisia ? '0 4px 14px rgba(198,255,62,0.3)' : 'none',
-                '&:hover': {
-                  bgcolor: !isTunisia ? '#b3f520' : 'rgba(255,255,255,0.06)',
-                  color: !isTunisia ? '#000' : 'text.primary',
-                },
-              }}
-            >
-              🌍 International (Carte • EUR / USD)
-            </Button>
-          </Paper>
-        </Box>
       </Box>
 
       {/* Guest Welcome Banner */}
@@ -726,8 +674,8 @@ export default function MembershipPage() {
                   </>
                 ) : (
                   <Stack spacing={1.5}>
-                    {isTunisia ? (
-                      /* Tunisia Payment Options: D17 Mobile (Primary) */
+                    {/* D17 Mobile Payment (controlled by admin panel) */}
+                    {hasD17 && (
                       <>
                         <Button
                           fullWidth
@@ -767,12 +715,14 @@ export default function MembershipPage() {
                           National Post D17 transfer • Verification within 24h
                         </Typography>
                       </>
-                    ) : (
-                      /* International Payment Options: Card / Apple Pay (Primary) */
+                    )}
+
+                    {/* Credit Card / Apple Pay (controlled by admin panel) */}
+                    {hasCard && (
                       <>
                         <Button
                           fullWidth
-                          variant="contained"
+                          variant={hasD17 ? 'outlined' : 'contained'}
                           size="large"
                           onClick={() => handlePolarCheckout('BASIC')}
                           startIcon={<CreditCardRounded sx={{ fontSize: 20 }} />}
@@ -780,16 +730,17 @@ export default function MembershipPage() {
                           sx={{
                             py: 1.6,
                             px: 3,
-                            bgcolor: 'primary.main',
-                            color: '#000',
+                            bgcolor: hasD17 ? 'transparent' : 'primary.main',
+                            color: hasD17 ? 'text.primary' : '#000',
+                            borderColor: hasD17 ? 'primary.main' : 'transparent',
                             fontWeight: 800,
                             fontSize: '0.95rem',
                             letterSpacing: '0.01em',
                             borderRadius: 3,
-                            boxShadow: '0 8px 24px rgba(198,255,62,0.3)',
+                            boxShadow: hasD17 ? 'none' : '0 8px 24px rgba(198,255,62,0.3)',
                             transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                             '&:hover': {
-                              bgcolor: '#b3f520',
+                              bgcolor: hasD17 ? 'rgba(198,255,62,0.08)' : '#b3f520',
                               transform: 'translateY(-2px)',
                               boxShadow: '0 12px 28px rgba(198,255,62,0.45)',
                             },
@@ -804,48 +755,6 @@ export default function MembershipPage() {
                           </Typography>
                         </Stack>
                       </>
-                    )}
-
-                    {hasCrypto && (
-                      <Button
-                        fullWidth
-                        variant="outlined"
-                        size="large"
-                        onClick={() => handleOpenD17('BASIC', 'Basic Plan', 49, 'USDT_TRC20')}
-                        startIcon={
-                          <Box
-                            sx={{
-                              width: 22,
-                              height: 22,
-                              borderRadius: '50%',
-                              bgcolor: '#26A17B',
-                              color: '#FFF',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontWeight: 900,
-                              fontSize: '0.75rem',
-                            }}
-                          >
-                            ₮
-                          </Box>
-                        }
-                        sx={{
-                          py: 1.4,
-                          color: 'text.primary',
-                          borderColor: 'divider',
-                          fontWeight: 800,
-                          fontSize: '0.9rem',
-                          borderRadius: 3,
-                          transition: 'all 0.2s ease',
-                          '&:hover': {
-                            borderColor: 'primary.main',
-                            bgcolor: 'rgba(198,255,62,0.06)',
-                          },
-                        }}
-                      >
-                        Pay with Crypto (USDT, BTC, ETH)
-                      </Button>
                     )}
 
                     <Divider sx={{ my: 0.5 }}>
@@ -1039,8 +948,8 @@ export default function MembershipPage() {
                   </>
                 ) : (
                   <Stack spacing={1.5}>
-                    {isTunisia ? (
-                      /* Tunisia Payment Options: D17 Mobile (Primary) */
+                    {/* D17 Mobile Payment (controlled by admin panel) */}
+                    {hasD17 && (
                       <>
                         <Button
                           fullWidth
@@ -1080,12 +989,14 @@ export default function MembershipPage() {
                           National Post D17 transfer • Verification within 24h
                         </Typography>
                       </>
-                    ) : (
-                      /* International Payment Options: Card / Apple Pay (Primary) */
+                    )}
+
+                    {/* Credit Card / Apple Pay (controlled by admin panel) */}
+                    {hasCard && (
                       <>
                         <Button
                           fullWidth
-                          variant="contained"
+                          variant={hasD17 ? 'outlined' : 'contained'}
                           size="large"
                           onClick={() => handlePolarCheckout('PREMIUM')}
                           startIcon={<CreditCardRounded sx={{ fontSize: 20 }} />}
@@ -1093,16 +1004,17 @@ export default function MembershipPage() {
                           sx={{
                             py: 1.6,
                             px: 3,
-                            background: 'linear-gradient(135deg, #8A7CFF 0%, #6355E6 100%)',
+                            background: hasD17 ? 'transparent' : 'linear-gradient(135deg, #8A7CFF 0%, #6355E6 100%)',
                             color: '#FFFFFF',
+                            borderColor: hasD17 ? '#8A7CFF' : 'transparent',
                             fontWeight: 800,
                             fontSize: '0.95rem',
                             letterSpacing: '0.01em',
                             borderRadius: 3,
-                            boxShadow: '0 8px 24px rgba(138,124,255,0.35)',
+                            boxShadow: hasD17 ? 'none' : '0 8px 24px rgba(138,124,255,0.35)',
                             transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                             '&:hover': {
-                              background: 'linear-gradient(135deg, #9B8FFF 0%, #7567F6 100%)',
+                              background: hasD17 ? 'rgba(138,124,255,0.1)' : 'linear-gradient(135deg, #9B8FFF 0%, #7567F6 100%)',
                               transform: 'translateY(-2px)',
                               boxShadow: '0 12px 28px rgba(138,124,255,0.5)',
                             },
@@ -1117,48 +1029,6 @@ export default function MembershipPage() {
                           </Typography>
                         </Stack>
                       </>
-                    )}
-
-                    {hasCrypto && (
-                      <Button
-                        fullWidth
-                        variant="outlined"
-                        size="large"
-                        onClick={() => handleOpenD17('PREMIUM', 'Premium Plan', 99, 'USDT_TRC20')}
-                        startIcon={
-                          <Box
-                            sx={{
-                              width: 22,
-                              height: 22,
-                              borderRadius: '50%',
-                              bgcolor: '#26A17B',
-                              color: '#FFF',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontWeight: 900,
-                              fontSize: '0.75rem',
-                            }}
-                          >
-                            ₮
-                          </Box>
-                        }
-                        sx={{
-                          py: 1.4,
-                          color: '#FFFFFF',
-                          borderColor: 'rgba(138,124,255,0.4)',
-                          fontWeight: 800,
-                          fontSize: '0.9rem',
-                          borderRadius: 3,
-                          transition: 'all 0.2s ease',
-                          '&:hover': {
-                            borderColor: '#8A7CFF',
-                            bgcolor: 'rgba(138,124,255,0.1)',
-                          },
-                        }}
-                      >
-                        Pay with Crypto (USDT, BTC, ETH)
-                      </Button>
                     )}
 
                     <Divider sx={{ my: 0.5 }}>

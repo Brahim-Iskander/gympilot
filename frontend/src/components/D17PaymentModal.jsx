@@ -162,16 +162,36 @@ export default function D17PaymentModal({
       setSubmitting(false);
 
       const country = geo?.countryCode || localStorage.getItem('gympilot_geo_country') || 'TN';
+      const storedRegion = localStorage.getItem('gympilot_selected_region');
+      const isTn = storedRegion === 'TN' || (!storedRegion && (country === 'TN' || geo?.currency === 'TND'));
 
       paymentService.getActiveMethods(country)
         .then((methods) => {
-          if (methods && methods.length > 0) {
-            setAvailableMethods(methods);
+          let filtered = methods || [];
+          if (isTn) {
+            filtered = filtered.filter((m) => m.code === 'D17');
+            if (filtered.length === 0) {
+              filtered = [{
+                code: 'D17',
+                name: 'D17 Mobile Payment',
+                network: 'D17',
+                receivingAddress: '99 123 456',
+                recipientName: 'GymPilot Administration',
+                instructions: 'Effectuez le transfert vers notre numéro D17 puis joignez la capture de confirmation.',
+                warningNotice: 'Transfert postal national tunisien. Montant exact requis.',
+              }];
+            }
+          } else {
+            filtered = filtered.filter((m) => m.code !== 'D17');
+          }
+
+          if (filtered && filtered.length > 0) {
+            setAvailableMethods(filtered);
             // Default active method
-            if (propSelectedMethod && methods.some((m) => m.code === propSelectedMethod)) {
+            if (propSelectedMethod && filtered.some((m) => m.code === propSelectedMethod)) {
               setActiveMethodCode(propSelectedMethod);
             } else {
-              setActiveMethodCode(methods[0].code);
+              setActiveMethodCode(filtered[0].code);
             }
           }
         })

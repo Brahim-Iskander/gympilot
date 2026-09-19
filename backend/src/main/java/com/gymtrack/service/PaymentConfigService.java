@@ -26,6 +26,7 @@ public class PaymentConfigService {
     private static final Logger log = LoggerFactory.getLogger(PaymentConfigService.class);
 
     public static final String METHOD_D17 = "D17";
+    public static final String METHOD_CARD = "CARD";
     public static final String METHOD_USDT = "USDT_TRC20";
     public static final String METHOD_BTC = "BTC";
     public static final String METHOD_ETH = "ETH";
@@ -42,6 +43,7 @@ public class PaymentConfigService {
     @PostConstruct
     public void initDefaultPaymentMethods() {
         try {
+            // 1. D17 Mobile Payment (Tunisia default: active; International default: inactive)
             initMethodIfMissing(
                     METHOD_D17,
                     "D17 Mobile Payment",
@@ -51,56 +53,35 @@ public class PaymentConfigService {
                     systemSettingService.getD17Instructions(),
                     "Tunisian national postal mobile transfer. Exact payable amount must be sent.",
                     true, // global
-                    true, // Tunisia
-                    false, // International
+                    true, // Tunisia (controlled by admin)
+                    false, // International (controlled by admin)
                     null,
                     1
             );
 
+            // 2. Credit Card / Apple Pay via Polar (Tunisia default: inactive; International default: active)
             initMethodIfMissing(
-                    METHOD_USDT,
-                    "USDT (TRC20 Network)",
-                    "TRC20",
-                    "TQn9Y2khEsLJW1ChVWFMSMeSTow5KaxnSE",
-                    "GymPilot USDT Treasury",
-                    "1. Copy the TRON wallet address or scan the QR code.\n2. Transfer the exact USDT amount via the TRC20 network.\n3. Enter the transaction hash (TXID) and/or upload payment screenshot.",
-                    "CRITICAL: Send ONLY USDT on the TRON (TRC20) network. Transfers via ERC20, BSC, or other networks will result in permanent loss.",
-                    true,
-                    false, // Tunisia toggle (can be enabled by admin)
-                    true,  // International
-                    "https://tronscan.org/#/transaction/",
+                    METHOD_CARD,
+                    "Credit Card / Apple Pay (Polar)",
+                    "Polar",
+                    "https://polar.sh/gympilot",
+                    "GymPilot International Card Checkout",
+                    "Visa, Mastercard, Apple Pay, Google Pay via Polar checkout with instant activation.",
+                    "Instant automated plan activation upon checkout completion.",
+                    true,  // global
+                    false, // Tunisia (controlled by admin)
+                    true,  // International (controlled by admin)
+                    null,
                     2
             );
 
-            initMethodIfMissing(
-                    METHOD_BTC,
-                    "Bitcoin (BTC)",
-                    "Bitcoin",
-                    "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh",
-                    "GymPilot Bitcoin Vault",
-                    "1. Copy the Bitcoin address or scan the QR code.\n2. Send Bitcoin (BTC) equivalent to the payable order/plan.\n3. Provide the transaction ID (TXID) and/or screenshot proof.",
-                    "Send only native Bitcoin (BTC) to this address. Ensure sufficient network mining fee is included.",
-                    true,
-                    false,
-                    true,
-                    "https://www.blockchain.com/explorer/transactions/btc/",
-                    3
-            );
-
-            initMethodIfMissing(
-                    METHOD_ETH,
-                    "Ethereum (ETH)",
-                    "Ethereum",
-                    "0x71C8360d8C8bB04d9c49081e6F86810292B2b89A",
-                    "GymPilot Ethereum Treasury",
-                    "1. Copy the Ethereum address or scan the QR code.\n2. Send ETH equivalent via Ethereum Mainnet.\n3. Enter the transaction hash (TXID) and/or upload screenshot confirmation.",
-                    "Send only ETH on Ethereum Mainnet. Transactions sent via Layer 2s (Arbitrum, Optimism) may encounter verification delays.",
-                    true,
-                    false,
-                    true,
-                    "https://etherscan.io/tx/",
-                    4
-            );
+            // 3. Remove/delete legacy crypto configs as crypto payment is discontinued
+            for (String cryptoCode : List.of(METHOD_USDT, METHOD_BTC, METHOD_ETH)) {
+                configRepo.findByCode(cryptoCode).ifPresent(c -> {
+                    configRepo.delete(c);
+                    log.info("Deleted legacy crypto payment config: {}", cryptoCode);
+                });
+            }
         } catch (Exception e) {
             log.error("Failed to initialize default payment methods: {}", e.getMessage(), e);
         }
@@ -129,6 +110,7 @@ public class PaymentConfigService {
         List<PaymentMethodConfig> allConfigs = configRepo.findByIsActiveGlobalTrue(sort);
 
         return allConfigs.stream()
+                .filter(c -> !List.of(METHOD_USDT, METHOD_BTC, METHOD_ETH).contains(c.getCode()))
                 .filter(c -> c.isAvailableForCountry(countryCode))
                 .map(PaymentMethodResponse::from)
                 .collect(Collectors.toList());
@@ -140,6 +122,7 @@ public class PaymentConfigService {
     public List<AdminPaymentMethodResponse> getAllMethodsForAdmin() {
         Sort sort = Sort.by(Sort.Direction.ASC, "displayOrder");
         return configRepo.findAll(sort).stream()
+                .filter(c -> !List.of(METHOD_USDT, METHOD_BTC, METHOD_ETH).contains(c.getCode()))
                 .map(AdminPaymentMethodResponse::from)
                 .collect(Collectors.toList());
     }

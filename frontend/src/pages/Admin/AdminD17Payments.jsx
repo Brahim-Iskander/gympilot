@@ -59,6 +59,7 @@ import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded';
 import PublicRoundedIcon from '@mui/icons-material/PublicRounded';
 import FlagRoundedIcon from '@mui/icons-material/FlagRounded';
 import AccountBalanceWalletRoundedIcon from '@mui/icons-material/AccountBalanceWalletRounded';
+import CreditCardRoundedIcon from '@mui/icons-material/CreditCardRounded';
 
 import SEO from '../../components/SEO';
 import { d17Service } from '../../services/d17Service';
@@ -66,6 +67,9 @@ import { paymentService } from '../../services/paymentService';
 import { useAuth } from '../../context/AuthContext';
 
 function CoinIcon({ code, sx = {} }) {
+  if (code === 'CARD' || code === 'POLAR') {
+    return <CreditCardRoundedIcon sx={{ fontSize: 20, color: 'primary.main', ...sx }} />;
+  }
   if (code === 'D17') {
     return (
       <Box
@@ -1398,15 +1402,18 @@ export default function AdminD17Payments() {
                         <TextField
                           fullWidth
                           size="small"
-                          label={current.category === 'CRYPTO' ? 'Official Receiving Wallet Address *' : 'Receiving Phone Number *'}
+                          label={
+                            current.code === 'CARD' || current.code === 'POLAR'
+                              ? 'Checkout / Organization URL *'
+                              : 'Receiving Phone Number / Address *'
+                          }
                           value={current.receivingAddress || ''}
                           onChange={(e) => handleUpdateMethodField(current.code, 'receivingAddress', e.target.value)}
                           helperText={
-                            current.category === 'CRYPTO'
-                              ? `Official GymPilot wallet address where athletes send ${current.name} payments.`
+                            current.code === 'CARD' || current.code === 'POLAR'
+                              ? 'Official Polar checkout or organization link.'
                               : 'Tunisian mobile phone number linked to D17.'
                           }
-                          inputProps={{ style: current.category === 'CRYPTO' ? { fontFamily: 'monospace' } : {} }}
                         />
 
                         {/* Recipient Name */}
